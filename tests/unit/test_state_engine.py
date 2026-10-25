@@ -916,13 +916,13 @@ def test_sec_03_missing_or_mismatched_expected_session_id(test_registry: Registr
         payload={"tool": "reset_context", "arguments": {}},
     )
 
-    # 1. Missing / omitted expected_session_id
-    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
-        apply_event(state, evt, test_registry)
+    # 1. Truly omitted expected_session_id raises TypeError (required Python parameter)
+    with pytest.raises(TypeError):
+        apply_event(state, evt, test_registry)  # type: ignore[call-arg]
 
-    # 2. Explicitly None expected_session_id
+    # 2. Explicitly None expected_session_id raises StateContinuityError
     with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
-        apply_event(state, evt, test_registry, expected_session_id=None)
+        apply_event(state, evt, test_registry, expected_session_id=None)  # type: ignore[arg-type]
 
     # 3. Empty string expected_session_id
     with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):

@@ -250,7 +250,7 @@ def apply_event(
     state: SessionState,
     event: StateEventEnvelope | Event,
     registry: Registry,
-    expected_session_id: Optional[str] = None,
+    expected_session_id: str,
     binding_mode: BindingMode = BindingMode.IMPLICIT,
 ) -> SessionState:
     """

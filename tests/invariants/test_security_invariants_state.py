@@ -274,6 +274,6 @@ def test_inv_04_sec_03_mandatory_session_continuity(inv_registry: Registry) -> N
     with pytest.raises(StateContinuityError, match="Session identity mismatch"):
         apply_event(state, evt_spliced, inv_registry, expected_session_id=session_a)
 
-    # Fails when expected_session_id is omitted
-    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
-        apply_event(state, evt_spliced, inv_registry)
+    # Fails when expected_session_id is omitted (TypeError in Python)
+    with pytest.raises(TypeError):
+        apply_event(state, evt_spliced, inv_registry)  # type: ignore[call-arg]
