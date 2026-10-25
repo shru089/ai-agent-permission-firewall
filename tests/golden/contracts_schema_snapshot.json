@@ -1,0 +1,1735 @@
+{
+  "ActionRequest": {
+    "additionalProperties": false,
+    "description": "Untrusted action request submitted by the agent.",
+    "properties": {
+      "arguments": {
+        "title": "Arguments",
+        "type": "object"
+      },
+      "declared_intent": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Declared Intent"
+      },
+      "schema_version": {
+        "default": "0.1.0",
+        "title": "Schema Version",
+        "type": "string"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "tool": {
+        "title": "Tool",
+        "type": "string"
+      }
+    },
+    "required": [
+      "session_id",
+      "tool",
+      "arguments"
+    ],
+    "title": "ActionRequest",
+    "type": "object"
+  },
+  "AuthorizationToken": {
+    "additionalProperties": false,
+    "description": "Cryptographic authorization token authorizing tool execution.",
+    "properties": {
+      "action_hash": {
+        "title": "Action Hash",
+        "type": "string"
+      },
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "decision_id": {
+        "title": "Decision Id",
+        "type": "string"
+      },
+      "expires_at_ms": {
+        "title": "Expires At Ms",
+        "type": "integer"
+      },
+      "nonce": {
+        "title": "Nonce",
+        "type": "string"
+      },
+      "state_head_hash": {
+        "title": "State Head Hash",
+        "type": "string"
+      },
+      "token_id": {
+        "title": "Token Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "token_id",
+      "action_id",
+      "action_hash",
+      "state_head_hash",
+      "decision_id",
+      "nonce",
+      "expires_at_ms"
+    ],
+    "title": "AuthorizationToken",
+    "type": "object"
+  },
+  "CanonicalAction": {
+    "additionalProperties": false,
+    "description": "Server-assigned canonical action with monotonic sequence and hash.",
+    "properties": {
+      "action_hash": {
+        "title": "Action Hash",
+        "type": "string"
+      },
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "arguments": {
+        "title": "Arguments",
+        "type": "object"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "tool": {
+        "title": "Tool",
+        "type": "string"
+      }
+    },
+    "required": [
+      "action_id",
+      "session_id",
+      "seq",
+      "tool",
+      "arguments",
+      "action_hash"
+    ],
+    "title": "CanonicalAction",
+    "type": "object"
+  },
+  "DecisionRecord": {
+    "$defs": {
+      "Decision": {
+        "description": "Final gateway / decision function outcome.",
+        "enum": [
+          "ALLOW",
+          "DENY",
+          "REVIEW"
+        ],
+        "title": "Decision",
+        "type": "string"
+      },
+      "MonitorVerdict": {
+        "description": "Advisory assessment verdict returned by an execution monitor.",
+        "enum": [
+          "BENIGN",
+          "SUSPICIOUS",
+          "UNKNOWN",
+          "NOT_CONSULTED"
+        ],
+        "title": "MonitorVerdict",
+        "type": "string"
+      },
+      "PolicyVerdict": {
+        "description": "Deterministic three-valued policy engine evaluation verdict.",
+        "enum": [
+          "PROHIBIT",
+          "PERMIT",
+          "UNDETERMINED",
+          "EVIDENCE_MISSING"
+        ],
+        "title": "PolicyVerdict",
+        "type": "string"
+      },
+      "VersionSet": {
+        "additionalProperties": false,
+        "description": "Set of component and config hashes active for a decision.",
+        "properties": {
+          "contracts": {
+            "default": "0.1.0",
+            "title": "Contracts",
+            "type": "string"
+          },
+          "firewall_config_hash": {
+            "title": "Firewall Config Hash",
+            "type": "string"
+          },
+          "monitor_version": {
+            "default": "none",
+            "title": "Monitor Version",
+            "type": "string"
+          },
+          "policy_hash": {
+            "title": "Policy Hash",
+            "type": "string"
+          },
+          "prompt_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Hash"
+          },
+          "registry_hash": {
+            "title": "Registry Hash",
+            "type": "string"
+          }
+        },
+        "required": [
+          "policy_hash",
+          "registry_hash",
+          "firewall_config_hash"
+        ],
+        "title": "VersionSet",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Immutable audit record of a firewall authorization decision.",
+    "properties": {
+      "action_hash": {
+        "title": "Action Hash",
+        "type": "string"
+      },
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "decision": {
+        "$ref": "#/$defs/Decision"
+      },
+      "decision_id": {
+        "title": "Decision Id",
+        "type": "string"
+      },
+      "evidence_refs": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Evidence Refs",
+        "type": "array"
+      },
+      "monitor_verdict": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/MonitorVerdict"
+          }
+        ],
+        "default": "NOT_CONSULTED"
+      },
+      "policy_verdict": {
+        "$ref": "#/$defs/PolicyVerdict"
+      },
+      "reason_codes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Reason Codes",
+        "type": "array"
+      },
+      "state_head_hash": {
+        "title": "State Head Hash",
+        "type": "string"
+      },
+      "timings_ms": {
+        "additionalProperties": {
+          "type": "number"
+        },
+        "title": "Timings Ms",
+        "type": "object"
+      },
+      "versions": {
+        "$ref": "#/$defs/VersionSet"
+      }
+    },
+    "required": [
+      "decision_id",
+      "action_id",
+      "action_hash",
+      "state_head_hash",
+      "decision",
+      "policy_verdict",
+      "versions"
+    ],
+    "title": "DecisionRecord",
+    "type": "object"
+  },
+  "DestinationRef": {
+    "$defs": {
+      "Zone": {
+        "description": "Destination network/storage zones.",
+        "enum": [
+          "INTERNAL",
+          "EXTERNAL",
+          "UNKNOWN"
+        ],
+        "title": "Zone",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Reference to an export destination with zone.",
+    "properties": {
+      "ref": {
+        "title": "Ref",
+        "type": "string"
+      },
+      "zone": {
+        "$ref": "#/$defs/Zone"
+      }
+    },
+    "required": [
+      "ref",
+      "zone"
+    ],
+    "title": "DestinationRef",
+    "type": "object"
+  },
+  "EgressCounter": {
+    "additionalProperties": false,
+    "description": "Cumulative egress counters per zone.",
+    "properties": {
+      "bytes": {
+        "default": 0,
+        "title": "Bytes",
+        "type": "integer"
+      },
+      "rows": {
+        "default": 0,
+        "title": "Rows",
+        "type": "integer"
+      },
+      "rows_plus_pending": {
+        "default": 0,
+        "title": "Rows Plus Pending",
+        "type": "integer"
+      }
+    },
+    "title": "EgressCounter",
+    "type": "object"
+  },
+  "Event": {
+    "$defs": {
+      "Decision": {
+        "description": "Final gateway / decision function outcome.",
+        "enum": [
+          "ALLOW",
+          "DENY",
+          "REVIEW"
+        ],
+        "title": "Decision",
+        "type": "string"
+      },
+      "Provenance": {
+        "description": "Attestation source for field values in state tracking.",
+        "enum": [
+          "GATEWAY",
+          "REGISTRY",
+          "TOOL_TYPED",
+          "TOOL_FREETEXT",
+          "AGENT_CLAIM"
+        ],
+        "title": "Provenance",
+        "type": "string"
+      },
+      "TaggedValue": {
+        "additionalProperties": false,
+        "description": "Value with provenance tracking to enforce INV-07.",
+        "properties": {
+          "provenance": {
+            "$ref": "#/$defs/Provenance"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "value",
+          "provenance"
+        ],
+        "title": "TaggedValue",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Event element in session history H_t.",
+    "properties": {
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "decision": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/Decision"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "event_id": {
+        "title": "Event Id",
+        "type": "string"
+      },
+      "fields": {
+        "additionalProperties": {
+          "$ref": "#/$defs/TaggedValue"
+        },
+        "title": "Fields",
+        "type": "object"
+      },
+      "free_text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Free Text"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "type": {
+        "title": "Type",
+        "type": "string"
+      }
+    },
+    "required": [
+      "event_id",
+      "session_id",
+      "seq",
+      "type",
+      "action_id"
+    ],
+    "title": "Event",
+    "type": "object"
+  },
+  "EvidenceReceipt": {
+    "additionalProperties": false,
+    "description": "Cryptographically verifiable evidence receipt from trusted executor.",
+    "properties": {
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "observed_state": {
+        "title": "Observed State",
+        "type": "object"
+      },
+      "observed_timestamp_ms": {
+        "title": "Observed Timestamp Ms",
+        "type": "integer"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "signature": {
+        "title": "Signature",
+        "type": "string"
+      },
+      "source_tool_name": {
+        "title": "Source Tool Name",
+        "type": "string"
+      },
+      "token_id": {
+        "title": "Token Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "session_id",
+      "action_id",
+      "token_id",
+      "source_tool_name",
+      "observed_state",
+      "observed_timestamp_ms",
+      "signature"
+    ],
+    "title": "EvidenceReceipt",
+    "type": "object"
+  },
+  "ExportJob": {
+    "$defs": {
+      "Zone": {
+        "description": "Destination network/storage zones.",
+        "enum": [
+          "INTERNAL",
+          "EXTERNAL",
+          "UNKNOWN"
+        ],
+        "title": "Zone",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Specification of an export job.",
+    "properties": {
+      "created_seq": {
+        "title": "Created Seq",
+        "type": "integer"
+      },
+      "destination_ref": {
+        "title": "Destination Ref",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "resource_refs": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Resource Refs",
+        "type": "array"
+      },
+      "zone": {
+        "$ref": "#/$defs/Zone"
+      }
+    },
+    "required": [
+      "job_id",
+      "resource_refs",
+      "destination_ref",
+      "zone",
+      "created_seq"
+    ],
+    "title": "ExportJob",
+    "type": "object"
+  },
+  "MonitorAssessment": {
+    "$defs": {
+      "MonitorVerdict": {
+        "description": "Advisory assessment verdict returned by an execution monitor.",
+        "enum": [
+          "BENIGN",
+          "SUSPICIOUS",
+          "UNKNOWN",
+          "NOT_CONSULTED"
+        ],
+        "title": "MonitorVerdict",
+        "type": "string"
+      },
+      "ScoreKind": {
+        "description": "Semantics of monitor risk scores.",
+        "enum": [
+          "NONE",
+          "HEURISTIC_RISK",
+          "MODEL_PROBABILITY_UNCALIBRATED",
+          "MODEL_PROBABILITY_CALIBRATED",
+          "MODEL_VERBALIZED_CONFIDENCE"
+        ],
+        "title": "ScoreKind",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Advisory assessment returned by an execution monitor.",
+    "properties": {
+      "error": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "latency_ms": {
+        "default": 0.0,
+        "title": "Latency Ms",
+        "type": "number"
+      },
+      "model_id": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Model Id"
+      },
+      "monitor_version": {
+        "title": "Monitor Version",
+        "type": "string"
+      },
+      "prompt_hash": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Prompt Hash"
+      },
+      "rationale": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rationale"
+      },
+      "raw_output": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Raw Output"
+      },
+      "score": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Score"
+      },
+      "score_kind": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/ScoreKind"
+          }
+        ],
+        "default": "NONE"
+      },
+      "verdict": {
+        "$ref": "#/$defs/MonitorVerdict"
+      }
+    },
+    "required": [
+      "verdict",
+      "monitor_version"
+    ],
+    "title": "MonitorAssessment",
+    "type": "object"
+  },
+  "MonitorView": {
+    "$defs": {
+      "CanonicalAction": {
+        "additionalProperties": false,
+        "description": "Server-assigned canonical action with monotonic sequence and hash.",
+        "properties": {
+          "action_hash": {
+            "title": "Action Hash",
+            "type": "string"
+          },
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "arguments": {
+            "title": "Arguments",
+            "type": "object"
+          },
+          "seq": {
+            "title": "Seq",
+            "type": "integer"
+          },
+          "session_id": {
+            "title": "Session Id",
+            "type": "string"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action_id",
+          "session_id",
+          "seq",
+          "tool",
+          "arguments",
+          "action_hash"
+        ],
+        "title": "CanonicalAction",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Allow-listed information projection provided to monitors.",
+    "properties": {
+      "action": {
+        "$ref": "#/$defs/CanonicalAction"
+      },
+      "goal": {
+        "anyOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Goal"
+      },
+      "monitor_id": {
+        "title": "Monitor Id",
+        "type": "string"
+      },
+      "policy_text": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Policy Text"
+      },
+      "registry_facts": {
+        "title": "Registry Facts",
+        "type": "object"
+      },
+      "state_summary": {
+        "anyOf": [
+          {
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "State Summary"
+      },
+      "transcript": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Transcript"
+      }
+    },
+    "required": [
+      "monitor_id",
+      "action"
+    ],
+    "title": "MonitorView",
+    "type": "object"
+  },
+  "PolicyResult": {
+    "$defs": {
+      "PolicyVerdict": {
+        "description": "Deterministic three-valued policy engine evaluation verdict.",
+        "enum": [
+          "PROHIBIT",
+          "PERMIT",
+          "UNDETERMINED",
+          "EVIDENCE_MISSING"
+        ],
+        "title": "PolicyVerdict",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Outcome of deterministic policy evaluation.",
+    "properties": {
+      "matched_rules": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Matched Rules",
+        "type": "array"
+      },
+      "maybe_rules": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Maybe Rules",
+        "type": "array"
+      },
+      "missing_fields": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Missing Fields",
+        "type": "array"
+      },
+      "policy_hash": {
+        "title": "Policy Hash",
+        "type": "string"
+      },
+      "registry_hash": {
+        "title": "Registry Hash",
+        "type": "string"
+      },
+      "verdict": {
+        "$ref": "#/$defs/PolicyVerdict"
+      }
+    },
+    "required": [
+      "verdict",
+      "policy_hash",
+      "registry_hash"
+    ],
+    "title": "PolicyResult",
+    "type": "object"
+  },
+  "ResourceRef": {
+    "$defs": {
+      "Classification": {
+        "description": "Data sensitivity classification for resources.",
+        "enum": [
+          "PUBLIC",
+          "INTERNAL",
+          "CONFIDENTIAL",
+          "UNKNOWN"
+        ],
+        "title": "Classification",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Reference to a selected resource with classification.",
+    "properties": {
+      "classification": {
+        "$ref": "#/$defs/Classification"
+      },
+      "ref": {
+        "title": "Ref",
+        "type": "string"
+      },
+      "selected_seq": {
+        "title": "Selected Seq",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "ref",
+      "classification",
+      "selected_seq"
+    ],
+    "title": "ResourceRef",
+    "type": "object"
+  },
+  "ResultEnvelope": {
+    "$defs": {
+      "ConfirmationLevel": {
+        "description": "Level of external effect confirmation verified for an execution outcome.",
+        "enum": [
+          "CONFIRMED_COMPLETED",
+          "DISPATCH_ACKNOWLEDGED",
+          "ATTEMPTED_DISPATCH",
+          "NONE"
+        ],
+        "title": "ConfirmationLevel",
+        "type": "string"
+      },
+      "OutcomeContract": {
+        "description": "Declared execution outcome contract from tool specification.",
+        "enum": [
+          "SYNCHRONOUS_CONFIRMED",
+          "ACCEPTED_ASYNC",
+          "BEST_EFFORT_DISPATCH"
+        ],
+        "title": "OutcomeContract",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Standardized result envelope for execution outcomes.",
+    "properties": {
+      "confirmation_level": {
+        "$ref": "#/$defs/ConfirmationLevel"
+      },
+      "error": {
+        "anyOf": [
+          {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Error"
+      },
+      "has_value": {
+        "title": "Has Value",
+        "type": "boolean"
+      },
+      "outcome_contract": {
+        "$ref": "#/$defs/OutcomeContract"
+      },
+      "value": {
+        "anyOf": [
+          {},
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Value"
+      }
+    },
+    "required": [
+      "has_value",
+      "outcome_contract",
+      "confirmation_level"
+    ],
+    "title": "ResultEnvelope",
+    "type": "object"
+  },
+  "ReviewTicket": {
+    "$defs": {
+      "MonitorAssessment": {
+        "additionalProperties": false,
+        "description": "Advisory assessment returned by an execution monitor.",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          },
+          "latency_ms": {
+            "default": 0.0,
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Id"
+          },
+          "monitor_version": {
+            "title": "Monitor Version",
+            "type": "string"
+          },
+          "prompt_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Hash"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "raw_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Raw Output"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Score"
+          },
+          "score_kind": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ScoreKind"
+              }
+            ],
+            "default": "NONE"
+          },
+          "verdict": {
+            "$ref": "#/$defs/MonitorVerdict"
+          }
+        },
+        "required": [
+          "verdict",
+          "monitor_version"
+        ],
+        "title": "MonitorAssessment",
+        "type": "object"
+      },
+      "MonitorVerdict": {
+        "description": "Advisory assessment verdict returned by an execution monitor.",
+        "enum": [
+          "BENIGN",
+          "SUSPICIOUS",
+          "UNKNOWN",
+          "NOT_CONSULTED"
+        ],
+        "title": "MonitorVerdict",
+        "type": "string"
+      },
+      "PolicyVerdict": {
+        "description": "Deterministic three-valued policy engine evaluation verdict.",
+        "enum": [
+          "PROHIBIT",
+          "PERMIT",
+          "UNDETERMINED",
+          "EVIDENCE_MISSING"
+        ],
+        "title": "PolicyVerdict",
+        "type": "string"
+      },
+      "ReviewStatus": {
+        "description": "Status of human oversight review tickets.",
+        "enum": [
+          "PENDING",
+          "APPROVED",
+          "REJECTED",
+          "EXPIRED",
+          "EXECUTED",
+          "STALE"
+        ],
+        "title": "ReviewStatus",
+        "type": "string"
+      },
+      "ReviewerView": {
+        "additionalProperties": false,
+        "description": "Allow-listed summary presented to a human reviewer.",
+        "properties": {
+          "monitor_assessment": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/MonitorAssessment"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
+          },
+          "policy_verdict": {
+            "$ref": "#/$defs/PolicyVerdict"
+          },
+          "reason_codes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reason Codes",
+            "type": "array"
+          },
+          "state_facts": {
+            "title": "State Facts",
+            "type": "object"
+          },
+          "tool": {
+            "title": "Tool",
+            "type": "string"
+          },
+          "typed_arguments": {
+            "title": "Typed Arguments",
+            "type": "object"
+          }
+        },
+        "required": [
+          "tool",
+          "typed_arguments",
+          "policy_verdict"
+        ],
+        "title": "ReviewerView",
+        "type": "object"
+      },
+      "ScoreKind": {
+        "description": "Semantics of monitor risk scores.",
+        "enum": [
+          "NONE",
+          "HEURISTIC_RISK",
+          "MODEL_PROBABILITY_UNCALIBRATED",
+          "MODEL_PROBABILITY_CALIBRATED",
+          "MODEL_VERBALIZED_CONFIDENCE"
+        ],
+        "title": "ScoreKind",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Review ticket for actions requiring human oversight.",
+    "properties": {
+      "action_hash": {
+        "title": "Action Hash",
+        "type": "string"
+      },
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "created_ms": {
+        "title": "Created Ms",
+        "type": "integer"
+      },
+      "expires_ms": {
+        "title": "Expires Ms",
+        "type": "integer"
+      },
+      "resolved_by": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Resolved By"
+      },
+      "resolved_ms": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Resolved Ms"
+      },
+      "status": {
+        "allOf": [
+          {
+            "$ref": "#/$defs/ReviewStatus"
+          }
+        ],
+        "default": "PENDING"
+      },
+      "summary": {
+        "$ref": "#/$defs/ReviewerView"
+      },
+      "ticket_id": {
+        "title": "Ticket Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "ticket_id",
+      "action_id",
+      "action_hash",
+      "created_ms",
+      "expires_ms",
+      "summary"
+    ],
+    "title": "ReviewTicket",
+    "type": "object"
+  },
+  "ReviewerView": {
+    "$defs": {
+      "MonitorAssessment": {
+        "additionalProperties": false,
+        "description": "Advisory assessment returned by an execution monitor.",
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Error"
+          },
+          "latency_ms": {
+            "default": 0.0,
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Model Id"
+          },
+          "monitor_version": {
+            "title": "Monitor Version",
+            "type": "string"
+          },
+          "prompt_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Prompt Hash"
+          },
+          "rationale": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Rationale"
+          },
+          "raw_output": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Raw Output"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Score"
+          },
+          "score_kind": {
+            "allOf": [
+              {
+                "$ref": "#/$defs/ScoreKind"
+              }
+            ],
+            "default": "NONE"
+          },
+          "verdict": {
+            "$ref": "#/$defs/MonitorVerdict"
+          }
+        },
+        "required": [
+          "verdict",
+          "monitor_version"
+        ],
+        "title": "MonitorAssessment",
+        "type": "object"
+      },
+      "MonitorVerdict": {
+        "description": "Advisory assessment verdict returned by an execution monitor.",
+        "enum": [
+          "BENIGN",
+          "SUSPICIOUS",
+          "UNKNOWN",
+          "NOT_CONSULTED"
+        ],
+        "title": "MonitorVerdict",
+        "type": "string"
+      },
+      "PolicyVerdict": {
+        "description": "Deterministic three-valued policy engine evaluation verdict.",
+        "enum": [
+          "PROHIBIT",
+          "PERMIT",
+          "UNDETERMINED",
+          "EVIDENCE_MISSING"
+        ],
+        "title": "PolicyVerdict",
+        "type": "string"
+      },
+      "ScoreKind": {
+        "description": "Semantics of monitor risk scores.",
+        "enum": [
+          "NONE",
+          "HEURISTIC_RISK",
+          "MODEL_PROBABILITY_UNCALIBRATED",
+          "MODEL_PROBABILITY_CALIBRATED",
+          "MODEL_VERBALIZED_CONFIDENCE"
+        ],
+        "title": "ScoreKind",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Allow-listed summary presented to a human reviewer.",
+    "properties": {
+      "monitor_assessment": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/MonitorAssessment"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "policy_verdict": {
+        "$ref": "#/$defs/PolicyVerdict"
+      },
+      "reason_codes": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Reason Codes",
+        "type": "array"
+      },
+      "state_facts": {
+        "title": "State Facts",
+        "type": "object"
+      },
+      "tool": {
+        "title": "Tool",
+        "type": "string"
+      },
+      "typed_arguments": {
+        "title": "Typed Arguments",
+        "type": "object"
+      }
+    },
+    "required": [
+      "tool",
+      "typed_arguments",
+      "policy_verdict"
+    ],
+    "title": "ReviewerView",
+    "type": "object"
+  },
+  "SessionState": {
+    "$defs": {
+      "Classification": {
+        "description": "Data sensitivity classification for resources.",
+        "enum": [
+          "PUBLIC",
+          "INTERNAL",
+          "CONFIDENTIAL",
+          "UNKNOWN"
+        ],
+        "title": "Classification",
+        "type": "string"
+      },
+      "DestinationRef": {
+        "additionalProperties": false,
+        "description": "Reference to an export destination with zone.",
+        "properties": {
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "zone": {
+            "$ref": "#/$defs/Zone"
+          }
+        },
+        "required": [
+          "ref",
+          "zone"
+        ],
+        "title": "DestinationRef",
+        "type": "object"
+      },
+      "EgressCounter": {
+        "additionalProperties": false,
+        "description": "Cumulative egress counters per zone.",
+        "properties": {
+          "bytes": {
+            "default": 0,
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "rows": {
+            "default": 0,
+            "title": "Rows",
+            "type": "integer"
+          },
+          "rows_plus_pending": {
+            "default": 0,
+            "title": "Rows Plus Pending",
+            "type": "integer"
+          }
+        },
+        "title": "EgressCounter",
+        "type": "object"
+      },
+      "ExportJob": {
+        "additionalProperties": false,
+        "description": "Specification of an export job.",
+        "properties": {
+          "created_seq": {
+            "title": "Created Seq",
+            "type": "integer"
+          },
+          "destination_ref": {
+            "title": "Destination Ref",
+            "type": "string"
+          },
+          "job_id": {
+            "title": "Job Id",
+            "type": "string"
+          },
+          "resource_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Resource Refs",
+            "type": "array"
+          },
+          "zone": {
+            "$ref": "#/$defs/Zone"
+          }
+        },
+        "required": [
+          "job_id",
+          "resource_refs",
+          "destination_ref",
+          "zone",
+          "created_seq"
+        ],
+        "title": "ExportJob",
+        "type": "object"
+      },
+      "ResourceRef": {
+        "additionalProperties": false,
+        "description": "Reference to a selected resource with classification.",
+        "properties": {
+          "classification": {
+            "$ref": "#/$defs/Classification"
+          },
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "selected_seq": {
+            "title": "Selected Seq",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ref",
+          "classification",
+          "selected_seq"
+        ],
+        "title": "ResourceRef",
+        "type": "object"
+      },
+      "Zone": {
+        "description": "Destination network/storage zones.",
+        "enum": [
+          "INTERNAL",
+          "EXTERNAL",
+          "UNKNOWN"
+        ],
+        "title": "Zone",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Observable security state S_t.",
+    "properties": {
+      "anomalies": {
+        "items": {
+          "type": "string"
+        },
+        "title": "Anomalies",
+        "type": "array"
+      },
+      "bound_resource": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/ResourceRef"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "destination": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/DestinationRef"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null
+      },
+      "egress_counters": {
+        "additionalProperties": {
+          "$ref": "#/$defs/EgressCounter"
+        },
+        "title": "Egress Counters",
+        "type": "object"
+      },
+      "head_hash": {
+        "title": "Head Hash",
+        "type": "string"
+      },
+      "indeterminate_state": {
+        "default": 0,
+        "title": "Indeterminate State",
+        "type": "integer"
+      },
+      "job_created": {
+        "default": false,
+        "title": "Job Created",
+        "type": "boolean"
+      },
+      "jobs": {
+        "additionalProperties": {
+          "$ref": "#/$defs/ExportJob"
+        },
+        "title": "Jobs",
+        "type": "object"
+      },
+      "selected_resources": {
+        "items": {
+          "$ref": "#/$defs/ResourceRef"
+        },
+        "title": "Selected Resources",
+        "type": "array"
+      },
+      "seq": {
+        "default": 0,
+        "title": "Seq",
+        "type": "integer"
+      },
+      "state_version": {
+        "default": "0.1.0",
+        "title": "State Version",
+        "type": "string"
+      }
+    },
+    "required": [
+      "head_hash"
+    ],
+    "title": "SessionState",
+    "type": "object"
+  },
+  "StateEventEnvelope": {
+    "additionalProperties": false,
+    "description": "Canonical envelope for hash-chained state transitions.",
+    "properties": {
+      "action_id": {
+        "title": "Action Id",
+        "type": "string"
+      },
+      "event_type": {
+        "title": "Event Type",
+        "type": "string"
+      },
+      "payload": {
+        "title": "Payload",
+        "type": "object"
+      },
+      "prior_head": {
+        "title": "Prior Head",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "session_id": {
+        "title": "Session Id",
+        "type": "string"
+      },
+      "token_id": {
+        "title": "Token Id",
+        "type": "string"
+      }
+    },
+    "required": [
+      "session_id",
+      "seq",
+      "prior_head",
+      "event_type",
+      "action_id",
+      "token_id",
+      "payload"
+    ],
+    "title": "StateEventEnvelope",
+    "type": "object"
+  },
+  "TaggedValue": {
+    "$defs": {
+      "Provenance": {
+        "description": "Attestation source for field values in state tracking.",
+        "enum": [
+          "GATEWAY",
+          "REGISTRY",
+          "TOOL_TYPED",
+          "TOOL_FREETEXT",
+          "AGENT_CLAIM"
+        ],
+        "title": "Provenance",
+        "type": "string"
+      }
+    },
+    "additionalProperties": false,
+    "description": "Value with provenance tracking to enforce INV-07.",
+    "properties": {
+      "provenance": {
+        "$ref": "#/$defs/Provenance"
+      },
+      "value": {
+        "title": "Value"
+      }
+    },
+    "required": [
+      "value",
+      "provenance"
+    ],
+    "title": "TaggedValue",
+    "type": "object"
+  },
+  "VersionSet": {
+    "additionalProperties": false,
+    "description": "Set of component and config hashes active for a decision.",
+    "properties": {
+      "contracts": {
+        "default": "0.1.0",
+        "title": "Contracts",
+        "type": "string"
+      },
+      "firewall_config_hash": {
+        "title": "Firewall Config Hash",
+        "type": "string"
+      },
+      "monitor_version": {
+        "default": "none",
+        "title": "Monitor Version",
+        "type": "string"
+      },
+      "policy_hash": {
+        "title": "Policy Hash",
+        "type": "string"
+      },
+      "prompt_hash": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Prompt Hash"
+      },
+      "registry_hash": {
+        "title": "Registry Hash",
+        "type": "string"
+      }
+    },
+    "required": [
+      "policy_hash",
+      "registry_hash",
+      "firewall_config_hash"
+    ],
+    "title": "VersionSet",
+    "type": "object"
+  }
+}

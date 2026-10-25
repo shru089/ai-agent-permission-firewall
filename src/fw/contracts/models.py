@@ -1,0 +1,51 @@
+"""
+Canonical contracts models (src/fw/contracts/models.py per 05_TECHNICAL_SPEC.md §3.2).
+"""
+
+from firewall.contracts.models import (
+    CONTRACTS_VERSION,
+    ActionRequest,
+    AuthorizationToken,
+    CanonicalAction,
+    DecisionRecord,
+    DestinationRef,
+    EgressCounter,
+    Event,
+    EvidenceReceipt,
+    ExportJob,
+    MonitorAssessment,
+    MonitorView,
+    PolicyResult,
+    ResourceRef,
+    ResultEnvelope,
+    ReviewerView,
+    ReviewTicket,
+    SessionState,
+    StateEventEnvelope,
+    TaggedValue,
+    VersionSet,
+)
+
+__all__ = [
+    "CONTRACTS_VERSION",
+    "TaggedValue",
+    "ResourceRef",
+    "DestinationRef",
+    "ExportJob",
+    "EgressCounter",
+    "ActionRequest",
+    "CanonicalAction",
+    "Event",
+    "SessionState",
+    "PolicyResult",
+    "MonitorView",
+    "MonitorAssessment",
+    "VersionSet",
+    "DecisionRecord",
+    "AuthorizationToken",
+    "ReviewerView",
+    "ReviewTicket",
+    "ResultEnvelope",
+    "StateEventEnvelope",
+    "EvidenceReceipt",
+]

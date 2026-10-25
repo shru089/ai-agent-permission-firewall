@@ -1,0 +1,29 @@
+# CODEOWNERS for AI Agent Permission Firewall
+# Rule: changes to contracts require all four owners (08 §1, 05 §12)
+
+/src/firewall/contracts/ @Akshat @Karishma @Shrishti @Snehal
+/src/fw/contracts/ @Akshat @Karishma @Shrishti @Snehal
+/src/firewall/schemas/ @Akshat @Karishma @Shrishti @Snehal
+
+# Component ownership per rules.md §2 and 08 §5
+/src/firewall/policy/ @Karishma
+/config/policy_*.yaml @Karishma
+/config/registry.yaml @Karishma
+
+/src/firewall/executor/ @Akshat
+/src/firewall/tools/ @Akshat
+/.github/ @Akshat
+
+/src/firewall/state/ @Shrishti
+/src/firewall/monitor/ @Shrishti
+/src/firewall/experiments/ @Shrishti
+
+/src/firewall/decision/ @Karishma @Akshat
+
+/src/firewall/oversight/ @Snehal
+/src/firewall/audit/ @Snehal
+/labels/ @Snehal
+
+# Test-set protection per rules.md §2
+/experiments/datasets/test/ @Akshat @Snehal
+/data/test/ @Akshat @Snehal
