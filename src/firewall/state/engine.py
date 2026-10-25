@@ -250,32 +250,45 @@ def apply_event(
     state: SessionState,
     event: StateEventEnvelope | Event,
     registry: Registry,
-    binding_mode: BindingMode = BindingMode.IMPLICIT,
     expected_session_id: Optional[str] = None,
+    binding_mode: BindingMode = BindingMode.IMPLICIT,
 ) -> SessionState:
     """
     Pure state transition function: Φ(S_{t-1}, e_t, Registry) -> S_t (INV-12).
 
     Validates:
-    - Session identity matching genesis head / expected session id.
+    - Authoritative expected_session_id is mandatory and non-empty (SEC-03).
+    - Event session_id strictly matches expected_session_id on every transition.
+    - Genesis head hash matches expected_session_id on first transition (seq == 0).
     - Monotonic sequence continuity (e_t.seq == S_{t-1}.seq + 1).
     - Prior-head hash continuity (e_t.prior_head == S_{t-1}.head_hash).
     - Provenance integrity: only registry/gateway/typed evidence sets security state (INV-07).
     - Denied/failed actions append to hash chain without mutating security state.
     """
-    # 1. Session Identity Validation
+    # 1. Authoritative Session Identity Validation (SEC-03)
+    if (
+        expected_session_id is None
+        or not isinstance(expected_session_id, str)
+        or not expected_session_id.strip()
+    ):
+        raise StateContinuityError(
+            "Missing or empty expected_session_id: authoritative session identity "
+            "is mandatory for every state transition"
+        )
+
+    if event.session_id != expected_session_id:
+        raise StateContinuityError(
+            f"Session identity mismatch: expected '{expected_session_id}', got '{event.session_id}'"
+        )
+
     if state.seq == 0:
-        expected_genesis = compute_genesis_head(event.session_id)
+        expected_genesis = compute_genesis_head(expected_session_id)
         if state.head_hash != expected_genesis:
             raise StateContinuityError(
-                f"Session identity mismatch: state genesis head {state.head_hash} "
-                f"does not match event session_id {event.session_id} (computed: {expected_genesis})"
+                f"Session genesis mismatch: state genesis head {state.head_hash} "
+                f"does not match expected session '{expected_session_id}' "
+                f"(computed: {expected_genesis})"
             )
-
-    if expected_session_id is not None and event.session_id != expected_session_id:
-        raise StateContinuityError(
-            f"Session identity mismatch: expected {expected_session_id}, got {event.session_id}"
-        )
 
     # 2. Monotonic Sequence Continuity Validation
     if event.seq != state.seq + 1:
@@ -496,13 +509,17 @@ def replay_events(
     Reconstructs observable session state S_t by replaying an ordered event log from S_0 (INV-12).
     Pure, deterministic, bit-for-bit reproducible.
     """
+    if not session_id or not isinstance(session_id, str) or not session_id.strip():
+        raise StateContinuityError(
+            "Missing or empty session_id: replay requires authoritative session identity"
+        )
     state = initial_state(session_id)
     for evt in events:
         state = apply_event(
             state=state,
             event=evt,
             registry=registry,
-            binding_mode=binding_mode,
             expected_session_id=session_id,
+            binding_mode=binding_mode,
         )
     return state

@@ -15,6 +15,7 @@ from firewall.contracts.enums import (
 )
 from firewall.contracts.models import (
     CanonicalAction,
+    Event,
     EvidenceReceipt,
     SessionState,
     StateEventEnvelope,
@@ -86,7 +87,7 @@ def test_t_sta_001_deterministic_transitions_and_replay(test_registry: Registry)
             "arguments": {"resource_ref": "public_records"},
         },
     )
-    state = apply_event(state, evt1, test_registry)
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_id)
     events.append(evt1)
 
     # Step 2: configure_destination
@@ -102,7 +103,7 @@ def test_t_sta_001_deterministic_transitions_and_replay(test_registry: Registry)
             "arguments": {"destination_ref": "external_storage"},
         },
     )
-    state = apply_event(state, evt2, test_registry)
+    state = apply_event(state, evt2, test_registry, expected_session_id=session_id)
     events.append(evt2)
 
     # Step 3: create_export_job
@@ -118,7 +119,7 @@ def test_t_sta_001_deterministic_transitions_and_replay(test_registry: Registry)
             "arguments": {},
         },
     )
-    state = apply_event(state, evt3, test_registry)
+    state = apply_event(state, evt3, test_registry, expected_session_id=session_id)
     events.append(evt3)
 
     # Step 4: execute_export
@@ -138,7 +139,7 @@ def test_t_sta_001_deterministic_transitions_and_replay(test_registry: Registry)
             },
         },
     )
-    state = apply_event(state, evt4, test_registry)
+    state = apply_event(state, evt4, test_registry, expected_session_id=session_id)
     events.append(evt4)
 
     assert state.seq == 4
@@ -198,7 +199,7 @@ def test_t_sta_002_forged_classification_cannot_change_state(test_registry: Regi
             },
         },
     )
-    state = apply_event(state, evt, test_registry)
+    state = apply_event(state, evt, test_registry, expected_session_id=session_id)
 
     # Trusted state remains strictly CONFIDENTIAL
     assert state.bound_resource is not None
@@ -232,7 +233,7 @@ def test_t_sta_003_selection_binding_and_anomalies(test_registry: Registry) -> N
             "arguments": {"resource_ref": "customer_records"},
         },
     )
-    state = apply_event(state, evt1, test_registry)
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_id)
     assert state.bound_resource is not None
     assert state.bound_resource.ref == "customer_records"
     assert state.anomalies == []
@@ -250,7 +251,7 @@ def test_t_sta_003_selection_binding_and_anomalies(test_registry: Registry) -> N
             "arguments": {"resource_ref": "public_records"},
         },
     )
-    state = apply_event(state, evt2, test_registry)
+    state = apply_event(state, evt2, test_registry, expected_session_id=session_id)
     assert Anomaly.CONFLICTING_SELECTION.value in state.anomalies
     assert state.bound_resource is not None
     assert state.bound_resource.ref == "public_records"
@@ -268,7 +269,7 @@ def test_t_sta_003_selection_binding_and_anomalies(test_registry: Registry) -> N
             "arguments": {"resource_ref": "unregistered_database"},
         },
     )
-    state = apply_event(state, evt3, test_registry)
+    state = apply_event(state, evt3, test_registry, expected_session_id=session_id)
     assert Anomaly.UNKNOWN_CLASSIFICATION.value in state.anomalies
     assert state.bound_resource is not None
     assert state.bound_resource.classification == Classification.UNKNOWN
@@ -286,7 +287,7 @@ def test_t_sta_003_selection_binding_and_anomalies(test_registry: Registry) -> N
             "arguments": {"destination_ref": "rogue_bucket"},
         },
     )
-    state = apply_event(state, evt4, test_registry)
+    state = apply_event(state, evt4, test_registry, expected_session_id=session_id)
     assert Anomaly.UNKNOWN_DESTINATION.value in state.anomalies
     assert state.destination is not None
     assert state.destination.zone == Zone.UNKNOWN
@@ -317,7 +318,7 @@ def test_t_sta_004_cumulative_egress_counters(test_registry: Registry) -> None:
             "arguments": {"destination_ref": "external_storage"},
         },
     )
-    state = apply_event(state, evt1, test_registry)
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_id)
 
     # Export 1 to EXTERNAL: 100 rows, 1024 bytes
     evt2 = StateEventEnvelope(
@@ -336,7 +337,7 @@ def test_t_sta_004_cumulative_egress_counters(test_registry: Registry) -> None:
             },
         },
     )
-    state = apply_event(state, evt2, test_registry)
+    state = apply_event(state, evt2, test_registry, expected_session_id=session_id)
     assert state.egress_counters["EXTERNAL"].rows == 100
     assert state.egress_counters["EXTERNAL"].bytes == 1024
 
@@ -357,7 +358,7 @@ def test_t_sta_004_cumulative_egress_counters(test_registry: Registry) -> None:
             },
         },
     )
-    state = apply_event(state, evt3, test_registry)
+    state = apply_event(state, evt3, test_registry, expected_session_id=session_id)
     assert state.egress_counters["EXTERNAL"].rows == 350
     assert state.egress_counters["EXTERNAL"].bytes == 3072
 
@@ -374,7 +375,7 @@ def test_t_sta_004_cumulative_egress_counters(test_registry: Registry) -> None:
             "arguments": {"destination_ref": "internal_archive"},
         },
     )
-    state = apply_event(state, evt4, test_registry)
+    state = apply_event(state, evt4, test_registry, expected_session_id=session_id)
 
     # Export 3 to INTERNAL: 50 rows, 512 bytes
     evt5 = StateEventEnvelope(
@@ -398,7 +399,7 @@ def test_t_sta_004_cumulative_egress_counters(test_registry: Registry) -> None:
             ),
         },
     )
-    state = apply_event(state, evt5, test_registry)
+    state = apply_event(state, evt5, test_registry, expected_session_id=session_id)
 
     # EXTERNAL counter remains 350; INTERNAL counter is 50
     assert state.egress_counters["EXTERNAL"].rows == 350
@@ -495,13 +496,25 @@ def test_t_sta_006_implicit_vs_explicit_binding_modes(test_registry: Registry) -
             "arguments": {"resource_ref": "customer_records"},
         },
     )
-    s_imp = apply_event(s_imp, evt_sel, test_registry, binding_mode=BindingMode.IMPLICIT)
+    s_imp = apply_event(
+        s_imp,
+        evt_sel,
+        test_registry,
+        expected_session_id=session_id,
+        binding_mode=BindingMode.IMPLICIT,
+    )
     assert s_imp.bound_resource is not None
     assert s_imp.bound_resource.ref == "customer_records"
 
     # --- Mode 2: Explicit Binding ---
     s_exp = initial_state(session_id)
-    s_exp = apply_event(s_exp, evt_sel, test_registry, binding_mode=BindingMode.EXPLICIT)
+    s_exp = apply_event(
+        s_exp,
+        evt_sel,
+        test_registry,
+        expected_session_id=session_id,
+        binding_mode=BindingMode.EXPLICIT,
+    )
     # In explicit mode, selecting a resource appends to selected_resources but does NOT bind
     assert s_exp.bound_resource is None
     assert len(s_exp.selected_resources) == 1
@@ -524,7 +537,13 @@ def test_t_sta_006_implicit_vs_explicit_binding_modes(test_registry: Registry) -
             },
         },
     )
-    s_exp = apply_event(s_exp, evt_job, test_registry, binding_mode=BindingMode.EXPLICIT)
+    s_exp = apply_event(
+        s_exp,
+        evt_job,
+        test_registry,
+        expected_session_id=session_id,
+        binding_mode=BindingMode.EXPLICIT,
+    )
     assert "job_custom_99" in s_exp.jobs
     job = s_exp.jobs["job_custom_99"]
     assert job.destination_ref == "external_storage"
@@ -547,7 +566,13 @@ def test_t_sta_006_implicit_vs_explicit_binding_modes(test_registry: Registry) -
             },
         },
     )
-    s_exp = apply_event(s_exp, evt_exp, test_registry, binding_mode=BindingMode.EXPLICIT)
+    s_exp = apply_event(
+        s_exp,
+        evt_exp,
+        test_registry,
+        expected_session_id=session_id,
+        binding_mode=BindingMode.EXPLICIT,
+    )
     assert s_exp.egress_counters["EXTERNAL"].rows == 300
 
 
@@ -571,7 +596,7 @@ def test_edge_case_invalid_event_sequence_order(test_registry: Registry) -> None
         payload={"tool": "reset_context", "arguments": {}},
     )
     with pytest.raises(StateContinuityError, match="Invalid event sequence: expected 1, got 2"):
-        apply_event(state, evt_bad_seq, test_registry)
+        apply_event(state, evt_bad_seq, test_registry, expected_session_id=session_id)
 
 
 @pytest.mark.unit
@@ -589,7 +614,7 @@ def test_edge_case_wrong_session_id(test_registry: Registry) -> None:
         payload={"tool": "reset_context", "arguments": {}},
     )
     with pytest.raises(StateContinuityError, match="Session identity mismatch"):
-        apply_event(state, evt_wrong_sess, test_registry)
+        apply_event(state, evt_wrong_sess, test_registry, expected_session_id="sess_alpha")
 
 
 @pytest.mark.unit
@@ -608,7 +633,7 @@ def test_edge_case_broken_prior_head_continuity(test_registry: Registry) -> None
         payload={"tool": "reset_context", "arguments": {}},
     )
     with pytest.raises(StateContinuityError, match="Prior-head mismatch"):
-        apply_event(state, evt_bad_head, test_registry)
+        apply_event(state, evt_bad_head, test_registry, expected_session_id=session_id)
 
 
 @pytest.mark.unit
@@ -633,7 +658,7 @@ def test_edge_case_denied_actions_preserve_security_state(test_registry: Registr
             "arguments": {"resource_ref": "customer_records"},
         },
     )
-    state = apply_event(state, evt1, test_registry)
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_id)
     head_after_1 = state.head_hash
 
     # Now an action is DENIED
@@ -646,7 +671,9 @@ def test_edge_case_denied_actions_preserve_security_state(test_registry: Registr
         token_id="tok_none",
         payload={"tool": "execute_export", "arguments": {}},
     )
-    state_after_deny = apply_event(state, evt_denied, test_registry)
+    state_after_deny = apply_event(
+        state, evt_denied, test_registry, expected_session_id=session_id
+    )
 
     # Sequence and head hash advanced
     assert state_after_deny.seq == 2
@@ -682,7 +709,7 @@ def test_edge_case_missing_execution_evidence_not_assumed_safe(test_registry: Re
             # Missing fields and missing evidence!
         },
     )
-    state = apply_event(state, evt, test_registry)
+    state = apply_event(state, evt, test_registry, expected_session_id=session_id)
 
     assert state.indeterminate_state > 0
     assert "MISSING_EXECUTION_EVIDENCE" in state.anomalies
@@ -713,3 +740,304 @@ def test_edge_case_dictionary_key_order_invariance() -> None:
     hash2 = compute_state_head(prior_head, payload2)
 
     assert hash1 == hash2
+
+
+# =====================================================================
+# SEC-03: Mandatory Session Continuity Adversarial Suite
+# =====================================================================
+@pytest.mark.unit
+def test_sec_03_session_a_followed_by_session_b_rejected(test_registry: Registry) -> None:
+    """
+    SEC-03: A valid first event for session A followed by an event for session B
+    must be rejected immediately on transition attempt.
+    """
+    session_a = "session_A"
+    session_b = "session_B"
+    state = initial_state(session_a)
+
+    evt1 = StateEventEnvelope(
+        session_id=session_a,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_1",
+        token_id="tok_1",
+        payload={"tool": "select_resource", "arguments": {"resource_ref": "public_records"}},
+    )
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_a)
+    assert state.seq == 1
+
+    # Spliced event from session B with matching prior_head
+    evt2_spliced = StateEventEnvelope(
+        session_id=session_b,
+        seq=2,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_2",
+        token_id="tok_2",
+        payload={"tool": "select_resource", "arguments": {"resource_ref": "public_records"}},
+    )
+    with pytest.raises(
+        StateContinuityError,
+        match="Session identity mismatch: expected 'session_A', got 'session_B'",
+    ):
+        apply_event(state, evt2_spliced, test_registry, expected_session_id=session_a)
+
+
+@pytest.mark.unit
+def test_sec_03_cross_session_splicing_at_seq_2_or_later(test_registry: Registry) -> None:
+    """
+    SEC-03: Cross-session splicing at sequence >= 2 is rejected for both
+    StateEventEnvelope and raw Event models.
+    """
+    session_a = "session_A_multi"
+    session_b = "session_B_intruder"
+    state = initial_state(session_a)
+
+    # Step 1
+    evt1 = StateEventEnvelope(
+        session_id=session_a,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_1",
+        token_id="tok_1",
+        payload={"tool": "select_resource", "arguments": {"resource_ref": "public_records"}},
+    )
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_a)
+
+    # Step 2
+    evt2 = StateEventEnvelope(
+        session_id=session_a,
+        seq=2,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_2",
+        token_id="tok_2",
+        payload={
+            "tool": "configure_destination",
+            "arguments": {"destination_ref": "external_storage"},
+        },
+    )
+    state = apply_event(state, evt2, test_registry, expected_session_id=session_a)
+    assert state.seq == 2
+
+    # Step 3 attempt: Raw Event from session B
+    evt3_raw_event_spliced = Event(
+        event_id="evt_raw_3",
+        session_id=session_b,
+        seq=3,
+        type=EventType.EXECUTED.value,
+        action_id="act_3",
+        fields={
+            "tool": TaggedValue(value="select_resource", provenance=Provenance.GATEWAY),
+            "resource_ref": TaggedValue(value="customer_records", provenance=Provenance.GATEWAY),
+        },
+    )
+    with pytest.raises(
+        StateContinuityError,
+        match="Session identity mismatch: expected 'session_A_multi', got 'session_B_intruder'",
+    ):
+        apply_event(state, evt3_raw_event_spliced, test_registry, expected_session_id=session_a)
+
+    # Step 3 attempt: StateEventEnvelope from session B
+    evt3_envelope_spliced = StateEventEnvelope(
+        session_id=session_b,
+        seq=3,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_3_env",
+        token_id="tok_3_env",
+        payload={"tool": "execute_export", "arguments": {}},
+    )
+    with pytest.raises(
+        StateContinuityError,
+        match="Session identity mismatch: expected 'session_A_multi', got 'session_B_intruder'",
+    ):
+        apply_event(state, evt3_envelope_spliced, test_registry, expected_session_id=session_a)
+
+
+@pytest.mark.unit
+def test_sec_03_replay_mixed_session_event_list_rejected(test_registry: Registry) -> None:
+    """
+    SEC-03: Replaying an event sequence containing mixed session IDs
+    fails closed with StateContinuityError at the spliced event.
+    """
+    session_a = "session_A_replay"
+    session_b = "session_B_replay"
+
+    state = initial_state(session_a)
+    evt1 = StateEventEnvelope(
+        session_id=session_a,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_1",
+        token_id="tok_1",
+        payload={"tool": "select_resource", "arguments": {"resource_ref": "public_records"}},
+    )
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_a)
+
+    # Mixed-session list: event 1 is session A, event 2 is session B
+    evt2_mixed = StateEventEnvelope(
+        session_id=session_b,
+        seq=2,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_2",
+        token_id="tok_2",
+        payload={
+            "tool": "configure_destination",
+            "arguments": {"destination_ref": "external_storage"},
+        },
+    )
+
+    mixed_events = [evt1, evt2_mixed]
+
+    with pytest.raises(StateContinuityError, match="Session identity mismatch"):
+        replay_events(mixed_events, session_a, test_registry)
+
+
+@pytest.mark.unit
+def test_sec_03_missing_or_mismatched_expected_session_id(test_registry: Registry) -> None:
+    """
+    SEC-03: Missing, None, empty, or mismatched expected_session_id fails closed immediately.
+    """
+    session_id = "session_validation_test"
+    state = initial_state(session_id)
+
+    evt = StateEventEnvelope(
+        session_id=session_id,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_1",
+        token_id="tok_1",
+        payload={"tool": "reset_context", "arguments": {}},
+    )
+
+    # 1. Missing / omitted expected_session_id
+    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
+        apply_event(state, evt, test_registry)
+
+    # 2. Explicitly None expected_session_id
+    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
+        apply_event(state, evt, test_registry, expected_session_id=None)
+
+    # 3. Empty string expected_session_id
+    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
+        apply_event(state, evt, test_registry, expected_session_id="")
+
+    # 4. Whitespace string expected_session_id
+    with pytest.raises(StateContinuityError, match="Missing or empty expected_session_id"):
+        apply_event(state, evt, test_registry, expected_session_id="   ")
+
+    # 5. Mismatched expected_session_id
+    with pytest.raises(
+        StateContinuityError,
+        match="Session identity mismatch: expected 'wrong_sess', got 'session_validation_test'",
+    ):
+        apply_event(state, evt, test_registry, expected_session_id="wrong_sess")
+
+    # 6. Empty session_id passed to replay_events
+    with pytest.raises(
+        StateContinuityError,
+        match="Missing or empty session_id: replay requires authoritative session identity",
+    ):
+        replay_events([evt], "", test_registry)
+
+
+@pytest.mark.unit
+def test_sec_03_valid_same_session_multi_event_replay_succeeds(test_registry: Registry) -> None:
+    """
+    SEC-03: Valid same-session multi-event sequence replays deterministically
+    and produces bit-for-bit identical state.
+    """
+    session_id = "session_valid_replay"
+    state = initial_state(session_id)
+    events: list[StateEventEnvelope] = []
+
+    for i in range(1, 6):
+        evt = StateEventEnvelope(
+            session_id=session_id,
+            seq=i,
+            prior_head=state.head_hash,
+            event_type=EventType.EXECUTED.value,
+            action_id=f"act_{i}",
+            token_id=f"tok_{i}",
+            payload={"tool": "reset_context", "arguments": {}},
+        )
+        state = apply_event(state, evt, test_registry, expected_session_id=session_id)
+        events.append(evt)
+
+    assert state.seq == 5
+    replayed = replay_events(events, session_id, test_registry)
+    assert replayed.head_hash == state.head_hash
+    assert replayed.seq == 5
+    assert replayed.model_dump() == state.model_dump()
+
+
+@pytest.mark.unit
+def test_sec_03_failed_transitions_leave_input_state_unchanged(test_registry: Registry) -> None:
+    """
+    SEC-03: Failed event transitions (session mismatch, sequence error, prior head error)
+    never mutate the input SessionState object in memory.
+    """
+    session_id = "session_state_immutability"
+    state = initial_state(session_id)
+
+    # Valid step 1
+    evt1 = StateEventEnvelope(
+        session_id=session_id,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_1",
+        token_id="tok_1",
+        payload={"tool": "select_resource", "arguments": {"resource_ref": "public_records"}},
+    )
+    state = apply_event(state, evt1, test_registry, expected_session_id=session_id)
+    assert state.seq == 1
+    snapshot_dump = state.model_dump()
+
+    # Attempt 1: Session mismatch
+    bad_sess_evt = StateEventEnvelope(
+        session_id="wrong_session",
+        seq=2,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_bad_sess",
+        token_id="tok_bad",
+        payload={"tool": "reset_context", "arguments": {}},
+    )
+    with pytest.raises(StateContinuityError):
+        apply_event(state, bad_sess_evt, test_registry, expected_session_id=session_id)
+    assert state.model_dump() == snapshot_dump
+
+    # Attempt 2: Sequence error
+    bad_seq_evt = StateEventEnvelope(
+        session_id=session_id,
+        seq=99,
+        prior_head=state.head_hash,
+        event_type=EventType.EXECUTED.value,
+        action_id="act_bad_seq",
+        token_id="tok_bad",
+        payload={"tool": "reset_context", "arguments": {}},
+    )
+    with pytest.raises(StateContinuityError):
+        apply_event(state, bad_seq_evt, test_registry, expected_session_id=session_id)
+    assert state.model_dump() == snapshot_dump
+
+    # Attempt 3: Prior head error
+    bad_head_evt = StateEventEnvelope(
+        session_id=session_id,
+        seq=2,
+        prior_head="bad_head_hash_value_12345",
+        event_type=EventType.EXECUTED.value,
+        action_id="act_bad_head",
+        token_id="tok_bad",
+        payload={"tool": "reset_context", "arguments": {}},
+    )
+    with pytest.raises(StateContinuityError):
+        apply_event(state, bad_head_evt, test_registry, expected_session_id=session_id)
+    assert state.model_dump() == snapshot_dump
