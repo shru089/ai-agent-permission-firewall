@@ -64,11 +64,11 @@ Status vocabulary: **CONFIRMED** (stated by the team) · **PROPOSED** (reviewer 
 | R-05 | Regex-parsed free text as the trusted state source | [P1] §IV.A | Spoofable by injected tool output (`TS-05`) | Retained only as ablation A-01 |
 | R-06 | Allow a monitor score or verdict to override a hard prohibition | — | Violates `INV-03`, `D-08` | Never |
 | R-07 | PostgreSQL in MVP | — | No concurrency need (`A-07`) | Multi-writer requirement |
-| R-08 | Self-reflection fallback when review capacity is low | [P4] §III | Self-critique ≠ approval; conflicts with `INV-05`; unvalidated | After separate study |
+| R-08 | Self-reflection fallback when review capacity is low | [P4] §III | Self-critique ≠ approval; conflicts with `INV-05`; unvalidated | Never |
 | R-09 | Treat [P1]'s 12 stress cases as independent test evidence | [P1] §IX | Derived from the same grammar as the firewall | Never; use as regression fixtures |
 | R-10 | Use verbalized confidence in decisions | [P1] LLM JSON | Not calibrated; self-reported (`03` §5) | After calibration protocol |
-| R-11 | Single headline accuracy for any method | — | Hides error types; trivial baselines can look good | Never |
-| R-12 | Claim novelty or superiority in project documents | — | Not established (`00` §6) | After literature work and TEST results |
+| R-11 | Single headline accuracy for any method | — | Hides error types; trivial baselines look good | Never |
+| R-12 | Claim novelty or superiority in project documents | — | Not established (`00` §6) | Never |
 
 ---
 
@@ -78,7 +78,7 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 
 | ID | Question | Why it matters | Evidence needed | Owner | By |
 |---|---|---|---|---|---|
-| OQ-01 | [P3]: which routing policy produced the 580-request FullCascade run (rejection vs early-acceptance); is the set truly held-out; version string 0.40.6 verification; per-sample paired outcomes? | Determines whether [P3] results can be used as an informal reference | Ask Akshat; inspect run logs | Akshat | Phase 1 |
+| **OQ-01** | [P3]: which routing policy produced the 580-request FullCascade run (rejection vs early-acceptance); is the set truly held-out; version string 0.40.6 verification; per-sample paired outcomes? | Determines whether [P3] results can be used as an informal reference | Ask Akshat; inspect run logs | **RESOLVED (Akshat)** | Phase 1 |
 | OQ-02 | [P4]: why do overall rows differ from the 350/350/300-weighted domain rows (e.g. WA-DIF danger-through 3.1 vs 3.2; Unconstrained success 81.245 vs 81.4), and why do some domain pairs sum to ≠ 100 (Static DIF Customer Ops 102.2)? | Reporting integrity | Ask Snehal; regenerate tables from raw logs | Snehal | Phase 1 |
 | OQ-03 | [P4]: values of α, Q_max, base thresholds, γ, C, r_min, θ_overload; how unsafe/incorrect labels were generated; whether the microservice stack ran in the evaluation | Needed before any reuse of [P4] | Code/config from Snehal | Snehal | Phase 9 |
 | OQ-04 | [P2]: unresolved bracketed author notes in the AI-disclosure paragraph; override O2's lack of resource–sink binding | Paper correctness | Ask Karishma; revise | Karishma | Before submission |
@@ -121,6 +121,7 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 | 2026-10-23 | D-10…D-32 | Proposed by the reviewer in this documentation set | PROPOSED | Reviewer |
 | 2026-10-23 | R-01…R-12 | Rejections recorded with rationale | REJECTED (pending team acknowledgement) | Reviewer |
 | 2026-10-23 | OQ-01…OQ-20 | Opened | OPEN | Reviewer |
+| **2026-10-26** | **OQ-01** | **Resolved via research paper audit (Rejection routing, held-out set, paired outcomes)** | **RESOLVED** | **Akshat** |
 | — | — | *Phase 1 exit check* | not started | — |
 | — | — | *Phase 2 exit check* | not started | — |
 | — | — | *Phase 3 exit check* | not started | — |
