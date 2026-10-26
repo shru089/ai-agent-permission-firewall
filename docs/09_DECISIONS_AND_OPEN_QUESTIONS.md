@@ -128,9 +128,9 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 | 2026-10-23 | D-10…D-32 | Proposed by the reviewer in this documentation set | PROPOSED | Reviewer |
 | 2026-10-23 | R-01…R-12 | Rejections recorded with rationale | REJECTED (pending team acknowledgement) | Reviewer |
 | 2026-10-23 | OQ-01…OQ-20 | Opened | OPEN | Reviewer |
-| 2026-10-26 | D-33, D-34, D-35 | Conditional acceptance of SEC-01/02 remediation design: D-33 (HMAC for MVP with explicit trust assumptions), D-34 (strict egress evidence for `execute_export`), D-35 (live freshness vs replay decoupling). Kept as PROPOSED pending pre-merge adversarial verification. | PROVISIONALLY ACCEPTED (PROPOSED pending verification) | Team Review |
+| 2026-10-26 | D-33, D-34, D-35 | SEC-01/02 remediation implemented and verified via 12 executable regression and adversarial tests: D-33 (HMAC EvidenceVerifier with single-process trust assumptions), D-34 (strict authenticated egress evidence for `execute_export`), D-35 (live freshness vs replay decoupling). | VERIFIED & CLOSED (Implementation Complete) | Team Review |
 | 2026-10-26 | D-36 | State-head preimage formalization: held pending independent reproduction against actual implementation | HELD (PROPOSED) | Team Review |
-| 2026-10-26 | OQ-21…OQ-23 | Opened for anomaly enum scope (OQ-21), key rotation (OQ-22), and external replay anchoring (OQ-23) | OPEN | Team Review |
+| 2026-10-26 | OQ-21…OQ-23 | Opened for anomaly enum scope (OQ-21), key rotation (OQ-22), and external replay anchoring (OQ-23; remains OPEN) | OPEN | Team Review |
 | — | — | *Phase 1 exit check* | not started | — |
 | — | — | *Phase 2 exit check* | not started | — |
 | — | — | *Phase 3 exit check* | not started | — |

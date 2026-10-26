@@ -12,10 +12,15 @@ from firewall.state.engine import (
     replay_events,
 )
 from firewall.state.errors import (
+    EvidenceVerificationError,
     StateContinuityError,
     StateError,
     StateIntegrityError,
     StateTransitionError,
+)
+from firewall.state.evidence import (
+    EvidenceVerifier,
+    HmacEvidenceVerifier,
 )
 from firewall.state.registry import (
     DestinationInfo,
@@ -41,11 +46,15 @@ __all__ = [
     "apply_event",
     "replay_events",
     "compute_state_head",
+    # Evidence & Verification
+    "EvidenceVerifier",
+    "HmacEvidenceVerifier",
     # Errors
     "StateError",
     "StateContinuityError",
     "StateIntegrityError",
     "StateTransitionError",
+    "EvidenceVerificationError",
     # Registry
     "Registry",
     "ResourceInfo",
