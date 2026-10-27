@@ -171,6 +171,28 @@ action_hash = SHA-256( canonical_json({"v": CONTRACTS_VERSION, "session_id": …
 
 Including `session_id` and `seq` makes two identical calls hash differently, which supports single-use authorization (`INV-06`). Test `T-GW-006` checks stability under key order/whitespace/Unicode forms.
 
+### State-head hashing (PROPOSED — D-36)
+
+```
+genesis_head = SHA-256( "GENESIS:" || Unicode_NFC(session_id) )
+head_hash_t  = SHA-256( prior_head_bytes || canonical_json(event_data, reject_floats=False) )
+```
+
+where `prior_head_bytes = prior_head.encode("utf-8")` (64 ASCII hex bytes), and `event_data` for a `StateEventEnvelope` is canonically serialized as:
+```json
+{
+  "action_id": "act_0001",
+  "event_type": "EXECUTED",
+  "payload": { "arguments": { ... }, "tool": "..." },
+  "prior_head": "800112320e...",
+  "seq": 1,
+  "session_id": "sess_001",
+  "token_id": "tok_0001"
+}
+```
+
+This binds monotonic sequence, prior state head, action ID, authorization token, and execution payload into an append-only hash chain (`INV-09`, `INV-12`).
+
 ---
 
 ## 5. API endpoints (PROPOSED)

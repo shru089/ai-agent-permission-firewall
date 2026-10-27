@@ -50,6 +50,10 @@ Status vocabulary: **CONFIRMED** (stated by the team) · **PROPOSED** (reviewer 
 | D-30 | Commit a pre-registration (`PREREG-001.md`) before the single TEST run. | Prevents post hoc analysis choices. | Informal plan | Phase 8 |
 | D-31 | Two deviations from the requested order: policy engine tested on fixtures before the live state fold exists; minimal review tickets in Phase 3. | Dependency (stateful rules need state) and `INV-05` is a security property. | Strict order | Phase 1 |
 | D-32 | Use [P1]'s metrics and tables as fixtures for our metrics code (`FR-EXP-04`). | Cheap correctness check of formulas. | None | Phase 6 |
+| **D-33** | Introduce `EvidenceVerifier` Protocol with HMAC-SHA256 for single-process MVP (`SEC-01`); defer Ed25519 until executor runs out-of-process. | Zero external C-dependencies, sub-microsecond latency, clean interface decoupling (`INV-07`). | Direct HMAC in engine; Ed25519 immediately | Phase 2 review |
+| **D-34** | Strict Egress Evidence Requirement (`SEC-02`): `execute_export` egress counters updated strictly from verified `EvidenceReceipt`. Loose payload fields deprecated for egress. | Prevents caller-forged `TOOL_TYPED` provenance tags (`INV-07`). | Trust loose tags | Phase 2 review |
+| **D-35** | Replay Wall-Clock Decoupling: historical replay verifies signatures and bindings, but bypasses live wall-clock freshness ($30\text{s}$). | Preserves deterministic audit log replay across arbitrary time spans (`INV-12`). | Re-evaluate wall clock (fails replay) | Phase 2 review |
+| **D-36** | State-Head Preimage Formalization: formalize the dictionary preimage schema implemented in `engine.py:82-93` into `05_TECHNICAL_SPEC.md §4`. | Closes audit finding SEC-04; establishes canonical state-head hashing. | Redesign preimage dictionary | Phase 2 review |
 
 ---
 
@@ -98,6 +102,9 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 | OQ-18 | Adaptive attacker evaluation beyond `ATK-10` (LLM-driven adversary) | Realism of the threat | Design and compute budget | Shrishti | After Phase 8 |
 | OQ-19 | Team capacity, deadline and academic submission requirements (venue, page limits, deliverable dates) | Scope of Phases 7–9 | Team input | all | Phase 1 |
 | OQ-20 | Is a single domain (data export) sufficient, or must a second domain be added for generality claims? | External validity | Advisor input | all | Phase 6 |
+| OQ-21 | Formal Anomaly Enum Expansion: Should `Anomaly` enum in `contracts/enums.py` be expanded with `FORGED_EVIDENCE_RECEIPT`, `INVALID_OBSERVATION`, `MISSING_EXECUTION_EVIDENCE`, `EXPIRED_EVIDENCE_RECEIPT` (modifying frozen contracts and schema snapshot), or should state anomalies remain open strings in `SessionState.anomalies: list[str]`? | Schema freeze stability vs typed anomaly enumeration | Team vote | all | Phase 2 |
+| OQ-22 | Cryptographic Key Rotation Scheme: Is a single static key sufficient for MVP research evaluation, or should `EvidenceReceipt` include an optional `key_id: Optional[str]` field to support seamless key rollover without schema changes? | Key management complexity vs protocol future-proofing | Security review | Akshat + Shrishti | Phase 3 |
+| OQ-23 | Replay Log Provenance Anchoring: Since a hash chain alone does not protect against wholesale log rewriting without external anchoring, how should production audit logs be anchored (periodic signed checkpoints, transparency log, or WORM storage)? | Non-repudiation and external audit integrity | Security review | Akshat + Shrishti | Phase 3/4 |
 
 ---
 
@@ -122,6 +129,9 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 | 2026-10-23 | R-01…R-12 | Rejections recorded with rationale | REJECTED (pending team acknowledgement) | Reviewer |
 | 2026-10-23 | OQ-01…OQ-20 | Opened | OPEN | Reviewer |
 | **2026-10-26** | **OQ-01** | **Resolved via research paper audit (Rejection routing, held-out set, paired outcomes)** | **RESOLVED** | **Akshat** |
+| 2026-10-26 | D-33, D-34, D-35 | SEC-01/02 remediation implemented and verified via 12 executable regression and adversarial tests: D-33 (HMAC EvidenceVerifier with single-process trust assumptions), D-34 (strict authenticated egress evidence for `execute_export`), D-35 (live freshness vs replay decoupling). | VERIFIED & CLOSED (Implementation Complete) | Team Review |
+| 2026-10-26 | D-36 | State-head preimage formalization: held pending independent reproduction against actual implementation | HELD (PROPOSED) | Team Review |
+| 2026-10-26 | OQ-21…OQ-23 | Opened for anomaly enum scope (OQ-21), key rotation (OQ-22), and external replay anchoring (OQ-23; remains OPEN) | OPEN | Team Review |
 | — | — | *Phase 1 exit check* | not started | — |
 | — | — | *Phase 2 exit check* | not started | — |
 | — | — | *Phase 3 exit check* | not started | — |

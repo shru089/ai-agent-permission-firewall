@@ -27,3 +27,11 @@ class StateTransitionError(StateError):
     """
     Raised when a state transition cannot be executed deterministically.
     """
+
+
+class EvidenceVerificationError(StateError):
+    """
+    Raised when an execution evidence receipt fails cryptographic signature
+    verification, session/action/token/tool binding checks, schema validation,
+    freshness limits, or replay protection (SEC-01, SEC-02, INV-07).
+    """
