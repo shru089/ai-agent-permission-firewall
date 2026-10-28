@@ -1,0 +1,96 @@
+"""
+Contracts package for AI Agent Permission Firewall.
+Version: 0.1.0
+Source of truth for all schemas, enums, models, and canonical hashing.
+"""
+
+from firewall.contracts.enums import (
+    Anomaly,
+    Classification,
+    ConfirmationLevel,
+    Decision,
+    EventType,
+    ExecStatus,
+    MonitorVerdict,
+    OutcomeContract,
+    PolicyVerdict,
+    Provenance,
+    ReviewStatus,
+    ScoreKind,
+    ToolClass,
+    Zone,
+)
+from firewall.contracts.hashing import (
+    canonical_hash,
+    canonical_json,
+    compute_action_hash,
+    compute_genesis_head,
+)
+from firewall.contracts.models import (
+    CONTRACTS_VERSION,
+    ActionRequest,
+    AuthorizationToken,
+    CanonicalAction,
+    DecisionRecord,
+    DestinationRef,
+    EgressCounter,
+    Event,
+    EvidenceReceipt,
+    ExportJob,
+    MonitorAssessment,
+    MonitorView,
+    PolicyResult,
+    ResourceRef,
+    ResultEnvelope,
+    ReviewerView,
+    ReviewTicket,
+    SessionState,
+    StateEventEnvelope,
+    TaggedValue,
+    VersionSet,
+)
+
+__all__ = [
+    "CONTRACTS_VERSION",
+    # Enums
+    "Decision",
+    "PolicyVerdict",
+    "MonitorVerdict",
+    "ScoreKind",
+    "ToolClass",
+    "Classification",
+    "Zone",
+    "Provenance",
+    "ExecStatus",
+    "OutcomeContract",
+    "ConfirmationLevel",
+    "ReviewStatus",
+    "EventType",
+    "Anomaly",
+    # Models
+    "TaggedValue",
+    "ResourceRef",
+    "DestinationRef",
+    "ExportJob",
+    "EgressCounter",
+    "ActionRequest",
+    "CanonicalAction",
+    "Event",
+    "SessionState",
+    "PolicyResult",
+    "MonitorView",
+    "MonitorAssessment",
+    "VersionSet",
+    "DecisionRecord",
+    "AuthorizationToken",
+    "ReviewerView",
+    "ReviewTicket",
+    "ResultEnvelope",
+    "StateEventEnvelope",
+    "EvidenceReceipt",
+    # Hashing
+    "canonical_json",
+    "canonical_hash",
+    "compute_action_hash",
+    "compute_genesis_head",
+]
