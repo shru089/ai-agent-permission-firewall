@@ -1,0 +1,51 @@
+"""
+Re-export of firewall.contracts.models for compatibility with schemas/ layout.
+"""
+
+from firewall.contracts.models import (
+    CONTRACTS_VERSION,
+    ActionRequest,
+    AuthorizationToken,
+    CanonicalAction,
+    DecisionRecord,
+    DestinationRef,
+    EgressCounter,
+    Event,
+    EvidenceReceipt,
+    ExportJob,
+    MonitorAssessment,
+    MonitorView,
+    PolicyResult,
+    ResourceRef,
+    ResultEnvelope,
+    ReviewerView,
+    ReviewTicket,
+    SessionState,
+    StateEventEnvelope,
+    TaggedValue,
+    VersionSet,
+)
+
+__all__ = [
+    "CONTRACTS_VERSION",
+    "TaggedValue",
+    "ResourceRef",
+    "DestinationRef",
+    "ExportJob",
+    "EgressCounter",
+    "ActionRequest",
+    "CanonicalAction",
+    "Event",
+    "SessionState",
+    "PolicyResult",
+    "MonitorView",
+    "MonitorAssessment",
+    "VersionSet",
+    "DecisionRecord",
+    "AuthorizationToken",
+    "ReviewerView",
+    "ReviewTicket",
+    "ResultEnvelope",
+    "StateEventEnvelope",
+    "EvidenceReceipt",
+]
