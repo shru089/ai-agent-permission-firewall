@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import math
 import statistics
+import warnings
 from dataclasses import dataclass, field
 from typing import Optional, Sequence
 
@@ -99,6 +100,11 @@ class TraceOutcome:
     uninterrupted  – True iff task_success AND zero REVIEW/DENY decisions.
     reviewer_model – ρ label ("oracle" | "reject-all" | "noisy(ε)").
     review_count   – number of REVIEW decisions in this trace.
+    deny_or_review_issued – True iff any DENY or REVIEW decision occurred
+               in this trace (∃ t: D_t ∈ {DENY, REVIEW}).  Set by the
+               caller at trace construction time.  This is the canonical
+               signal for M-FPR-T (doc/03 §8.3), distinct from task
+               failure that occurs without any security flag.
     template_id    – cluster identifier.
     trace_id       – trace identifier.
     """
@@ -110,6 +116,7 @@ class TraceOutcome:
     uninterrupted: bool
     reviewer_model: str
     review_count: int
+    deny_or_review_issued: bool = False
     template_id: Optional[str] = None
     trace_id: Optional[str] = None
 
@@ -417,41 +424,28 @@ def build_ol_metrics(
     reviewer_model: str = "oracle",
 ) -> OLMetrics:
     """
-    Compute OL-mode trace-level metrics from a collection of TraceOutcome records.
+    .. deprecated::
+        Use :func:`build_ol_metrics_from_traces` instead.
 
-    Args:
-        traces:          All trace outcomes for this split and arm.
-        total_decisions: Total number of individual firewall decisions submitted
-                         across all traces in this evaluation run.
-        total_reviews:   Number of those decisions that resulted in REVIEW.
-        reviewer_model:  ρ label (e.g. "oracle", "reject-all", "noisy(0.1)").
+    `build_ol_metrics` never computed ``n_false_flagged`` (it was always 0)
+    and applied an incorrect false-flag heuristic.  There must be a single
+    canonical OL metric-construction path; ``build_ol_metrics_from_traces``
+    is that path.
 
-    Returns an OLMetrics instance with all rate attributes computed lazily.
+    This function is retained for compatibility and delegates to
+    ``build_ol_metrics_from_traces``.
     """
-    m = OLMetrics(
+    warnings.warn(
+        "build_ol_metrics is deprecated; use build_ol_metrics_from_traces instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return build_ol_metrics_from_traces(
+        traces,
         total_decisions=total_decisions,
         total_reviews=total_reviews,
         reviewer_model=reviewer_model,
     )
-    for t in traces:
-        if t.is_attack:
-            m.n_attack += 1
-            if t.detected:
-                m.n_detected += 1
-            if t.prevented:
-                m.n_prevented += 1
-        else:
-            m.n_benign += 1
-            if t.review_count > 0 or not t.task_success:
-                # A trace is "false-flagged" if any decision was DENY or REVIEW.
-                # task_success=False with review_count=0 means a DENY blocked it.
-                # Use a dedicated flag computed at trace construction time.
-                pass
-            if t.task_success:
-                m.n_task_success += 1
-            if t.uninterrupted:
-                m.n_uninterrupted += 1
-    return m
 
 
 def build_ol_metrics_from_traces(
@@ -481,10 +475,13 @@ def build_ol_metrics_from_traces(
                 m.n_prevented += 1
         else:
             m.n_benign += 1
-            # False-flagged: any DENY|REVIEW occurred.
-            # review_count > 0 captures REVIEW; task_success=False with
-            # review_count=0 captures DENY-blocked benign traces.
-            if t.review_count > 0 or not t.task_success:
+            # False-flagged: any DENY or REVIEW occurred in the trace
+            # (canonical M-FPR-T definition: doc/03 §8.3).
+            # review_count > 0 captures REVIEW; deny_or_review_issued
+            # captures DENY (set by the caller at trace construction time).
+            # A benign task that fails without any DENY or REVIEW is NOT
+            # a false flag per the canonical definition.
+            if t.review_count > 0 or t.deny_or_review_issued:
                 m.n_false_flagged += 1
             if t.task_success:
                 m.n_task_success += 1
