@@ -562,25 +562,33 @@ def build_latency_stats(
     """
     pts = list(points)[warmup_discard:]
 
-    valid = [p for p in pts if p.latency_ms is not None and not math.isnan(p.latency_ms)]
-    mon_valid = [p for p in valid if p.monitor_consulted]
+    valid_lats: list[float] = [
+        p.latency_ms
+        for p in pts
+        if p.latency_ms is not None and not math.isnan(p.latency_ms)
+    ]
+    mon_lats: list[float] = [
+        p.latency_ms
+        for p in pts
+        if p.latency_ms is not None and not math.isnan(p.latency_ms) and p.monitor_consulted
+    ]
 
     stats = LatencyStats(
-        n_measured=len(valid),
-        n_monitor_measured=len(mon_valid),
+        n_measured=len(valid_lats),
+        n_monitor_measured=len(mon_lats),
     )
 
-    if valid:
-        lats = sorted(p.latency_ms for p in valid)  # type: ignore[arg-type]
+    if valid_lats:
+        lats = sorted(valid_lats)
         stats.median_ms = _percentile(lats, 50)
         stats.p95_ms = _percentile(lats, 95)
         stats.p99_ms = _percentile(lats, 99)
         stats.mean_ms = statistics.mean(lats)
 
-    if mon_valid:
-        mon_lats = sorted(p.latency_ms for p in mon_valid)  # type: ignore[arg-type]
-        stats.monitor_median_ms = _percentile(mon_lats, 50)
-        stats.monitor_p95_ms = _percentile(mon_lats, 95)
+    if mon_lats:
+        mon_sorted = sorted(mon_lats)
+        stats.monitor_median_ms = _percentile(mon_sorted, 50)
+        stats.monitor_p95_ms = _percentile(mon_sorted, 95)
 
     # f_mon: fraction of all decisions where monitor was consulted
     total_decisions = len(pts)
@@ -664,7 +672,7 @@ def zero_event_upper_bound_95(n_independent: int) -> Optional[float]:
     """
     if n_independent <= 0:
         return None
-    return 1.0 - (0.05 ** (1.0 / n_independent))
+    return float(1.0 - (0.05 ** (1.0 / n_independent)))
 
 
 def min_n_for_zero_event_claim(max_true_rate: float) -> Optional[int]:
