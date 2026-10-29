@@ -710,3 +710,4 @@ P1_TABLE_FIXTURES = {
     "stress_test_flagged": 12,
     "stress_test_total": 12,
 }
+

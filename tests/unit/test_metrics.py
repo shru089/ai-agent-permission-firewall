@@ -781,3 +781,4 @@ class TestMonitorQualityStats:
         assert mq.parse_error_rate == pytest.approx(0.2)
         assert mq.timeout_rate == pytest.approx(0.1)
         assert mq.unknown_rate == pytest.approx(0.3)
+
