@@ -54,6 +54,7 @@ Status vocabulary: **CONFIRMED** (stated by the team) · **PROPOSED** (reviewer 
 | **D-34** | Strict Egress Evidence Requirement (`SEC-02`): `execute_export` egress counters updated strictly from verified `EvidenceReceipt`. Loose payload fields deprecated for egress. | Prevents caller-forged `TOOL_TYPED` provenance tags (`INV-07`). | Trust loose tags | Phase 2 review |
 | **D-35** | Replay Wall-Clock Decoupling: historical replay verifies signatures and bindings, but bypasses live wall-clock freshness ($30\text{s}$). | Preserves deterministic audit log replay across arbitrary time spans (`INV-12`). | Re-evaluate wall clock (fails replay) | Phase 2 review |
 | **D-36** | State-Head Preimage Formalization: formalize the dictionary preimage schema implemented in `engine.py:82-93` into `05_TECHNICAL_SPEC.md §4`. | Closes audit finding SEC-04; establishes canonical state-head hashing. | Redesign preimage dictionary | Phase 2 review |
+| **D-37** | Deep-monitor `UNKNOWN`, timeout, exception, or malformed output maps to `MonitorVerdict.UNKNOWN` and the gateway maps it to `Decision.REVIEW`, unless a hard policy verdict independently requires `DENY`. It must never map to `ALLOW`. | Preserves fail-closed behavior while distinguishing unconfirmed risk from confirmed policy violation. | Deep UNKNOWN → DENY | Team approval; cascade adapter tests |
 
 ---
 
@@ -82,7 +83,7 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 
 | ID | Question | Why it matters | Evidence needed | Owner | By |
 |---|---|---|---|---|---|
-| **OQ-01** | [P3]: which routing policy produced the 580-request FullCascade run (rejection vs early-acceptance); is the set truly held-out; version string 0.40.6 verification; per-sample paired outcomes? | Determines whether [P3] results can be used as an informal reference | Ask Akshat; inspect run logs | **RESOLVED (Akshat)** | Phase 1 |
+| **OQ-01** | [P3]: which routing policy produced the 580-request FullCascade run (rejection vs early-acceptance); is the set truly held-out; version string 0.40.6 verification; per-sample paired outcomes? | Determines whether [P3] results can be used as an informal reference | Research-paper audit completed; retain reconciliation report, route distribution, paired outcomes, and commit/artifact references as evidence. | **RESOLVED (Akshat)** | Phase 1 |
 | OQ-02 | [P4]: why do overall rows differ from the 350/350/300-weighted domain rows (e.g. WA-DIF danger-through 3.1 vs 3.2; Unconstrained success 81.245 vs 81.4), and why do some domain pairs sum to ≠ 100 (Static DIF Customer Ops 102.2)? | Reporting integrity | Ask Snehal; regenerate tables from raw logs | Snehal | Phase 1 |
 | OQ-03 | [P4]: values of α, Q_max, base thresholds, γ, C, r_min, θ_overload; how unsafe/incorrect labels were generated; whether the microservice stack ran in the evaluation | Needed before any reuse of [P4] | Code/config from Snehal | Snehal | Phase 9 |
 | OQ-04 | [P2]: unresolved bracketed author notes in the AI-disclosure paragraph; override O2's lack of resource–sink binding | Paper correctness | Ask Karishma; revise | Karishma | Before submission |
@@ -132,6 +133,8 @@ Each question lists the evidence needed to resolve it and the phase by which it 
 | 2026-10-26 | D-33, D-34, D-35 | SEC-01/02 remediation implemented and verified via 12 executable regression and adversarial tests: D-33 (HMAC EvidenceVerifier with single-process trust assumptions), D-34 (strict authenticated egress evidence for `execute_export`), D-35 (live freshness vs replay decoupling). | VERIFIED & CLOSED (Implementation Complete) | Team Review |
 | 2026-10-26 | D-36 | State-head preimage formalization: held pending independent reproduction against actual implementation | HELD (PROPOSED) | Team Review |
 | 2026-10-26 | OQ-21…OQ-23 | Opened for anomaly enum scope (OQ-21), key rotation (OQ-22), and external replay anchoring (OQ-23; remains OPEN) | OPEN | Team Review |
+| 2026-10-29 | D-37 | Proposed fail-closed mapping for deep-monitor uncertainty and failure: `UNKNOWN`/timeout/error/malformed output → `MonitorVerdict.UNKNOWN` → `Decision.REVIEW`; never `ALLOW`. | PROPOSED | Akshat |
+| 2026-10-29 | OQ-01 | Clarified evidence boundary for imported P3 artifacts: commit `c9517a5` is on `integrate-rejection-cascade`; no merge into `main` is established by that commit. | RESOLVED evidence clarified | Akshat |
 | — | — | *Phase 1 exit check* | not started | — |
 | — | — | *Phase 2 exit check* | not started | — |
 | — | — | *Phase 3 exit check* | not started | — |
