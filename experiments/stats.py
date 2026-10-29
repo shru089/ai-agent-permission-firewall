@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import math
 import random
+import statistics
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Sequence, TypeVar
 
@@ -884,61 +885,11 @@ def _percentile_sorted(sorted_vals: List[float], pct: float) -> float:
 
 def _normal_cdf(x: float) -> float:
     """Standard normal cumulative distribution function Phi(x)."""
-    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+    return statistics.NormalDist().cdf(x)
 
 
 def _normal_quantile(p: float) -> float:
-    """
-    Rational approximation of the standard normal quantile function (Wichura / Beasley-Springer).
-    Accurate to within 1e-9 for p in (1e-12, 1 - 1e-12).
-    """
+    """Standard normal quantile function (inverse CDF) using standard library."""
     if p <= 0.0 or p >= 1.0:
         raise ValueError(f"p must be in (0, 1), got {p}")
-
-    # Rational approximation coefficients for central region
-    a = [
-        -3.969683028665376e01,
-        2.209460984245205e02,
-        -2.759285104469687e02,
-        1.383577518672690e02,
-        -3.066479806614716e01,
-        2.506628277459239e00,
-    ]
-    b = [
-        -5.447609879822406e01,
-        1.615858368580409e02,
-        -1.556989798598866e02,
-        6.680131188771972e01,
-        -1.328068155288572e01,
-    ]
-    # Tail coefficients
-    c = [
-        -7.784894002430293e-03,
-        -3.223964580411365e-01,
-        -2.400758277161838e00,
-        -2.549732539343734e00,
-        4.374664141464968e00,
-        2.938163982698783e00,
-    ]
-    d = [
-        7.784695709041462e-03,
-        3.224671290700398e-01,
-        2.445134137142996e00,
-        3.754408661907416e00,
-    ]
-
-    q = p - 0.5
-    if abs(q) <= 0.425:
-        r = 0.180625 - q * q
-        num = (
-            ((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]
-        ) * q
-        den = ((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1.0
-        return num / den
-
-    r = p if q < 0.0 else 1.0 - p
-    r = math.sqrt(-math.log(r))
-    num = ((((c[0] * r + c[1]) * r + c[2]) * r + c[3]) * r + c[4]) * r + c[5]
-    den = (((d[0] * r + d[1]) * r + d[2]) * r + d[3]) * r + 1.0
-    x = num / den
-    return -x if q < 0.0 else x
+    return statistics.NormalDist().inv_cdf(p)

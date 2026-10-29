@@ -19,7 +19,6 @@ These tests verify:
 Pytest markers: unit, experiment (see pyproject.toml).
 """
 
-import math
 import sys
 from pathlib import Path
 
@@ -29,13 +28,11 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from experiments.metrics import (  # noqa: E402
+    P1_TABLE_FIXTURES,
     ConfusionMatrix,
     DecisionPoint,
-    LatencyStats,
     MonitorQualityStats,
     OLMetrics,
-    P1_TABLE_FIXTURES,
-    PolicyFidelity,
     TraceOutcome,
     accuracy,
     build_confusion_matrix,
