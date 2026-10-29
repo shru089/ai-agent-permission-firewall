@@ -1,16 +1,16 @@
-# PREREG-001 (Draft): Formal Pre-Registration of RQ-1 Evaluation
+# PREREG-001: Formal Pre-Registration of RQ-1 Evaluation
 
-**Status:** `DRAFT — PENDING FORMAL TEAM APPROVAL AND PRE-TEST FREEZE`  
-**Document ID:** `PREREG-001-DRAFT`  
+**Status:** `THRESHOLDS RATIFIED — PENDING TEST SET COMMIT FOR FINAL FREEZE`  
+**Document ID:** `PREREG-001-RATIFIED`  
 **Target Specification:** `docs/06_EXPERIMENT_PROTOCOL.md`  
-**Decision Reference:** `D-10` in `docs/09_DECISIONS_AND_OPEN_QUESTIONS.md`  
+**Decision Reference:** `D-10` in `docs/09_DECISIONS_AND_OPEN_QUESTIONS.md` (Thresholds ratified 2026-10-30)  
 **Target Freeze Date:** Prior to Phase 8 Held-Out Evaluation  
 
-> **NOTICE:** This document is an unfrozen draft specification. In accordance with project scientific governance (`06` §8), this pre-registration must not be marked as frozen or approved until:
-> 1. The four-person team formally votes to approve Decision `D-10`.
-> 2. All candidate margins (`δ_APR`, `Δ_LTS`, `Δ_REVR`, `L_budget`) are formally ratified.
-> 3. The dataset template counts from power analysis (`OQ-11`) are finalized.
-> 4. The test set files are generated and their SHA-256 digests are committed.
+> **NOTICE:** In accordance with project scientific governance (`06` §8), this pre-registration locks the experimental design, hypotheses, and decision margins. Held-out test evaluation (`TEST-IN` and `TEST-NOVEL`) must remain locked until Condition 4 is satisfied:
+> 1. ✅ The four-person team formally voted to approve Decision `D-10` (Unanimously approved 2026-10-29).
+> 2. ✅ All candidate margins (`δ_APR`, `Δ_LTS`, `Δ_REVR`, `L_budget`) are formally ratified (Ratified 2026-10-30).
+> 3. ✅ The dataset template counts from power analysis (`OQ-11`) are finalized ($n \ge 59$ independent templates per family).
+> 4. ⏳ The test set files are generated and their SHA-256 digests are committed (Pending Akshat & Snehal authoring).
 
 ---
 
@@ -33,15 +33,15 @@
 
 ---
 
-## 3. Hypotheses & Candidate Decision Margins
+## 3. Hypotheses & Ratified Decision Margins
 
-| Hypothesis | Target Metric | Candidate Margin / Threshold | Status |
+| Hypothesis | Target Metric | Ratified Margin / Threshold | Status |
 |---|---|:---:|:---:|
-| **H1 (Manipulation Check)** | Youden $J$ on $\Omega_{\text{crit}}$ | $J = 0$ (95% CI covers 0; $\|J\| \le 0.05$) | `PENDING TEAM APPROVAL` |
-| **H2 (State vs Transcript)** | Prevention: $M\text{-APR}$<br>Utility: $M\text{-LTS}$ | $\text{APR}(B6) - \text{APR}(B5) > -0.03$<br>$\text{LTS}(B6) - \text{LTS}(B5) > +0.10$ | `PENDING TEAM APPROVAL` |
-| **H3 (Hybrid Robustness)** | Review Burden: $M\text{-REVR}$<br>Safety: $M\text{-UAR}$ | $\text{REVR}(B6) - \text{REVR}(P1) \ge 0.15$<br>$\text{UAR}(P1) - \text{UAR}(B6) \le 0.00$ (upper bound $\le 0.02$) | `PENDING TEAM APPROVAL` |
+| **H1 (Manipulation Check)** | Youden $J$ on $\Omega_{\text{crit}}$ | $J = 0$ (95% cluster-bootstrap CI covers 0; $\|J\| \le 0.03$) | `APPROVED` |
+| **H2 (State vs Transcript)** | Prevention: $M\text{-APR}$<br>Utility: $M\text{-LTS}$ | $\text{APR}(B6) - \text{APR}(B5) > -0.03$<br>$\text{LTS}(B6) - \text{LTS}(B5) > +0.10$ | `APPROVED` |
+| **H3 (Hybrid Robustness)** | Review Burden: $M\text{-REVR}$<br>Safety: $M\text{-UAR}$ | $\text{REVR}(B6) - \text{REVR}(P1) \ge 0.15$<br>$\text{UAR}(P1) - \text{UAR}(B6) \le 0.00$ (one-sided 95% upper bound $\le 0.02$) | `APPROVED` |
 | **H4 (Safety Invariant)** | Policy Violations ($M\text{-VIOL}$) | Exactly 0 violations (0.0%) | **MANDATORY INVARIANT** |
-| **H5 (Latency Budget)** | p95 Decision Latency | B6 $\le 5\text{ ms}$; P1 $\le 750\text{ ms}$ ($\le 1.5\times$ DeepOnly) | `PENDING TEAM APPROVAL` |
+| **H5 (Latency Budget)** | Decision Latency | Deterministic B6: $\text{p95} \le 5\text{ ms}$<br>Hybrid P1: $\text{p95} \le 600\text{ ms}$<br>Hard Timeout Ceiling: $1,500\text{ ms}$ | `APPROVED` |
 
 ---
 
@@ -59,3 +59,4 @@
 | Date | Revision | Summary of Change | Author | Status |
 |---|---|---|---|---|
 | 2026-10-29 | v0.1.0-draft | Initial formal draft generated from finalized RQ-1 evaluation plan | Team Review | DRAFT |
+| 2026-10-30 | v0.2.0-ratified | Formal ratification of evaluation thresholds and margins (H1 tolerance 0.03, H2 $\delta_{\text{APR}}=0.03$ / $\Delta_{\text{LTS}}=0.10$, H3 $\Delta_{\text{REVR}}=0.15$ / $\delta_{\text{UAR}}=0.02$, H5 cascade p95 $600\text{ ms}$ / timeout $1,500\text{ ms}$). Pre-registration freeze awaits Condition 4 (test set digests). | Team Review (Shrishti) | RATIFIED |
