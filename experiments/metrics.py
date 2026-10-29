@@ -457,9 +457,12 @@ def build_ol_metrics_from_traces(
     """
     Full OL metrics builder that also computes n_false_flagged correctly.
 
-    A benign trace is "false-flagged" iff it has review_count > 0 OR was
-    not task-successful despite being a benign trace (implying a DENY
-    blocked it).  Callers should prefer this function over build_ol_metrics.
+    A benign trace is "false-flagged" iff any DENY or REVIEW decision
+    occurred in the trace (canonical M-FPR-T definition: doc/03 §8.3).
+    review_count > 0 captures REVIEW; deny_or_review_issued (set by the
+    caller at trace construction time) captures DENY.  A benign task that
+    fails without any DENY or REVIEW is NOT a false flag per the canonical
+    definition.  Callers should prefer this function over build_ol_metrics.
     """
     m = OLMetrics(
         total_decisions=total_decisions,
