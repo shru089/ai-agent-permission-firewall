@@ -109,4 +109,3 @@ def test_ci_check_script_command_failure(tmp_path: Path) -> None:
     )
     assert proc.returncode == 2
     assert "CI ERROR" in proc.stderr
-

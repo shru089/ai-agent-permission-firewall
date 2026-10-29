@@ -14,10 +14,7 @@ from firewall.contracts.hashing import canonical_hash, canonical_json, compute_a
 
 # Recursive strategy for JSON objects with no floats
 json_primitives = (
-    st.none()
-    | st.booleans()
-    | st.integers(min_value=-10**9, max_value=10**9)
-    | st.text()
+    st.none() | st.booleans() | st.integers(min_value=-(10**9), max_value=10**9) | st.text()
 )
 json_values = st.recursive(
     json_primitives,

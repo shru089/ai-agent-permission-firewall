@@ -403,46 +403,46 @@ manipulation check, not by itself the main research contribution.
 
 ### 5.2 RQ-1 — proposed operational revision
 
-> On history-dependent policy scenarios, how do
-> (a) action-only,
-> (b) transcript-conditioned,
-> (c) deterministic observable-state, and
-> (d) hybrid monitors compare on attack prevention, benign-task
-> completion including review burden, and decision latency; and how
-> does each degrade under tool-syntax perturbation, long benign
-> context, and missing or conflicting evidence?
+> How do action-only, transcript-based, deterministic stateful, and
+> hybrid/cascade-based permission monitors compare in terms of
+> malicious-action prevention, benign-task completion, human-review
+> burden, and decision latency for multi-step AI-agent workflows?
 
-**Status.** Proposed revision requiring the decision recorded under
-`D-10` in `09_DECISIONS_AND_OPEN_QUESTIONS.md`. This document update
-does not establish that approval has occurred.
+**Status.** Proposed operational research question requiring the decision
+recorded under `D-10` in `09_DECISIONS_AND_OPEN_QUESTIONS.md`. This
+document update prepares the evaluation plan for team review; it does not
+constitute final approval, which requires formal team consensus.
 
 **Relationship to RQ-0.** RQ-1 is proposed as the operational
-replacement for the broad wording of RQ-0, not automatically as an
-additional independent study. RQ-0 remains visible as the motivation
-and is partially addressed through H1.
+replacement for the broad wording of RQ-0, not as an unrelated or
+competing study. RQ-0 remains visible as the foundational motivation and
+is formally verified as a necessary baseline condition through H1.
 
-**Purpose.** Compare ways of using context, their failure modes, and
-their costs rather than merely demonstrating that hidden historical
-information matters.
+**Purpose.** Rigorously evaluate and compare distinct mechanisms for utilizing
+context (local actions vs raw transcripts vs typed state folds vs tiered
+cascades), quantify their failure modes under syntactic and temporal
+perturbations, and measure their operational costs (human review burden
+and latency) within an authoritative enforcement architecture.
 
-**Scope boundary.** The existing rejection-cascade paper contributes
-evidence about staged per-request assessment. Its results do not
-independently answer the project's stateful-monitor comparison or
-establish execution-enforcement properties.
+**Scope boundary.** The imported rejection-cascade artifacts (`experiments/`)
+provide empirical pilot data on tiered per-request filtering. However,
+standalone Ollama scripts do not answer the multi-step stateful research
+question or evaluate firewall enforcement properties. RQ-1 absorbs these
+cascade concepts into a unified evaluation framework.
 
 ### 5.3 Hypotheses and verification obligations
 
-Formal operational definitions belong in
-`06_EXPERIMENT_PROTOCOL.md`. Their acceptance status belongs in
+Formal operational definitions, metrics, and non-inferiority margins are
+specified in `06_EXPERIMENT_PROTOCOL.md`. Their approval status belongs in
 `09_DECISIONS_AND_OPEN_QUESTIONS.md`.
 
-| ID | Statement | Type | Required operational definition |
+| ID | Statement | Type | Compared Arms & Operational Requirement |
 |---|---|---|---|
-| H1 | History necessity: action-only arms are at chance on balanced matched history-dependent pairs when the permitted action-only inputs are identical across the pair. | Manipulation check | Define matching, balance, permitted inputs, stochastic behavior, and treatment of REVIEW/errors. |
-| H2 | State versus transcript: on in-grammar scenarios, the deterministic stateful arm is non-inferior in prevention and superior in benign completion to the selected transcript-LLM arm. | Primary research hypothesis | Fix the non-inferiority margin, comparator-selection procedure, completion definition, and analysis before held-out testing. |
-| H3 | Robustness: under defined tool-syntax perturbations, the hybrid arm lowers the stateful arm's review burden without increasing unsafe allows. | Primary research hypothesis | Define perturbations, permitted evidence recovery, hybrid behavior, paired comparison, and safety criterion before testing. |
-| H4 | Safety floor: no action with a hard `PROHIBIT` verdict is executed, regardless of monitor output or review outcome. | Security invariant; not a statistical hypothesis | Verify through decision-function tests, executor integration tests, and applicable review/concurrency cases. |
-| H5 | Cost: hybrid latency overhead over the stateful arm remains within a budget fixed before testing. | Secondary research hypothesis | Define the budget, timing boundary, summary statistic, runtime conditions, and uncertainty analysis before testing. |
+| **H1** | *History necessity (manipulation check).* Action-only arms (B3, B4) perform at chance (`J = 0`) on balanced, matched history-dependent pairs differing only in prior workflow context. | Manipulation check | B3/B4 vs Ground Truth on `Ω_crit`. Non-zero `J` indicates information leakage or scenario defect. |
+| **H2** | *State vs transcript comparator.* On in-grammar history-dependent scenarios, the deterministic stateful baseline (B6) is non-inferior in malicious-action prevention and superior in benign-task completion compared with the transcript-based LLM monitor (B5). | Primary research hypothesis | B6 vs B5 on TEST-IN. Paired cluster-bootstrap on `APR(B6) - APR(B5) > -δ` and `LTS(B6) - LTS(B5) > Δ` under `ρ = oracle`. |
+| **H3** | *Hybrid robustness under perturbation.* Under tool-syntax and environment perturbations (`PRT-xx`), the hybrid/cascade monitor (P1) reduces human-review burden compared with B6 without increasing unsafe allows. | Primary research hypothesis | P1 vs B6 on `PRT-xx` and `TEST-NOVEL`. Evaluates reduction in `M-REVR` while holding `M-UAR(P1) - M-UAR(B6) < δ_UAR`. |
+| **H4** | *Deterministic safety floor (Hard Invariant).* Zero actions classified as `PROHIBIT` by policy are executed under any circumstances, regardless of monitor scores, reviewer models, timeouts, or system faults. | Security invariant | Universal across all runs and arms. Evaluated via `T-INV-01…12` and continuous fault/fuzz testing. Pass rate must be 100% (0 violations). |
+| **H5** | *Decision latency budget.* The decision latency overhead of the hybrid/cascade monitor (P1) relative to B6 remains within a pre-registered wall-clock budget at p95 under standard operating conditions. | Secondary research hypothesis | P1 vs B6 on all decisions. Requires `p95(L_dec(P1)) ≤ L_budget` with stage attribution (network, inference, parsing). |
 
 No hypothesis is considered supported merely because an implementation
 exists or an experiment completes.

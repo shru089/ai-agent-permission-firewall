@@ -118,31 +118,62 @@ The **AI Agent Permission Firewall** is a research-grade security architecture d
 ### Confirmed Decisions (from brief)
 - `D-01` to `D-09`, `D-10b`: Confirmed team roles, Python/Pydantic stack, SQLite audit, no Redis/microservices, 3 decision outcomes, dashboard deferred.
 
-### Key Proposed Decisions Awaiting Approval
-- **`D-10` (Adopt RQ-1):** Team vote required to formally adopt RQ-1 and hypotheses H1–H5 alongside RQ-0.
-- **`D-13` / `OQ-07` (Mandatory Review & Egress Authority):** Whether research arms let monitors evaluate `EGRESS_EXTERNAL` actions to benchmark against [P1].
-- **`D-16` (Single-Process FirewallCore):** Keep gateway and decision engine in a single in-process Python library; FastAPI as a thin wrapper.
-- **`D-17` (Session Serialization):** Strictly one in-flight action per session (`BUSY` state during review).
-- **`D-24` / `OQ-08` (Missing Evidence Handling):** Monitor can resolve `UNDETERMINED` but can never relax `EVIDENCE_MISSING` or `PROHIBIT`.
-- **`D-33`, `D-34`, `D-35`:** Verified and closed during SEC-01/SEC-02 remediation.
-- **`D-36`:** State-head preimage specification formalization (Held pending team reproduction).
+### Approved Decisions (Unanimous Team Consensus, 2026-10-29)
+- **`D-10` (Adopt RQ-1 alongside RQ-0):** Unanimously approved. RQ-1 adopted as primary operational research question; candidate margins remain pending pre-registration freeze.
+- **`D-11` to `D-32`, `D-37`:** Unanimously approved by the four-person team:
+  - `D-11` (B6 deterministic baseline first)
+  - `D-12` (Typed evidence provenance)
+  - `D-13` (MR classes & egress authority; **resolves OQ-07**)
+  - `D-14` (Two evaluation modes: TF and OL)
+  - `D-15` (Independent specification-level label oracle)
+  - `D-16` (Single-process `FirewallCore`)
+  - `D-17` (One in-flight action per session / `BUSY`)
+  - `D-18` (Categorical monitor verdicts)
+  - `D-19` (Hash-chained audit log)
+  - `D-20` (Hypothesis, Ruff, Mypy)
+  - `D-21` (Template-based splits)
+  - `D-22` (Pre-commit sealing of TEST-NOVEL families)
+  - `D-23` (Simulation reviewer models)
+  - `D-24` (Monitor cannot relax missing evidence or prohibition; **resolves OQ-08**)
+  - `D-25` (Unknown tool DENY)
+  - `D-26` (Strict JSON parsing fail-closed)
+  - `D-27` (Scored monitor calibration criteria)
+  - `D-28` (Scope deferrals: dashboard, learned policies, TRANSFORM)
+  - `D-29` (Authorship separation for test specs)
+  - `D-30` (Pre-registration commitment requirement)
+  - `D-31` (Roadmap sequencing deviations)
+  - `D-32` ([P1] regression test fixtures)
+  - `D-33`, `D-34`, `D-35` (Verified & closed on 2026-10-26)
+  - `D-37` (Deep-monitor error/timeout mapping to REVIEW)
 
-### Open Questions (OQs) Requiring Resolution
-1. **Resolved:** `OQ-01` (Akshat verified [P3] rejection routing and held-out dataset).
-2. **Phase 1 Urgent:**
-   - `OQ-06`: Tool argument binding mode (implicit, explicit, or both?).
-   - `OQ-07`: Egress external monitor authority.
-   - `OQ-19`: Team capacity, submission deadlines, and academic targets.
-3. **Phase 2:**
-   - `OQ-15`: Literature review tasks L-1 to L-3 (novelty verification).
-   - `OQ-21`: Formal Anomaly enum expansion vs open strings in `SessionState.anomalies`.
-4. **Phase 3 & 4:**
-   - `OQ-22`: Cryptographic key rotation scheme (`key_id` in `EvidenceReceipt`).
-   - `OQ-23`: Replay log provenance anchoring (WORM / signed checkpoints).
-   - `OQ-13`: Payload retention/redaction in audit logs.
-5. **Phase 5 & 7:**
-   - `OQ-11`: Power analysis and template counts per family.
-   - `OQ-12`: LLM model selection, hosting (local Ollama vs API), and cost budget.
+### Decisions Remaining Pending / Held
+- **`D-36` (State-Head Preimage Formalization):** Held (`HELD (PROPOSED)`) pending independent technical reproduction against actual implementation per audit finding SEC-04.
+
+### Open Questions (OQs) Status
+1. **Resolved:**
+   - `OQ-01`: Rejection routing and held-out dataset verified from research paper audit.
+   - `OQ-07`: Egress action monitor authority resolved by approval of `D-13` (`MR={DESTRUCTIVE, PRIVILEGED_ADMIN}`).
+   - `OQ-08`: Missing evidence resolution resolved by approval of `D-24` (monitors cannot relax `EVIDENCE_MISSING`).
+2. **Remaining Open (Requiring Evidence / Phase-Gate Resolution):**
+   - `OQ-02`, `OQ-03`: [P4] table discrepancies and parameters (Snehal).
+   - `OQ-04`: [P2] unaddressed notes (Karishma).
+   - `OQ-05`: [P1] LLM false alarm persistence (Shrishti, Phase 7).
+   - `OQ-06`: Tool binding mode (implicit, explicit, or both) (all, Phase 1).
+   - `OQ-09`: [P1] prompt text and repo state (Shrishti, Phase 7).
+   - `OQ-10`: Reviewer model realism (Snehal, Phase 8).
+   - `OQ-11`: Power analysis and template counts (Shrishti, Phase 5).
+   - `OQ-12`: Model selection, hosting, and budget (all, Phase 7).
+   - `OQ-13`: Payload retention/redaction in audit logs (Snehal, Phase 4).
+   - `OQ-14`: Latency budget and monitor timeout values (Candidate budget in doc 06 pending approval; Phase 6).
+   - `OQ-15`: Related work & literature tasks L-1..L-3 (Shrishti & Karishma, Phase 2).
+   - `OQ-16`: Authorship separation logistics (all, Phase 5).
+   - `OQ-17`: TRANSFORM scope (Karishma, After Phase 8).
+   - `OQ-18`: Adaptive attacker evaluation (Shrishti, After Phase 8).
+   - `OQ-19`: Academic deadlines and submission targets (all, Phase 1).
+   - `OQ-20`: Domain generality / single domain sufficiency (all, Phase 6).
+   - `OQ-21`: Formal Anomaly enum expansion vs open strings (all, Phase 2).
+   - `OQ-22`: Key rotation scheme in `EvidenceReceipt` (Akshat + Shrishti, Phase 3).
+   - `OQ-23`: Replay log external anchoring (Akshat + Shrishti, Phase 3/4).
 
 ---
 

@@ -88,13 +88,15 @@ def test_action_request_valid() -> None:
 @pytest.mark.unit
 def test_action_request_extra_fields_forbidden() -> None:
     with pytest.raises(ValidationError):
-        ActionRequest.model_validate({
-            "schema_version": "0.1.0",
-            "session_id": "sess_123",
-            "tool": "select_resource",
-            "arguments": {},
-            "unauthorized_field": "smuggled_payload",
-        })
+        ActionRequest.model_validate(
+            {
+                "schema_version": "0.1.0",
+                "session_id": "sess_123",
+                "tool": "select_resource",
+                "arguments": {},
+                "unauthorized_field": "smuggled_payload",
+            }
+        )
 
 
 @pytest.mark.unit
@@ -111,14 +113,16 @@ def test_canonical_action_validation() -> None:
     assert action.action_id == "act_001"
 
     with pytest.raises(ValidationError):
-        CanonicalAction.model_validate({
-            "action_id": "act_001",
-            "session_id": "sess_123",
-            "seq": "invalid_integer",
-            "tool": "select_resource",
-            "arguments": {},
-            "action_hash": "abc",
-        })
+        CanonicalAction.model_validate(
+            {
+                "action_id": "act_001",
+                "session_id": "sess_123",
+                "seq": "invalid_integer",
+                "tool": "select_resource",
+                "arguments": {},
+                "action_hash": "abc",
+            }
+        )
 
 
 @pytest.mark.unit

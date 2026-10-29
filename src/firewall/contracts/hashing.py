@@ -82,7 +82,7 @@ def compute_action_hash(
         "session_id": unicodedata.normalize("NFC", session_id),
         "seq": seq,
         "tool": unicodedata.normalize("NFC", tool),
-        "args": arguments
+        "args": arguments,
     }
     canonical_bytes = canonical_json(preimage, reject_floats=True)
     return hashlib.sha256(canonical_bytes).hexdigest()

@@ -48,10 +48,12 @@ def test_inv_07_provenance_tagging_enforced() -> None:
 
     # Validates that provenance must be a valid Provenance enum member
     with pytest.raises(ValidationError):
-        TaggedValue.model_validate({
-            "value": "PUBLIC",
-            "provenance": "FORGED_TRUSTED_SOURCE",
-        })
+        TaggedValue.model_validate(
+            {
+                "value": "PUBLIC",
+                "provenance": "FORGED_TRUSTED_SOURCE",
+            }
+        )
 
 
 @pytest.mark.invariant
@@ -61,10 +63,12 @@ def test_inv_04_action_request_fail_closed_on_extra_fields() -> None:
     Untrusted agent cannot smuggle unauthorized parameters or metadata.
     """
     with pytest.raises(ValidationError):
-        ActionRequest.model_validate({
-            "schema_version": "0.1.0",
-            "session_id": "sess_001",
-            "tool": "select_resource",
-            "arguments": {"resource_ref": "records"},
-            "bypass_firewall": True,
-        })
+        ActionRequest.model_validate(
+            {
+                "schema_version": "0.1.0",
+                "session_id": "sess_001",
+                "tool": "select_resource",
+                "arguments": {"resource_ref": "records"},
+                "bypass_firewall": True,
+            }
+        )
