@@ -100,6 +100,11 @@ def decide(
 
     # D5: Policy undetermined
     if policy_verdict == PolicyVerdict.UNDETERMINED:
+        if monitor_verdict == MonitorVerdict.BENIGN:
+            if tool_class is not None and tool_class in cfg.mandatory_review_classes:
+                return Decision.REVIEW, [f"CLASS_REQUIRES_REVIEW:{tool_class.value}"]
+            return Decision.REVIEW, ["UNDETERMINED_BENIGN_REQUIRES_REVIEW"]
+
         if cfg.monitor_authority == "none":
             # D5a: No monitor configured to resolve undetermined actions
             return Decision.REVIEW, ["NO_RULE_NO_MONITOR"]
@@ -109,13 +114,7 @@ def decide(
             return Decision.REVIEW, ["NO_AUTHORITY_TO_DECIDE"]
 
         # monitor_authority == "decide_undetermined":
-        if monitor_verdict == MonitorVerdict.BENIGN:
-            if tool_class is not None and tool_class in cfg.mandatory_review_classes:
-                # D5c: Action class is in Mandatory Review set -> require REVIEW
-                return Decision.REVIEW, [f"CLASS_REQUIRES_REVIEW:{tool_class.value}"]
-            # D5b: Benign verdict and not in mandatory review set -> ALLOW
-            return Decision.ALLOW, ["MONITOR_BENIGN"]
-        elif monitor_verdict == MonitorVerdict.SUSPICIOUS:
+        if monitor_verdict == MonitorVerdict.SUSPICIOUS:
             # D5d: Suspicious verdict -> suspicious_map
             return cfg.suspicious_map, ["MONITOR_SUSPICIOUS"]
         else:

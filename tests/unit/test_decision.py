@@ -5,12 +5,14 @@ Verifies:
 - Hard invariants: INV-03 (P-PROHIB), INV-04 (P-FAILCLOSED), P-MONO, P-NOLEAK
 """
 
+import pytest
 
 from firewall.contracts.enums import Decision, MonitorVerdict, PolicyVerdict, ToolClass
 from firewall.decision.combinator import DecisionConfig, decide
 
 
-def test_d1_invalid_request():
+@pytest.mark.unit
+def test_d1_invalid_request() -> None:
     """D1: Invalid request fails closed with DENY."""
     res, reasons = decide(valid=False, policy_verdict=PolicyVerdict.PERMIT)
     assert res == Decision.DENY
@@ -25,7 +27,8 @@ def test_d1_invalid_request():
     assert "UNKNOWN_TOOL:foo" in reasons2
 
 
-def test_d2_prohibit_supremacy():
+@pytest.mark.unit
+def test_d2_prohibit_supremacy() -> None:
     """D2 / INV-03 (P-PROHIB): Policy PROHIBIT always results in DENY, regardless of monitor."""
     for monitor_v in MonitorVerdict:
         for auth in ("none", "decide_undetermined", "escalate_only"):
@@ -41,7 +44,8 @@ def test_d2_prohibit_supremacy():
             assert any("POLICY_PROHIBIT" in r for r in reasons)
 
 
-def test_d3_missing_evidence():
+@pytest.mark.unit
+def test_d3_missing_evidence() -> None:
     """D3 / INV-04 (P-FAILCLOSED): Missing evidence always results in REVIEW."""
     for monitor_v in MonitorVerdict:
         res, reasons = decide(
@@ -54,7 +58,8 @@ def test_d3_missing_evidence():
         assert any("EVIDENCE_MISSING" in r for r in reasons)
 
 
-def test_d4a_permit_standard():
+@pytest.mark.unit
+def test_d4a_permit_standard() -> None:
     """D4a: PERMIT with non-escalating monitor authority results in ALLOW."""
     cfg = DecisionConfig(monitor_authority="decide_undetermined")
     res, reasons = decide(
@@ -67,7 +72,8 @@ def test_d4a_permit_standard():
     assert any("POLICY_PERMIT" in r for r in reasons)
 
 
-def test_d4b_d4c_d4d_permit_escalate_only():
+@pytest.mark.unit
+def test_d4b_d4c_d4d_permit_escalate_only() -> None:
     """D4b, D4c, D4d: PERMIT under escalate_only authority."""
     cfg = DecisionConfig(monitor_authority="escalate_only", suspicious_map=Decision.REVIEW)
 
@@ -109,7 +115,8 @@ def test_d4b_d4c_d4d_permit_escalate_only():
     assert res_unk == Decision.REVIEW
 
 
-def test_d5a_undetermined_no_monitor():
+@pytest.mark.unit
+def test_d5a_undetermined_no_monitor() -> None:
     """D5a: UNDETERMINED with monitor_authority = none results in REVIEW."""
     cfg = DecisionConfig(monitor_authority="none")
     res, reasons = decide(
@@ -121,23 +128,24 @@ def test_d5a_undetermined_no_monitor():
     assert "NO_RULE_NO_MONITOR" in reasons
 
 
-def test_d5b_d5c_undetermined_benign_mandatory_review():
-    """D5b & D5c: UNDETERMINED with BENIGN monitor verdict honors Mandatory Review classes."""
+@pytest.mark.unit
+def test_d5b_d5c_undetermined_benign_mandatory_review() -> None:
+    """D5b & D5c: UNDETERMINED with BENIGN monitor verdict produces REVIEW."""
     cfg = DecisionConfig(
         monitor_authority="decide_undetermined",
         mandatory_review_classes=(ToolClass.DESTRUCTIVE, ToolClass.PRIVILEGED_ADMIN),
     )
 
-    # Non-mandatory class: READ_LOW -> ALLOW (D5b)
-    res_allow, reasons_allow = decide(
+    # Agreed AASF semantic: UNDETERMINED + BENIGN -> REVIEW
+    res_review, reasons_review = decide(
         valid=True,
         policy_verdict=PolicyVerdict.UNDETERMINED,
         monitor_verdict=MonitorVerdict.BENIGN,
         tool_class=ToolClass.READ_LOW,
         config=cfg,
     )
-    assert res_allow == Decision.ALLOW
-    assert "MONITOR_BENIGN" in reasons_allow
+    assert res_review == Decision.REVIEW
+    assert "UNDETERMINED_BENIGN_REQUIRES_REVIEW" in reasons_review
 
     # Mandatory class: DESTRUCTIVE -> REVIEW (D5c)
     res_destr, reasons_destr = decide(
@@ -162,7 +170,8 @@ def test_d5b_d5c_undetermined_benign_mandatory_review():
     assert "CLASS_REQUIRES_REVIEW:PRIVILEGED_ADMIN" in reasons_admin
 
 
-def test_d5d_d5e_undetermined_suspicious_and_unknown():
+@pytest.mark.unit
+def test_d5d_d5e_undetermined_suspicious_and_unknown() -> None:
     """D5d & D5e: UNDETERMINED with SUSPICIOUS or UNKNOWN monitor verdict."""
     cfg = DecisionConfig(monitor_authority="decide_undetermined", suspicious_map=Decision.REVIEW)
 
@@ -188,7 +197,8 @@ def test_d5d_d5e_undetermined_suspicious_and_unknown():
     assert "MONITOR_UNAVAILABLE" in reasons_unk
 
 
-def test_p_failclosed_exhaustive():
+@pytest.mark.unit
+def test_p_failclosed_exhaustive() -> None:
     """
     Exhaustive property verification of P-FAILCLOSED:
     For all possible combinations where monitor verdict is UNKNOWN, decision is NEVER ALLOW.

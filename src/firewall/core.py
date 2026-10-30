@@ -146,6 +146,7 @@ class FirewallCore:
         self._action_seqs: dict[str, int] = {}
         self._in_flight: set[str] = set()  # session_ids with active requests
         self._actions_by_id: dict[str, CanonicalAction] = {}
+        self._ticket_state_heads: dict[str, str] = {}
 
     def _get_session_lock(self, session_id: str) -> threading.Lock:
         with self._global_lock:
@@ -530,6 +531,7 @@ class FirewallCore:
                     action=canonical_action,
                     summary=reviewer_view,
                 )
+                self._ticket_state_heads[ticket.ticket_id] = state.head_hash
                 self.audit_store.append(
                     session_id=session_id,
                     record_type="REVIEW_CREATED",
@@ -612,7 +614,47 @@ class FirewallCore:
 
             outcome_norm = outcome.strip().upper()
             if outcome_norm in ("APPROVE", "APPROVED"):
+                # a. Reload current session state
                 state = self._get_state(session_id)
+
+                # b. Re-evaluate original CanonicalAction using current PolicyEngine and Registry
+                policy_result = self.policy_engine.evaluate(
+                    action=action, state=state, registry=self.registry
+                )
+
+                # c. Compare review ticket's recorded state head with current state head
+                recorded_state_head = self._ticket_state_heads.get(ticket_id)
+                if recorded_state_head is None:
+                    for r in reversed(self.audit_store.get_records(session_id)):
+                        if r.record_type == "DECISION" and r.payload.get("action_id") == action.action_id:
+                            recorded_state_head = r.payload.get("state_head_hash")
+                            break
+
+                # d. If current policy verdict is PROHIBIT, return DENY and do not execute
+                if policy_result.verdict == PolicyVerdict.PROHIBIT:
+                    reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or ["POLICY_PROHIBIT"]
+                    self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
+                    return FirewallResponse(
+                        action_id=action.action_id,
+                        status="DENIED",
+                        decision=Decision.DENY,
+                        reason_codes=reasons,
+                        policy_verdict=PolicyVerdict.PROHIBIT,
+                        ticket_id=ticket_id,
+                    )
+
+                # e. If the state head changed since ticket creation, return DENY; do not execute directly
+                if recorded_state_head is not None and recorded_state_head != state.head_hash:
+                    return FirewallResponse(
+                        action_id=action.action_id,
+                        status="DENIED",
+                        decision=Decision.DENY,
+                        reason_codes=["STATE_CHANGED", f"RECORDED:{recorded_state_head}", f"CURRENT:{state.head_hash}"],
+                        policy_verdict=policy_result.verdict,
+                        ticket_id=ticket_id,
+                    )
+
+                # f. Only if policy is not PROHIBIT and state is fresh may it issue a token and execute
                 decision_id = f"dec_rev_{uuid.uuid4().hex[:10]}"
 
                 token = self.token_store.issue_token(
