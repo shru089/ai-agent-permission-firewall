@@ -16,6 +16,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from firewall.audit.store import AuditStore
+from firewall.cascade.adapter import CascadeAdapter, CascadeFailureReason
 from firewall.contracts.enums import (
     Decision,
     EventType,
@@ -46,6 +47,41 @@ from firewall.state.registry import Registry
 from firewall.state.views import build_monitor_view, build_reviewer_view
 
 
+class RouteTrace(BaseModel):
+    """
+    Route trace recording the execution path and metrics for an authorization decision.
+    Tracks whether fast path or cascade path was used, whether a monitor was invoked,
+    the final decision, failure or review reason, and decision latency.
+    Source: 05_TECHNICAL_SPEC.md §9, 06_EXPERIMENT_PROTOCOL.md §2
+    """
+
+    path: str  # "fast_path" | "cascade_path"
+    monitor_invoked: bool
+    final_decision: Decision
+    reason: Optional[str] = None
+    reason_codes: list[str] = Field(default_factory=list)
+    failure_reason: Optional[str] = None
+    review_reason: Optional[str] = None
+    latency_ms: float = 0.0
+    decision_latency_ms: float = 0.0
+    policy_verdict: Optional[PolicyVerdict] = None
+    monitor_verdict: Optional[MonitorVerdict] = None
+
+    model_config = ConfigDict(extra="forbid")
+
+    @property
+    def is_fast_path(self) -> bool:
+        return self.path == "fast_path"
+
+    @property
+    def is_cascade_path(self) -> bool:
+        return self.path == "cascade_path"
+
+    @property
+    def decision_latency(self) -> float:
+        return self.latency_ms
+
+
 class FirewallResponse(BaseModel):
     """
     Typed response returned by FirewallCore.submit() and resolve_review().
@@ -60,6 +96,7 @@ class FirewallResponse(BaseModel):
     monitor_verdict: Optional[MonitorVerdict] = None
     ticket_id: Optional[str] = None
     result: Optional[ResultEnvelope] = None
+    route_trace: Optional[RouteTrace] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -75,6 +112,7 @@ class FirewallCore:
         registry: Registry,
         policy_engine: Optional[PolicyEngine] = None,
         monitor: Optional[Monitor] = None,
+        cascade_adapter: Optional[CascadeAdapter] = None,
         decision_config: Optional[DecisionConfig] = None,
         audit_store: Optional[AuditStore] = None,
         token_store: Optional[TokenStore] = None,
@@ -93,6 +131,13 @@ class FirewallCore:
         self.executor = executor or ControlledExecutor(
             token_store=self.token_store, verifier=self.verifier
         )
+        if cascade_adapter is not None:
+            self.cascade_adapter = cascade_adapter
+            if self.monitor is None and cascade_adapter.monitor is not None:
+                if isinstance(cascade_adapter.monitor, Monitor):
+                    self.monitor = SafeMonitorWrapper(cascade_adapter.monitor)
+        else:
+            self.cascade_adapter = CascadeAdapter(monitor=self.monitor or monitor)
 
         # Session control state
         self._global_lock = threading.Lock()
@@ -118,6 +163,7 @@ class FirewallCore:
         Submit an agent action request to the firewall for authorization and execution.
         Guarantees single in-flight action per session (D-17).
         """
+        t_submit_start = time.perf_counter_ns()
         session_id = request.session_id
         session_lock = self._get_session_lock(session_id)
 
@@ -178,6 +224,20 @@ class FirewallCore:
                     validation_error=f"UNKNOWN_TOOL:{request.tool}",
                     config=self.decision_config,
                 )
+                t_latency_ms = (time.perf_counter_ns() - t_submit_start) / 1_000_000.0
+                route_trace = RouteTrace(
+                    path="fast_path",
+                    monitor_invoked=False,
+                    final_decision=dec,
+                    reason=reasons[0] if reasons else None,
+                    reason_codes=reasons,
+                    failure_reason=reasons[0] if reasons else None,
+                    review_reason=None,
+                    latency_ms=t_latency_ms,
+                    decision_latency_ms=t_latency_ms,
+                    policy_verdict=PolicyVerdict.UNDETERMINED,
+                    monitor_verdict=MonitorVerdict.NOT_CONSULTED,
+                )
                 self._record_decision_audit(
                     canonical_action,
                     self._get_state(session_id),
@@ -185,6 +245,8 @@ class FirewallCore:
                     reasons,
                     PolicyVerdict.UNDETERMINED,
                     MonitorVerdict.NOT_CONSULTED,
+                    timings={"decision_latency": t_latency_ms},
+                    route_trace=route_trace,
                 )
                 self._apply_terminal_event(session_id, canonical_action, EventType.ACTION_DENIED)
                 return FirewallResponse(
@@ -194,6 +256,7 @@ class FirewallCore:
                     reason_codes=reasons,
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.NOT_CONSULTED,
+                    route_trace=route_trace,
                 )
 
             # 5. Obtain current state
@@ -204,41 +267,187 @@ class FirewallCore:
             policy_result = self.policy_engine.evaluate(canonical_action, state, self.registry)
             t_policy_ms = (time.perf_counter_ns() - t_policy_start) / 1_000_000.0
 
-            # 7. Monitor consultation rule
+            # 7 & 8: Routing and Decision Path
             monitor_verdict = MonitorVerdict.NOT_CONSULTED
             monitor_assessment: Optional[MonitorAssessment] = None
-            should_consult_monitor = False
+            monitor_invoked = False
+            path = "fast_path"
+            failure_reason: Optional[str] = None
+            review_reason: Optional[str] = None
 
-            if self.monitor is not None:
-                if self.decision_config.monitor_authority == "escalate_only":
-                    should_consult_monitor = policy_result.verdict == PolicyVerdict.PERMIT
-                elif self.decision_config.monitor_authority == "decide_undetermined":
-                    should_consult_monitor = policy_result.verdict == PolicyVerdict.UNDETERMINED
+            if policy_result.verdict == PolicyVerdict.PROHIBIT:
+                # Rule: PROHIBIT -> DENY (Fast Path, INV-03)
+                path = "fast_path"
+                monitor_invoked = False
+                decision = Decision.DENY
+                reasons = (
+                    [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules]
+                    if policy_result.matched_rules
+                    else ["POLICY_PROHIBIT"]
+                )
+                reason_codes = reasons
+                reason = reasons[0]
+                failure_reason = reason
 
-            if should_consult_monitor and self.monitor is not None:
+            elif policy_result.verdict == PolicyVerdict.EVIDENCE_MISSING:
+                # Rule: EVIDENCE_MISSING -> REVIEW (Fast Path, INV-04)
+                path = "fast_path"
+                monitor_invoked = False
+                decision = Decision.REVIEW
+                missing_str = (
+                    ",".join(policy_result.missing_fields)
+                    if policy_result.missing_fields
+                    else ""
+                )
+                reasons = (
+                    [f"EVIDENCE_MISSING:{missing_str}"]
+                    if missing_str
+                    else ["EVIDENCE_MISSING"]
+                )
+                reason_codes = reasons
+                reason = reasons[0]
+                review_reason = reason
+
+            elif policy_result.verdict == PolicyVerdict.PERMIT:
+                # Policy PERMIT: check if escalate_only monitor is configured
+                path = "fast_path"
+                if (
+                    self.decision_config.monitor_authority == "escalate_only"
+                    and self.monitor is not None
+                ):
+                    monitor_invoked = True
+                    cand_id = getattr(self.monitor, "monitor_id", None)
+                    mon_id = cand_id if isinstance(cand_id, str) else "monitor"
+                    monitor_view = build_monitor_view(
+                        monitor_type=mon_id,
+                        action=canonical_action,
+                        state=state,
+                        registry=self.registry,
+                    )
+                    monitor_assessment = self.monitor.assess(monitor_view)
+                    monitor_verdict = monitor_assessment.verdict
+                    decision, reason_codes = decide(
+                        valid=True,
+                        policy_verdict=policy_result.verdict,
+                        monitor_verdict=monitor_verdict,
+                        tool_class=tool_info.tool_class,
+                        config=self.decision_config,
+                        matched_rules=policy_result.matched_rules,
+                        missing_fields=policy_result.missing_fields,
+                    )
+                    reason = reason_codes[0] if reason_codes else "POLICY_PERMIT"
+                    if decision == Decision.REVIEW:
+                        review_reason = reason
+                    elif decision == Decision.DENY:
+                        failure_reason = reason
+                else:
+                    monitor_invoked = False
+                    decision = Decision.ALLOW
+                    reasons = (
+                        [f"POLICY_PERMIT:{r}" for r in policy_result.matched_rules]
+                        if policy_result.matched_rules
+                        else ["POLICY_PERMIT"]
+                    )
+                    reason_codes = reasons
+                    reason = reasons[0]
+
+            elif policy_result.verdict == PolicyVerdict.UNDETERMINED:
+                # Rule: UNDETERMINED -> cascade adapter (Cascade Path)
+                path = "cascade_path"
+                adapter_mon = self.cascade_adapter.monitor
+                cand_id = getattr(adapter_mon, "monitor_id", None) if adapter_mon else None
+                mon_id = cand_id if isinstance(cand_id, str) else "cascade_monitor"
                 monitor_view = build_monitor_view(
-                    monitor_type=self.monitor.monitor_id,
+                    monitor_type=mon_id,
                     action=canonical_action,
                     state=state,
                     registry=self.registry,
                 )
-                monitor_assessment = self.monitor.assess(monitor_view)
-                monitor_verdict = monitor_assessment.verdict
+                cascade_res = self.cascade_adapter.decide(
+                    policy_verdict=PolicyVerdict.UNDETERMINED,
+                    action=canonical_action,
+                    view=monitor_view,
+                    tool=canonical_action.tool,
+                    arguments=canonical_action.arguments,
+                )
+                monitor_invoked = self.cascade_adapter.monitor is not None
+                monitor_verdict = cascade_res.monitor_verdict
 
-            # 8. Deterministic Decision Combinator
-            t_decide_start = time.perf_counter_ns()
-            decision, reason_codes = decide(
-                valid=True,
+                # Invariant: Never return ALLOW after a monitor failure (INV-04)
+                monitor_failed = (
+                    cascade_res.monitor_verdict == MonitorVerdict.UNKNOWN
+                    or cascade_res.error is not None
+                    or cascade_res.reason in [r.value for r in CascadeFailureReason]
+                )
+
+                if monitor_failed or cascade_res.decision == Decision.REVIEW:
+                    decision = Decision.REVIEW
+                    reason = cascade_res.reason
+                    reason_codes = cascade_res.reason_codes or [reason]
+                    review_reason = reason
+                    if cascade_res.error or monitor_failed:
+                        failure_reason = reason
+                elif cascade_res.decision == Decision.DENY:
+                    decision = Decision.DENY
+                    reason = cascade_res.reason
+                    reason_codes = cascade_res.reason_codes or [reason]
+                    failure_reason = reason
+                elif cascade_res.decision == Decision.ALLOW:
+                    # Enforce mandatory review classes (INV-04, D-5c)
+                    if tool_info.tool_class in self.decision_config.mandatory_review_classes:
+                        decision = Decision.REVIEW
+                        reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
+                        reason_codes = [reason]
+                        review_reason = reason
+                    else:
+                        decision = Decision.ALLOW
+                        reason = cascade_res.reason
+                        reason_codes = cascade_res.reason_codes or [reason]
+                else:
+                    # Defensive fallback: fail-closed to REVIEW
+                    decision = Decision.REVIEW
+                    reason = "UNRECOGNIZED_CASCADE_DECISION"
+                    reason_codes = ["UNRECOGNIZED_CASCADE_DECISION"]
+                    review_reason = reason
+
+                # Populate monitor_assessment for review ticket if applicable
+                monitor_assessment = MonitorAssessment(
+                    verdict=cascade_res.monitor_verdict,
+                    score=0.0 if decision == Decision.ALLOW else 1.0,
+                    rationale=cascade_res.reason,
+                    raw_output=cascade_res.raw_output,
+                    monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
+                    error=cascade_res.error,
+                )
+
+            else:
+                # Unexpected policy verdict -> fail-closed to DENY
+                path = "fast_path"
+                monitor_invoked = False
+                decision = Decision.DENY
+                reason = "UNRECOGNIZED_POLICY_VERDICT"
+                reason_codes = ["UNRECOGNIZED_POLICY_VERDICT", str(policy_result.verdict)]
+                failure_reason = reason
+
+            # Calculate decision latency
+            t_latency_ms = (time.perf_counter_ns() - t_submit_start) / 1_000_000.0
+
+            # Construct RouteTrace
+            route_trace = RouteTrace(
+                path=path,
+                monitor_invoked=monitor_invoked,
+                final_decision=decision,
+                reason=reason,
+                reason_codes=reason_codes,
+                failure_reason=failure_reason,
+                review_reason=review_reason,
+                latency_ms=t_latency_ms,
+                decision_latency_ms=t_latency_ms,
                 policy_verdict=policy_result.verdict,
                 monitor_verdict=monitor_verdict,
-                tool_class=tool_info.tool_class,
-                config=self.decision_config,
-                matched_rules=policy_result.matched_rules,
-                missing_fields=policy_result.missing_fields,
             )
-            t_decide_ms = (time.perf_counter_ns() - t_decide_start) / 1_000_000.0
 
-            # 9. Record Decision in Audit Store
+            # Record Decision in Audit Store
             self._record_decision_audit(
                 canonical_action,
                 state,
@@ -246,7 +455,8 @@ class FirewallCore:
                 reason_codes,
                 policy_result.verdict,
                 monitor_verdict,
-                timings={"policy": t_policy_ms, "decide": t_decide_ms},
+                timings={"policy": t_policy_ms, "decision_latency": t_latency_ms},
+                route_trace=route_trace,
             )
 
             # 10. Process Decision Outcome
@@ -284,6 +494,7 @@ class FirewallCore:
                         policy_verdict=policy_result.verdict,
                         monitor_verdict=monitor_verdict,
                         result=envelope,
+                        route_trace=route_trace,
                     )
                 else:
                     # Execution failed
@@ -303,6 +514,7 @@ class FirewallCore:
                         policy_verdict=policy_result.verdict,
                         monitor_verdict=monitor_verdict,
                         result=envelope,
+                        route_trace=route_trace,
                     )
 
             elif decision == Decision.REVIEW:
@@ -331,6 +543,7 @@ class FirewallCore:
                     policy_verdict=policy_result.verdict,
                     monitor_verdict=monitor_verdict,
                     ticket_id=ticket.ticket_id,
+                    route_trace=route_trace,
                 )
 
             else:  # Decision.DENY
@@ -342,6 +555,7 @@ class FirewallCore:
                     reason_codes=reason_codes,
                     policy_verdict=policy_result.verdict,
                     monitor_verdict=monitor_verdict,
+                    route_trace=route_trace,
                 )
 
         finally:
@@ -504,6 +718,7 @@ class FirewallCore:
         policy_verdict: PolicyVerdict,
         monitor_verdict: MonitorVerdict,
         timings: Optional[dict[str, float]] = None,
+        route_trace: Optional[RouteTrace] = None,
     ) -> None:
         record = DecisionRecord(
             decision_id=f"dec_{uuid.uuid4().hex[:12]}",
@@ -528,3 +743,9 @@ class FirewallCore:
             record_type="DECISION",
             payload=record.model_dump(),
         )
+        if route_trace is not None:
+            self.audit_store.append(
+                session_id=action.session_id,
+                record_type="ROUTE_TRACE",
+                payload=route_trace.model_dump(),
+            )
