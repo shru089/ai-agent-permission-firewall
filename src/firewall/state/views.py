@@ -73,7 +73,11 @@ def format_transcript(
                     parts.append(f"arguments={arguments}")
             if evt.token_id:
                 parts.append(f"token_id={evt.token_id}")
-            output = payload.get("output") or payload.get("free_text")
+            output = (
+                payload.get("output")
+                or payload.get("free_text")
+                or payload.get("error")
+            )
             if output is not None:
                 bounded_output = str(output)[:max_output_chars]
                 parts.append(f"output={bounded_output}")

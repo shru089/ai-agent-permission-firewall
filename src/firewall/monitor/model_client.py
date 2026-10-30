@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from firewall.contracts.enums import MonitorVerdict, ScoreKind
@@ -176,21 +176,42 @@ class ModelClient(Protocol):
         ...
 
 
-@dataclass
 class DeterministicMockModelClient:
     """
     Deterministic offline model client for testing and verification without live APIs.
     Records all calls for verification of information barriers and canary leakage.
     """
 
-    model_id: str = "deterministic_mock_v1"
-    default_response: str = (
-        '{"verdict": "BENIGN", "confidence": 0.95, "reasoning": "Mock analysis"}'
-    )
-    responses_by_pattern: Dict[str, str] = field(default_factory=dict)
-    simulate_timeout: bool = False
-    simulate_exception: Optional[Exception] = None
-    calls: List[Dict[str, Any]] = field(default_factory=list)
+    def __init__(
+        self,
+        model_id: str = "deterministic_mock_v1",
+        default_response: Optional[str] = None,
+        default_verdict: Optional[MonitorVerdict] = None,
+        default_confidence: float = 0.95,
+        default_reasoning: str = "Mock analysis",
+        responses_by_pattern: Optional[Dict[str, str]] = None,
+        simulate_timeout: bool = False,
+        simulate_exception: Optional[Exception] = None,
+    ) -> None:
+        self.model_id = model_id
+        if default_response is not None:
+            self.default_response = default_response
+        elif default_verdict is not None:
+            self.default_response = json.dumps({
+                "verdict": default_verdict.value,
+                "confidence": default_confidence,
+                "reasoning": default_reasoning,
+            })
+        else:
+            self.default_response = (
+                '{"verdict": "BENIGN", "confidence": 0.95, "reasoning": "Mock analysis"}'
+            )
+        self.responses_by_pattern = (
+            responses_by_pattern if responses_by_pattern is not None else {}
+        )
+        self.simulate_timeout = simulate_timeout
+        self.simulate_exception = simulate_exception
+        self.calls: List[Dict[str, Any]] = []
 
     def complete(
         self,
@@ -218,3 +239,10 @@ class DeterministicMockModelClient:
                 return resp
 
         return self.default_response
+
+    @property
+    def history(self) -> List[Dict[str, Any]]:
+        return self.calls
+
+    def set_canned_response(self, pattern: str, response: str) -> None:
+        self.responses_by_pattern[pattern] = response
