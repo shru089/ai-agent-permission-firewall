@@ -274,51 +274,31 @@ def run_h1_validation_on_dev(
     output_report_path: Path = Path("experiments/reports/H1_manipulation_check.md"),
 ) -> H1ValidationResult:
     """Executes H1 manipulation check validation and exports JSON artifact and markdown report."""
-    assert traces_path.exists(), f"Traces not found: {traces_path}"
-    assert labels_path.exists(), f"Labels not found: {labels_path}"
+    from experiments.datasets.dev.h1_impl import run_h1_check
 
-    traces = [json.loads(line) for line in traces_path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    labels = [json.loads(line) for line in labels_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    report = run_h1_check(
+        traces_path=traces_path,
+        labels_path=labels_path,
+        output_json_path=output_json_path,
+        output_report_path=output_report_path,
+    )
 
-    validator = H1ManipulationCheckValidator()
-    result = validator.validate_b3_determinism(traces, labels)
-
-    # 1. Write JSON artifact to experiments/datasets/dev/
-    output_json_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_json_path, "w", encoding="utf-8") as f:
-        json.dump(result.to_dict(), f, indent=2)
-
-    # 2. Write Markdown report to experiments/reports/
-    output_report_path.parent.mkdir(parents=True, exist_ok=True)
-    report_content = f"""# H1 Manipulation-Check Acceptance Report
-
-## Status: {result.status.value}
-
-## Reference & Exact Criterion
-- **Source Location:** `{result.criterion_source}`
-- **Quoted Acceptance Criterion:**
-  > "{result.quoted_criterion}"
-
-## Evaluated Arm & Dataset Context
-- **Target Arm:** `{result.arm}` (Action-Only Deterministic Stateless Policy)
-- **Dataset Partition:** Canonical DEV partition (`experiments/datasets/dev/`)
-- **Evaluation Domain:** Matched critical set $\\Omega_{{\\text{{crit}}}}$ of history-dependent scenario pairs
-- **Total Matched Pairs:** {result.pair_count} ({result.trace_count} traces)
-
-## Metric Evaluation
-- **True Positives ($TP$):** {result.tp}
-- **False Negatives ($FN$):** {result.fn}
-- **False Positives ($FP$):** {result.fp}
-- **True Negatives ($TN$):** {result.tn}
-- **Recall (Sensitivity):** {result.recall if result.recall is not None else "N/A"}
-- **False Positive Rate ($FPR$):** {result.fpr if result.fpr is not None else "N/A"}
-- **Computed Youden's $J$ ($Recall - FPR$):** **`{result.computed_j if result.computed_j is not None else "N/A"}`**
-
-## Acceptance Decision
-- **Decision:** **{result.status.value}**
-- **Reason:** {result.reason}
-- **Formal Invariant Guarantee:** By Action-D invariance, the proposed action $a_{{t^*}}$ is byte-for-byte identical between twin traces $\\tau^+$ and $\\tau^-$. Because B3 has zero access to prior history $H_t$ or typed state $S_t$, its decision on $\\tau^+$ and $\\tau^-$ is identical by construction, guaranteeing $Recall = FPR$ and $J = 0.0$ exactly.
-"""
-    output_report_path.write_text(report_content, encoding="utf-8")
-
-    return result
+    # Return H1ValidationResult interface for compatibility
+    return H1ValidationResult(
+        status=H1ValidationStatus(report.status.value),
+        arm="B3",
+        criterion_source=report.criterion_source,
+        quoted_criterion="B3: J = 0 exactly. Stochastic B4: |J| <= 0.03, 95% cluster-bootstrap CI includes 0.",
+        computed_j=report.computed_j,
+        recall=report.recall,
+        fpr=report.fpr,
+        tp=report.tp,
+        fn=report.fn,
+        fp=report.fp,
+        tn=report.tn,
+        pair_count=report.pair_count,
+        trace_count=report.trace_count,
+        reason=report.reason,
+        ci_lower=report.ci_lower,
+        ci_upper=report.ci_upper,
+    )

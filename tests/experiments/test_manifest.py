@@ -68,6 +68,8 @@ def test_no_untracked_files_in_dev_package() -> None:
         "h1_manipulation_check.json",
         "information_barrier_audit.json",
         "manifest.sha256",
+        "protocol.md",
+        "h1_impl.py",
     }
 
     unexpected = actual_files - allowed_files
