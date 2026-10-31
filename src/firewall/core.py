@@ -302,14 +302,10 @@ class FirewallCore:
                 monitor_invoked = False
                 decision = Decision.REVIEW
                 missing_str = (
-                    ",".join(policy_result.missing_fields)
-                    if policy_result.missing_fields
-                    else ""
+                    ",".join(policy_result.missing_fields) if policy_result.missing_fields else ""
                 )
                 reasons = (
-                    [f"EVIDENCE_MISSING:{missing_str}"]
-                    if missing_str
-                    else ["EVIDENCE_MISSING"]
+                    [f"EVIDENCE_MISSING:{missing_str}"] if missing_str else ["EVIDENCE_MISSING"]
                 )
                 reason_codes = reasons
                 reason = reasons[0]
@@ -324,9 +320,8 @@ class FirewallCore:
                     reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
                     reason_codes = [reason]
                     review_reason = reason
-                    if (
-                        self.monitor is not None
-                        or (self.cascade_adapter and self.cascade_adapter.monitor is not None)
+                    if self.monitor is not None or (
+                        self.cascade_adapter and self.cascade_adapter.monitor is not None
                     ):
                         monitor_invoked = True
                         active_mon = self.monitor or self.cascade_adapter
@@ -356,12 +351,9 @@ class FirewallCore:
                                 monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
                                 error=advisory.error,
                             )
-                elif (
-                    self.decision_config.monitor_authority == "escalate_only"
-                    and (
-                        self.monitor is not None
-                        or (self.cascade_adapter and self.cascade_adapter.monitor is not None)
-                    )
+                elif self.decision_config.monitor_authority == "escalate_only" and (
+                    self.monitor is not None
+                    or (self.cascade_adapter and self.cascade_adapter.monitor is not None)
                 ):
                     monitor_invoked = True
                     active_mon = self.monitor or self.cascade_adapter
@@ -446,9 +438,7 @@ class FirewallCore:
                 if tool_info.tool_class in self.decision_config.mandatory_review_classes:
                     reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
                     reason_codes = (
-                        [reason, cascade_res.reason]
-                        if cascade_res.reason != reason
-                        else [reason]
+                        [reason, cascade_res.reason] if cascade_res.reason != reason else [reason]
                     )
                     review_reason = reason
                 elif (
@@ -490,7 +480,6 @@ class FirewallCore:
                     monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
                     error=cascade_res.error,
                 )
-
 
             else:
                 # Unexpected policy verdict -> fail-closed to DENY
@@ -704,10 +693,9 @@ class FirewallCore:
 
                 # d. If current policy verdict is PROHIBIT, return DENY and do not execute
                 if policy_result.verdict == PolicyVerdict.PROHIBIT:
-                    reasons = (
-                        [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules]
-                        or ["POLICY_PROHIBIT"]
-                    )
+                    reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or [
+                        "POLICY_PROHIBIT"
+                    ]
                     reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
                     self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(

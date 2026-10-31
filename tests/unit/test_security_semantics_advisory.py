@@ -23,20 +23,23 @@ from firewall.contracts.enums import (
     EventType,
     MonitorVerdict,
     PolicyVerdict,
+    Provenance,
     ToolClass,
 )
 from firewall.contracts.models import (
     ActionRequest,
     CanonicalAction,
+    Event,
     MonitorAssessment,
     ResourceRef,
     StateEventEnvelope,
+    TaggedValue,
 )
 from firewall.core import FirewallCore
 from firewall.decision.combinator import DecisionConfig, decide
 from firewall.state.engine import apply_event, initial_state
 from firewall.state.registry import Registry
-from firewall.state.views import build_monitor_view
+from firewall.state.views import build_monitor_view, format_transcript
 
 
 @pytest.fixture
@@ -430,7 +433,8 @@ def test_case_12_allow_plus_suspicious_elevated_risk_equals_review(test_registry
 def test_case_13_allow_plus_benign_low_risk_for_non_mandatory_tool_may_allow(
     test_registry: Registry,
 ) -> None:
-    """Case 13: Policy PERMIT + BENIGN/LOW_RISK may ALLOW if all checks pass."""
+    """Case 13: Policy PERMIT + BENIGN/LOW_RISK for non-mandatory tool may ALLOW
+    only if all checks pass."""
     cfg = DecisionConfig(monitor_authority="escalate_only")
     dec, reasons = decide(
         valid=True,
@@ -664,7 +668,9 @@ def test_case_20_monitor_mutation_of_state_summary_does_not_change_original_stat
 
 
 @pytest.mark.unit
-def test_case_21_sensitive_fields_not_exposed_through_monitor_view(test_registry: Registry) -> None:
+def test_case_21_sensitive_fields_not_exposed_through_monitor_view(
+    test_registry: Registry,
+) -> None:
     """Case 21: Sensitive fields (tokens, passwords, keys) are not exposed through MonitorView."""
     action = CanonicalAction(
         action_id="act_iso_21",
@@ -841,3 +847,148 @@ def test_case_24_review_approval_can_execute_only_when_policy_and_state_remain_v
     assert resolve_resp.result is not None
     assert resolve_resp.result.has_value is True
     assert resolve_resp.result.error is None
+
+
+# ==============================================================================
+# Case 25: Information-Barrier Credential Scrubbing Verification
+# ==============================================================================
+
+
+@pytest.mark.unit
+def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scrubbed(
+    test_registry: Registry,
+) -> None:
+    """Case 25: Synthetic secrets planted in transcript output, free_text, error,
+    and nested content cannot leak into monitor-visible representations."""
+    planted_secrets = [
+        "secret_token_live_12345",
+        "ak_live_xyz987654321",
+        "super_secret_db_pass",
+        "cs_top_secret_key",
+        "raw_secret_key_nested",
+        "nested_pwd_val_999",
+        "supersecret_token_in_envelope",
+    ]
+
+    events = [
+        # Envelope with sensitive string in output and error
+        StateEventEnvelope(
+            session_id="sess_sec25",
+            seq=1,
+            prior_head="GENESIS",
+            event_type=EventType.EXECUTED.value,
+            action_id="act_sec25_1",
+            token_id="tok_1",
+            payload={
+                "tool": "select_resource",
+                "arguments": {"resource_ref": "customer_records"},
+                "output": (
+                    "Export finished with token=secret_token_live_12345 and "
+                    "api_key=ak_live_xyz987654321"
+                ),
+                "error": (
+                    "Connection error with password='super_secret_db_pass' and "
+                    "client_secret=cs_top_secret_key"
+                ),
+            },
+        ),
+        # Envelope with nested dictionary secrets
+        StateEventEnvelope(
+            session_id="sess_sec25",
+            seq=2,
+            prior_head="h1",
+            event_type=EventType.EXECUTED.value,
+            action_id="act_sec25_2",
+            token_id="tok_2",
+            payload={
+                "tool": "configure_destination",
+                "arguments": {"destination_ref": "external_storage"},
+                "free_text": (
+                    "Agent user message Bearer "
+                    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.t-IDN secretly"
+                ),
+                "output": {
+                    "sensitive_dict": {
+                        "api_key": "raw_secret_key_nested",
+                        "nested": {"password": "nested_pwd_val_999"},
+                    },
+                    "safe_metric": 42,
+                },
+            },
+        ),
+        # Event with PEM private key in free_text and sensitive arguments
+        Event(
+            event_id="evt_sec25_3",
+            session_id="sess_sec25",
+            seq=3,
+            type=EventType.EXECUTED.value,
+            action_id="act_sec25_3",
+            fields={
+                "tool": TaggedValue(
+                    value="validate_schema",
+                    provenance=Provenance.TOOL_TYPED,
+                ),
+                "arguments": TaggedValue(
+                    value={"auth_token": "supersecret_token_in_envelope", "safe_field": "ok"},
+                    provenance=Provenance.TOOL_TYPED,
+                ),
+            },
+            free_text=(
+                "-----BEGIN RSA PRIVATE KEY-----\n"
+                "MIIEowIBAAKCAQEA0...\n"
+                "-----END RSA PRIVATE KEY-----"
+            ),
+        ),
+    ]
+
+    # 1. format_transcript direct audit
+    formatted = format_transcript(events)
+    for secret in planted_secrets:
+        assert secret not in formatted, f"Secret {secret} leaked into format_transcript output!"
+    assert "-----BEGIN RSA PRIVATE KEY-----" not in formatted
+
+    # Preserved safe data
+    assert "customer_records" in formatted
+    assert "external_storage" in formatted
+    assert "safe_metric" in formatted
+    assert "42" in formatted
+
+    # 2. build_monitor_view projection audit
+    action = CanonicalAction(
+        action_id="act_sec25_cur",
+        session_id="sess_sec25",
+        seq=4,
+        tool="execute_export",
+        arguments={"safe_arg": "public_data"},
+        action_hash="hash_sec25",
+    )
+    state = initial_state("sess_sec25")
+
+    # Transcript monitor view
+    view_t = build_monitor_view(
+        monitor_type="transcript",
+        action=action,
+        state=state,
+        registry=test_registry,
+        history=events,
+    )
+    assert view_t.transcript is not None
+    view_dump_str = str(view_t.model_dump())
+    for secret in planted_secrets:
+        assert secret not in view_t.transcript, f"Secret {secret} leaked into view.transcript!"
+        assert secret not in view_dump_str, f"Secret {secret} leaked into view model_dump!"
+    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_t.transcript
+    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_dump_str
+
+    # Hybrid monitor view
+    view_h = build_monitor_view(
+        monitor_type="hybrid",
+        action=action,
+        state=state,
+        registry=test_registry,
+        history=events,
+    )
+    view_h_str = str(view_h.model_dump())
+    for secret in planted_secrets:
+        assert secret not in view_h_str, f"Secret {secret} leaked into hybrid view!"
+    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_h_str

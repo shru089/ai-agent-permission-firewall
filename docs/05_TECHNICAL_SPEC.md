@@ -64,15 +64,69 @@ All modules use these models; none defines its own. Version constant `CONTRACTS_
 ### 3.1 Enumerations
 
 ```python
-class Decision(str, Enum):        ALLOW="ALLOW"; DENY="DENY"; REVIEW="REVIEW"
-class PolicyVerdict(str, Enum):   PROHIBIT="PROHIBIT"; PERMIT="PERMIT"; UNDETERMINED="UNDETERMINED"; EVIDENCE_MISSING="EVIDENCE_MISSING"
-class MonitorVerdict(str, Enum):  BENIGN="BENIGN"; SUSPICIOUS="SUSPICIOUS"; UNKNOWN="UNKNOWN"; NOT_CONSULTED="NOT_CONSULTED"
-class ScoreKind(str, Enum):       NONE; HEURISTIC_RISK; MODEL_PROBABILITY_UNCALIBRATED; MODEL_PROBABILITY_CALIBRATED; MODEL_VERBALIZED_CONFIDENCE
-class ToolClass(str, Enum):       READ_LOW; READ_SENSITIVE; WRITE_INTERNAL; EGRESS_EXTERNAL; DESTRUCTIVE; PRIVILEGED_ADMIN
-class Classification(str, Enum):  PUBLIC; INTERNAL; CONFIDENTIAL; UNKNOWN
-class Zone(str, Enum):            INTERNAL; EXTERNAL; UNKNOWN
-class Provenance(str, Enum):      GATEWAY; REGISTRY; TOOL_TYPED; TOOL_FREETEXT; AGENT_CLAIM
-class ExecStatus(str, Enum):      EXECUTED; FAILED; EXEC_UNKNOWN; NOT_EXECUTED
+class Decision(str, Enum):
+    ALLOW = "ALLOW"
+    DENY = "DENY"
+    REVIEW = "REVIEW"
+
+
+class PolicyVerdict(str, Enum):
+    PROHIBIT = "PROHIBIT"
+    PERMIT = "PERMIT"
+    UNDETERMINED = "UNDETERMINED"
+    EVIDENCE_MISSING = "EVIDENCE_MISSING"
+
+
+class MonitorVerdict(str, Enum):
+    BENIGN = "BENIGN"
+    SUSPICIOUS = "SUSPICIOUS"
+    UNKNOWN = "UNKNOWN"
+    NOT_CONSULTED = "NOT_CONSULTED"
+
+
+class ScoreKind(str, Enum):
+    NONE
+    HEURISTIC_RISK
+    MODEL_PROBABILITY_UNCALIBRATED
+    MODEL_PROBABILITY_CALIBRATED
+    MODEL_VERBALIZED_CONFIDENCE
+
+
+class ToolClass(str, Enum):
+    READ_LOW
+    READ_SENSITIVE
+    WRITE_INTERNAL
+    EGRESS_EXTERNAL
+    DESTRUCTIVE
+    PRIVILEGED_ADMIN
+
+
+class Classification(str, Enum):
+    PUBLIC
+    INTERNAL
+    CONFIDENTIAL
+    UNKNOWN
+
+
+class Zone(str, Enum):
+    INTERNAL
+    EXTERNAL
+    UNKNOWN
+
+
+class Provenance(str, Enum):
+    GATEWAY
+    REGISTRY
+    TOOL_TYPED
+    TOOL_FREETEXT
+    AGENT_CLAIM
+
+
+class ExecStatus(str, Enum):
+    EXECUTED
+    FAILED
+    EXEC_UNKNOWN
+    NOT_EXECUTED
 ```
 
 `Provenance` values `TOOL_FREETEXT` and `AGENT_CLAIM` are **never** read by `Φ` for security-relevant fields (`INV-07`).
@@ -80,83 +134,121 @@ class ExecStatus(str, Enum):      EXECUTED; FAILED; EXEC_UNKNOWN; NOT_EXECUTED
 ### 3.2 Core models (abridged)
 
 ```python
-class ActionRequest(BaseModel):                      # from the agent (untrusted)
-    schema_version: str                              # contracts version
+class ActionRequest(BaseModel):  # from the agent (untrusted)
+    schema_version: str  # contracts version
     session_id: str
     tool: str
-    arguments: dict[str, JSONScalarOrList]           # validated per tool schema in the registry
-    declared_intent: str | None = None               # logged only; never used for decisions or reviewer summaries
+    arguments: dict[str, JSONScalarOrList]  # validated per tool schema in the registry
+    declared_intent: str | None = (
+        None  # logged only; never used for decisions or reviewer summaries
+    )
     model_config = ConfigDict(extra="forbid")
 
-class CanonicalAction(BaseModel):                    # server-assigned
-    action_id: str                                   # UUID
+
+class CanonicalAction(BaseModel):  # server-assigned
+    action_id: str  # UUID
     session_id: str
-    seq: int                                         # monotonic per session, assigned by gateway
+    seq: int  # monotonic per session, assigned by gateway
     tool: str
     arguments: dict
-    action_hash: str                                 # SHA-256, see §4
+    action_hash: str  # SHA-256, see §4
 
-class Event(BaseModel):                              # one element of H_t
-    event_id: str; session_id: str; seq: int
-    type: Literal["ACTION_RECEIVED","ACTION_DENIED","EXECUTED","FAILED","EXEC_UNKNOWN","REVIEW_RESOLVED"]
+
+class Event(BaseModel):  # one element of H_t
+    event_id: str
+    session_id: str
+    seq: int
+    type: Literal[
+        "ACTION_RECEIVED", "ACTION_DENIED", "EXECUTED", "FAILED", "EXEC_UNKNOWN", "REVIEW_RESOLVED"
+    ]
     action_id: str
-    fields: dict[str, TaggedValue]                   # TaggedValue = {value, provenance}
-    free_text: str | None                            # tool-returned text; provenance TOOL_FREETEXT
+    fields: dict[str, TaggedValue]  # TaggedValue = {value, provenance}
+    free_text: str | None  # tool-returned text; provenance TOOL_FREETEXT
     decision: Decision | None
 
-class SessionState(BaseModel):                       # S_t (data-export domain)
+
+class SessionState(BaseModel):  # S_t (data-export domain)
     state_version: str
     head_hash: str
-    bound_resource: ResourceRef | None               # implicit binding mode
-    selected_resources: list[ResourceRef]            # each: ref, classification (REGISTRY), selected_seq
-    jobs: dict[str, ExportJob]                       # job_id → resource_refs, destination_ref, zone, created_seq
-    destination: DestinationRef | None               # implicit binding mode
+    bound_resource: ResourceRef | None  # implicit binding mode
+    selected_resources: list[ResourceRef]  # each: ref, classification (REGISTRY), selected_seq
+    jobs: dict[str, ExportJob]  # job_id → resource_refs, destination_ref, zone, created_seq
+    destination: DestinationRef | None  # implicit binding mode
     job_created: bool
-    egress_counters: dict[Zone, EgressCounter]       # rows/bytes executed per zone
-    anomalies: list[Anomaly]                         # CONFLICTING_SELECTION, UNKNOWN_CLASSIFICATION, …
+    egress_counters: dict[Zone, EgressCounter]  # rows/bytes executed per zone
+    anomalies: list[Anomaly]  # CONFLICTING_SELECTION, UNKNOWN_CLASSIFICATION, …
+
 
 class PolicyResult(BaseModel):
     verdict: PolicyVerdict
-    matched_rules: list[str]; maybe_rules: list[str]
+    matched_rules: list[str]
+    maybe_rules: list[str]
     missing_fields: list[str]
-    policy_hash: str; registry_hash: str
+    policy_hash: str
+    registry_hash: str
 
-class MonitorView(BaseModel):                        # allow-listed projection π_m — see §8
+
+class MonitorView(BaseModel):  # allow-listed projection π_m — see §8
     monitor_id: str
     action: CanonicalAction
-    registry_facts: dict                             # facts about entities named in the action only
+    registry_facts: dict  # facts about entities named in the action only
     goal: dict | None
     policy_text: str | None
-    transcript: str | None                           # only for TranscriptMonitor
-    state_summary: dict | None                       # only for HybridMonitor (typed fields + event refs)
+    transcript: str | None  # only for TranscriptMonitor
+    state_summary: dict | None  # only for HybridMonitor (typed fields + event refs)
     # NO label fields, no future actions, no scenario metadata, by construction
+
 
 class MonitorAssessment(BaseModel):
     verdict: MonitorVerdict
     score: float | None = None
     score_kind: ScoreKind = ScoreKind.NONE
-    rationale: str | None                            # free text, logged only
-    raw_output: str | None                           # stored separately from parsed verdict
-    model_id: str | None; prompt_hash: str | None; monitor_version: str
-    latency_ms: float; error: str | None = None
+    rationale: str | None  # free text, logged only
+    raw_output: str | None  # stored separately from parsed verdict
+    model_id: str | None
+    prompt_hash: str | None
+    monitor_version: str
+    latency_ms: float
+    error: str | None = None
+
 
 class DecisionRecord(BaseModel):
-    decision_id: str; action_id: str; action_hash: str; state_head_hash: str
-    decision: Decision; reason_codes: list[str]; evidence_refs: list[str]
-    policy_verdict: PolicyVerdict; monitor_verdict: MonitorVerdict
-    versions: VersionSet                             # contracts, policy_hash, registry_hash, monitor_version, prompt_hash, firewall_config_hash
-    timings_ms: dict[str, float]                     # validate, state_view, policy, monitor, decide, audit_write, total
+    decision_id: str
+    action_id: str
+    action_hash: str
+    state_head_hash: str
+    decision: Decision
+    reason_codes: list[str]
+    evidence_refs: list[str]
+    policy_verdict: PolicyVerdict
+    monitor_verdict: MonitorVerdict
+    versions: VersionSet  # contracts, policy_hash, registry_hash, monitor_version, prompt_hash, firewall_config_hash
+    timings_ms: dict[
+        str, float
+    ]  # validate, state_view, policy, monitor, decide, audit_write, total
+
 
 class AuthorizationToken(BaseModel):
-    token_id: str; action_id: str; action_hash: str; state_head_hash: str
-    decision_id: str; nonce: str; expires_at_ms: int
+    token_id: str
+    action_id: str
+    action_hash: str
+    state_head_hash: str
+    decision_id: str
+    nonce: str
+    expires_at_ms: int
     # single-use flag lives in the DB, flipped atomically by the executor
 
+
 class ReviewTicket(BaseModel):
-    ticket_id: str; action_id: str; action_hash: str; created_ms: int; expires_ms: int
-    status: Literal["PENDING","APPROVED","REJECTED","EXPIRED","EXECUTED","STALE"]
-    summary: ReviewerView                            # gateway-generated from typed fields only
-    resolved_by: str | None; resolved_ms: int | None
+    ticket_id: str
+    action_id: str
+    action_hash: str
+    created_ms: int
+    expires_ms: int
+    status: Literal["PENDING", "APPROVED", "REJECTED", "EXPIRED", "EXECUTED", "STALE"]
+    summary: ReviewerView  # gateway-generated from typed fields only
+    resolved_by: str | None
+    resolved_ms: int | None
 ```
 
 ---
@@ -388,6 +480,7 @@ Denied or rejected actions append `ACTION_DENIED` and do not change security-rel
 class Monitor(Protocol):
     monitor_id: str
     version: str
+
     def assess(self, view: MonitorView, *, timeout_ms: int | None) -> MonitorAssessment: ...
 ```
 

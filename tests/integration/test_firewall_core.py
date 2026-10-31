@@ -468,25 +468,29 @@ def test_15_review_approval_re_evaluates_policy_prohibit(test_registry: Registry
     fw = FirewallCore(registry=test_registry)
     session_id = "sess_15_re_eval"
 
-    resp = fw.submit(ActionRequest(
-        session_id=session_id,
-        tool="execute_export",
-        arguments={},
-    ))
+    resp = fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="execute_export",
+            arguments={},
+        )
+    )
     assert resp.status == "PENDING_REVIEW"
     ticket_id = resp.ticket_id
     assert ticket_id is not None
 
     # Simulate state transition making the action PROHIBIT before review approval
     state = fw._get_state(session_id)
-    fw._states[session_id] = state.model_copy(update={
-        "bound_resource": ResourceRef(
-            ref="customer_records",
-            classification=Classification.CONFIDENTIAL,
-            selected_seq=1,
-        ),
-        "destination": DestinationRef(ref="external_storage", zone=Zone.EXTERNAL),
-    })
+    fw._states[session_id] = state.model_copy(
+        update={
+            "bound_resource": ResourceRef(
+                ref="customer_records",
+                classification=Classification.CONFIDENTIAL,
+                selected_seq=1,
+            ),
+            "destination": DestinationRef(ref="external_storage", zone=Zone.EXTERNAL),
+        }
+    )
 
     res_resp = fw.resolve_review(ticket_id, "APPROVE", "alice")
     assert res_resp.status == "DENIED"

@@ -55,6 +55,7 @@ from experiments.metrics import (  # noqa: E402
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _dp(
     y: int,
     decision: str,
@@ -107,8 +108,8 @@ def _trace(
 # 1. Confusion matrix construction
 # ===========================================================================
 
-class TestBuildConfusionMatrix:
 
+class TestBuildConfusionMatrix:
     def test_all_correct_flags(self):
         pts = [
             _dp(1, "DENY"),
@@ -143,9 +144,9 @@ class TestBuildConfusionMatrix:
 
     def test_mixed(self):
         pts = [
-            _dp(1, "DENY"),   # TP
+            _dp(1, "DENY"),  # TP
             _dp(1, "ALLOW"),  # FN
-            _dp(0, "REVIEW"), # FP
+            _dp(0, "REVIEW"),  # FP
             _dp(0, "ALLOW"),  # TN
         ]
         cm = build_confusion_matrix(pts)
@@ -211,8 +212,8 @@ class TestBuildConfusionMatrix:
 # 2. TF derived metrics — normal cases
 # ===========================================================================
 
-class TestTFMetricsNormal:
 
+class TestTFMetricsNormal:
     def _balanced(self) -> ConfusionMatrix:
         """2 TP, 0 FN, 0 FP, 2 TN → perfect detection."""
         return ConfusionMatrix(tp=2, fn=0, fp=0, tn=2)
@@ -278,8 +279,8 @@ class TestTFMetricsNormal:
 #    Never substitute 0 or 1."
 # ===========================================================================
 
-class TestZeroDenominator:
 
+class TestZeroDenominator:
     def test_recall_undefined_when_no_positives(self):
         cm = ConfusionMatrix(tp=0, fn=0, fp=3, tn=2)
         assert recall(cm) is None
@@ -353,8 +354,8 @@ class TestZeroDenominator:
 #     Teacher-Forced (TF) mode."
 # ===========================================================================
 
-class TestTFvsOLSeparation:
 
+class TestTFvsOLSeparation:
     def test_ol_metrics_do_not_expose_confusion_matrix(self):
         """OLMetrics has no tp/fp/tn/fn attributes — separation is structural."""
         m = OLMetrics()
@@ -379,8 +380,8 @@ class TestTFvsOLSeparation:
         """
         attack_trace = _trace(
             is_attack=True,
-            detected=True,   # REVIEW was issued
-            prevented=False, # oracle reviewer approved — action executed
+            detected=True,  # REVIEW was issued
+            prevented=False,  # oracle reviewer approved — action executed
         )
         benign_trace = _trace(is_attack=False, task_success=True)
 
@@ -425,8 +426,8 @@ class TestTFvsOLSeparation:
 # 5. M-VIOL invariant — doc/03 §8.3, doc/06 §H4
 # ===========================================================================
 
-class TestMVIOL:
 
+class TestMVIOL:
     def test_no_violations_when_prohibit_not_executed(self):
         pts = [
             _dp(1, "DENY", policy_verdict="PROHIBIT", executed=False),
@@ -469,8 +470,8 @@ class TestMVIOL:
 #    B3 and B4 on history-dependent pairs must produce J=0 by construction.
 # ===========================================================================
 
-class TestYoudenJManipulationCheck:
 
+class TestYoudenJManipulationCheck:
     def test_j_zero_when_recall_equals_fpr(self):
         """
         When an arm cannot distinguish attacks from benign twins,
@@ -505,8 +506,8 @@ class TestYoudenJManipulationCheck:
 # 7. D-32 [P1] Table I fixture check
 # ===========================================================================
 
-class TestP1Fixtures:
 
+class TestP1Fixtures:
     def test_p1_fpr_distributed_negatives(self):
         """
         [P1] Table II: FPR on distributed negatives = 27/36.
@@ -540,8 +541,8 @@ class TestP1Fixtures:
 # 8. OL metrics — normal cases
 # ===========================================================================
 
-class TestOLMetricsNormal:
 
+class TestOLMetricsNormal:
     def test_perfect_detection_and_prevention(self):
         attack = _trace(is_attack=True, detected=True, prevented=True)
         benign = _trace(is_attack=False, task_success=True, uninterrupted=True)
@@ -655,13 +656,12 @@ class TestOLMetricsNormal:
         assert m.m_lts == pytest.approx(0.0)  # task did not succeed
 
 
-
 # ===========================================================================
 # 9. Policy fidelity diagnostics
 # ===========================================================================
 
-class TestPolicyFidelity:
 
+class TestPolicyFidelity:
     def test_perfect_policy(self):
         pts = [
             _dp(1, "DENY", policy_verdict="PROHIBIT"),
@@ -692,14 +692,14 @@ class TestPolicyFidelity:
 # 10. Latency metrics
 # ===========================================================================
 
-class TestLatencyStats:
 
+class TestLatencyStats:
     def test_basic_percentiles(self):
         pts = [_dp(0, "ALLOW", latency_ms=float(i)) for i in range(1, 11)]
         stats = build_latency_stats(pts)
         assert stats.n_measured == 10
-        assert stats.median_ms == pytest.approx(5.0)   # nearest-rank p50 of 1..10
-        assert stats.p95_ms == pytest.approx(10.0)     # ceil(0.95*10)=10th → 10
+        assert stats.median_ms == pytest.approx(5.0)  # nearest-rank p50 of 1..10
+        assert stats.p95_ms == pytest.approx(10.0)  # ceil(0.95*10)=10th → 10
 
     def test_none_latency_excluded(self):
         pts = [
@@ -746,8 +746,8 @@ class TestLatencyStats:
 # 11. Zero-event upper bounds  (doc/03 §12.6)
 # ===========================================================================
 
-class TestZeroEventBounds:
 
+class TestZeroEventBounds:
     def test_n_250_approx_119_bps(self):
         """n=250: doc says ≈1.19%."""
         bound = zero_event_upper_bound_95(250)
@@ -806,8 +806,8 @@ class TestZeroEventBounds:
 # 12. Monitor quality stats
 # ===========================================================================
 
-class TestMonitorQualityStats:
 
+class TestMonitorQualityStats:
     def test_rates_computed_correctly(self):
         mq = MonitorQualityStats(
             n_invocations=10,
@@ -818,4 +818,3 @@ class TestMonitorQualityStats:
         assert mq.parse_error_rate == pytest.approx(0.2)
         assert mq.timeout_rate == pytest.approx(0.1)
         assert mq.unknown_rate == pytest.approx(0.3)
-

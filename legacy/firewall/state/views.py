@@ -75,9 +75,7 @@ def build_state_summary(
     Builds allow-listed typed state summary for HybridMonitor projection.
     Contains only typed fields and event references; no labels or oracle data.
     """
-    event_refs = [
-        evt.action_id for evt in events if hasattr(evt, "action_id") and evt.action_id
-    ]
+    event_refs = [evt.action_id for evt in events if hasattr(evt, "action_id") and evt.action_id]
     return {
         "bound_resource": state.bound_resource.model_dump() if state.bound_resource else None,
         "selected_resources": [r.model_dump() for r in state.selected_resources],

@@ -175,7 +175,9 @@ def test_undetermined_calls_monitor_deny() -> None:
 
 @pytest.mark.unit
 def test_undetermined_with_string_decision_allow() -> None:
-    """Monitor returning string 'PASS' / 'ALLOW' maps to advisory LOW_RISK, not Decision.ALLOW."""
+    """Monitor returning valid string 'PASS' / 'ALLOW' maps to advisory
+    LOW_RISK, not Decision.ALLOW.
+    """
     fake_monitor = MagicMock(return_value="PASS")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
@@ -186,7 +188,9 @@ def test_undetermined_with_string_decision_allow() -> None:
 
 @pytest.mark.unit
 def test_undetermined_with_string_decision_fail() -> None:
-    """String 'FAIL' / 'DENY' from monitor maps to advisory ELEVATED_RISK, not Decision.DENY."""
+    """Monitor returning valid string 'FAIL' / 'DENY' maps to advisory
+    ELEVATED_RISK, not Decision.DENY.
+    """
     fake_monitor = MagicMock(return_value="FAIL")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
@@ -445,7 +449,6 @@ def test_tuple_unpacking_and_equality() -> None:
     verdict, reasons = adapter.decide(PolicyVerdict.PROHIBIT)
     assert isinstance(reasons, list)
     assert "POLICY_PROHIBIT" in reasons[0]
-
 
 
 @pytest.mark.unit

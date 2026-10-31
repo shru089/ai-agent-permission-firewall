@@ -388,11 +388,7 @@ def apply_event(
                 r_refs = []
 
             dest_ref_job = str(arguments.get("destination_ref", ""))
-            job_zone = (
-                registry.get_destination_zone(dest_ref_job)
-                if dest_ref_job
-                else Zone.UNKNOWN
-            )
+            job_zone = registry.get_destination_zone(dest_ref_job) if dest_ref_job else Zone.UNKNOWN
             if dest_ref_job and not registry.has_destination(dest_ref_job):
                 if Anomaly.UNKNOWN_DESTINATION.value not in anomalies:
                     anomalies.append(Anomaly.UNKNOWN_DESTINATION.value)

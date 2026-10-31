@@ -372,6 +372,7 @@ def test_run_mode_b_evaluation_oracle_reviewer() -> None:
 
     # Security Invariant H4: Zero executed PROHIBIT violations across protected arms
     from experiments.metrics import count_policy_violations
+
     assert count_policy_violations(results.decision_points) == 0
 
     # Under B6 with stateful policy:
@@ -411,36 +412,46 @@ def test_cli_runner_mode_a(tmp_path: Path) -> None:
     ]
     trace_file = tmp_path / "test_traces.json"
     trace_file.write_text(
-        json.dumps([
-            {
-                "trace_id": t.trace_id,
-                "template_id": t.template_id,
-                "family_id": t.family_id,
-                "scenario_type": t.scenario_type,
-                "actions": [
-                    {
-                        "step_index": a.step_index,
-                        "tool": a.tool,
-                        "arguments": a.arguments,
-                        "y": a.y,
-                    }
-                    for a in t.actions
-                ],
-            }
-            for t in traces
-        ]),
+        json.dumps(
+            [
+                {
+                    "trace_id": t.trace_id,
+                    "template_id": t.template_id,
+                    "family_id": t.family_id,
+                    "scenario_type": t.scenario_type,
+                    "actions": [
+                        {
+                            "step_index": a.step_index,
+                            "tool": a.tool,
+                            "arguments": a.arguments,
+                            "y": a.y,
+                        }
+                        for a in t.actions
+                    ],
+                }
+                for t in traces
+            ]
+        ),
         encoding="utf-8",
     )
 
     out_dir = tmp_path / "results"
-    ret = cli_main([
-        "--mode", "replay",
-        "--arm", "B6",
-        "--split", "dev",
-        "--dataset-path", str(trace_file),
-        "--output-dir", str(out_dir),
-        "--bootstrap-reps", "10",
-    ])
+    ret = cli_main(
+        [
+            "--mode",
+            "replay",
+            "--arm",
+            "B6",
+            "--split",
+            "dev",
+            "--dataset-path",
+            str(trace_file),
+            "--output-dir",
+            str(out_dir),
+            "--bootstrap-reps",
+            "10",
+        ]
+    )
     assert ret == 0
     assert (out_dir / "eval_replay_dev_B6.json").is_file()
 
@@ -452,46 +463,62 @@ def test_cli_runner_mode_b(tmp_path: Path) -> None:
     ]
     trace_file = tmp_path / "test_traces_b.json"
     trace_file.write_text(
-        json.dumps([
-            {
-                "trace_id": t.trace_id,
-                "template_id": t.template_id,
-                "family_id": t.family_id,
-                "scenario_type": t.scenario_type,
-                "actions": [
-                    {
-                        "step_index": a.step_index,
-                        "tool": a.tool,
-                        "arguments": a.arguments,
-                        "y": a.y,
-                    }
-                    for a in t.actions
-                ],
-            }
-            for t in traces
-        ]),
+        json.dumps(
+            [
+                {
+                    "trace_id": t.trace_id,
+                    "template_id": t.template_id,
+                    "family_id": t.family_id,
+                    "scenario_type": t.scenario_type,
+                    "actions": [
+                        {
+                            "step_index": a.step_index,
+                            "tool": a.tool,
+                            "arguments": a.arguments,
+                            "y": a.y,
+                        }
+                        for a in t.actions
+                    ],
+                }
+                for t in traces
+            ]
+        ),
         encoding="utf-8",
     )
 
     out_dir = tmp_path / "results_b"
-    ret = cli_main([
-        "--mode", "closed_loop",
-        "--arm", "B6",
-        "--split", "dev",
-        "--dataset-path", str(trace_file),
-        "--reviewer", "oracle",
-        "--output-dir", str(out_dir),
-        "--bootstrap-reps", "10",
-    ])
+    ret = cli_main(
+        [
+            "--mode",
+            "closed_loop",
+            "--arm",
+            "B6",
+            "--split",
+            "dev",
+            "--dataset-path",
+            str(trace_file),
+            "--reviewer",
+            "oracle",
+            "--output-dir",
+            str(out_dir),
+            "--bootstrap-reps",
+            "10",
+        ]
+    )
     assert ret == 0
     assert (out_dir / "eval_closed_loop_dev_B6.json").is_file()
 
 
 def test_cli_runner_blocks_test_split() -> None:
-    ret = cli_main([
-        "--mode", "replay",
-        "--arm", "B6",
-        "--split", "test",
-    ])
+    ret = cli_main(
+        [
+            "--mode",
+            "replay",
+            "--arm",
+            "B6",
+            "--split",
+            "test",
+        ]
+    )
     # Returns 2 on PermissionError (preregistration guard)
     assert ret == 2

@@ -71,7 +71,8 @@ class MonitorAdvisory:
     monitor_verdict: MonitorVerdict = MonitorVerdict.NOT_CONSULTED
     error: Optional[str] = None
     raw_output: Optional[str] = None
-    decision: Optional[Decision] = None  # Adapter never makes authorization decisions
+    # Always None; adapter does not make authorization decisions
+    decision: Optional[Decision] = None
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Decision):
@@ -452,7 +453,7 @@ class CascadeAdapter:
                     reason="MONITOR_SUSPICIOUS",
                     reason_codes=["MONITOR_SUSPICIOUS"],
                     confidence=raw.score,
-                    recommended_outcome=self.suspicious_map.value,
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.SUSPICIOUS,
                     raw_output=raw.raw_output,
@@ -846,4 +847,3 @@ class CascadeAdapter:
             registry_facts={},
             state_summary={},
         )
-
