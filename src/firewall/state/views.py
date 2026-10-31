@@ -4,6 +4,7 @@ Enforces information barriers: monitors and reviewers see only their allow-liste
 Source: 05_TECHNICAL_SPEC.md §8.2, 01_THREAT_MODEL.md (INV-08)
 """
 
+import json
 from typing import Any, Optional, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -46,23 +47,57 @@ def build_policy_view(
     )
 
 
-def format_transcript(events: Sequence[Event | StateEventEnvelope]) -> str:
+def format_transcript(
+    events: Sequence[Event | StateEventEnvelope],
+    max_output_chars: int = 500,
+) -> str:
     """
-    Deterministically formats event history into a plain text transcript (INV-08).
+    Deterministically formats event history into a plain text transcript (INV-08, SEC-05).
+    Includes sequence number, event type, action ID, canonical tool name, typed arguments,
+    and bounded output text per [P1] specification.
     Excludes any oracle labels, future actions, or scenario metadata.
     """
     lines: list[str] = []
     for evt in events:
         if isinstance(evt, StateEventEnvelope):
-            lines.append(
-                f"[{evt.seq}] {evt.event_type} action_id={evt.action_id} token_id={evt.token_id}"
+            parts = [f"[{evt.seq}] {evt.event_type} action_id={evt.action_id}"]
+            payload = evt.payload or {}
+            tool = payload.get("tool") or payload.get("action_tool")
+            if tool:
+                parts.append(f"tool={tool}")
+            arguments = payload.get("arguments")
+            if arguments is not None:
+                if isinstance(arguments, dict):
+                    parts.append(f"arguments={json.dumps(arguments, sort_keys=True)}")
+                else:
+                    parts.append(f"arguments={arguments}")
+            if evt.token_id:
+                parts.append(f"token_id={evt.token_id}")
+            output = (
+                payload.get("output")
+                or payload.get("free_text")
+                or payload.get("error")
             )
+            if output is not None:
+                bounded_output = str(output)[:max_output_chars]
+                parts.append(f"output={bounded_output}")
+            lines.append(" ".join(parts))
         elif isinstance(evt, Event):
             parts = [f"[{evt.seq}] {evt.type} action_id={evt.action_id}"]
+            tool_field = evt.fields.get("tool")
+            if tool_field is not None:
+                parts.append(f"tool={tool_field.value}")
+            args_field = evt.fields.get("arguments")
+            if args_field is not None:
+                if isinstance(args_field.value, dict):
+                    parts.append(f"arguments={json.dumps(args_field.value, sort_keys=True)}")
+                else:
+                    parts.append(f"arguments={args_field.value}")
             if evt.decision:
                 parts.append(f"decision={evt.decision.value}")
             if evt.free_text:
-                parts.append(f"output={evt.free_text}")
+                bounded_output = str(evt.free_text)[:max_output_chars]
+                parts.append(f"output={bounded_output}")
             lines.append(" ".join(parts))
     return "\n".join(lines)
 
@@ -75,9 +110,7 @@ def build_state_summary(
     Builds allow-listed typed state summary for HybridMonitor projection.
     Contains only typed fields and event references; no labels or oracle data.
     """
-    event_refs = [
-        evt.action_id for evt in events if hasattr(evt, "action_id") and evt.action_id
-    ]
+    event_refs = [evt.action_id for evt in events if hasattr(evt, "action_id") and evt.action_id]
     return {
         "bound_resource": state.bound_resource.model_dump() if state.bound_resource else None,
         "selected_resources": [r.model_dump() for r in state.selected_resources],
@@ -113,9 +146,9 @@ def build_monitor_view(
     transcript: Optional[str] = None
     state_summary: Optional[dict[str, Any]] = None
 
-    if monitor_type == "Transcript":
+    if monitor_type in ("Transcript", "B5"):
         transcript = format_transcript(history)
-    elif monitor_type == "Hybrid":
+    elif monitor_type in ("Hybrid", "P1"):
         state_summary = build_state_summary(state, history)
 
     return MonitorView(

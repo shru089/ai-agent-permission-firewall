@@ -26,6 +26,7 @@ CONTRACTS_VERSION: str = "0.1.0"
 
 class TaggedValue(BaseModel):
     """Value with provenance tracking to enforce INV-07."""
+
     value: Any
     provenance: Provenance
     model_config = ConfigDict(extra="forbid")
@@ -33,6 +34,7 @@ class TaggedValue(BaseModel):
 
 class ResourceRef(BaseModel):
     """Reference to a selected resource with classification."""
+
     ref: str
     classification: Classification
     selected_seq: int
@@ -41,6 +43,7 @@ class ResourceRef(BaseModel):
 
 class DestinationRef(BaseModel):
     """Reference to an export destination with zone."""
+
     ref: str
     zone: Zone
     model_config = ConfigDict(extra="forbid")
@@ -48,6 +51,7 @@ class DestinationRef(BaseModel):
 
 class ExportJob(BaseModel):
     """Specification of an export job."""
+
     job_id: str
     resource_refs: list[str]
     destination_ref: str
@@ -58,6 +62,7 @@ class ExportJob(BaseModel):
 
 class EgressCounter(BaseModel):
     """Cumulative egress counters per zone."""
+
     rows: int = 0
     bytes: int = 0
     rows_plus_pending: int = 0
@@ -66,6 +71,7 @@ class EgressCounter(BaseModel):
 
 class ActionRequest(BaseModel):
     """Untrusted action request submitted by the agent."""
+
     schema_version: str = CONTRACTS_VERSION
     session_id: str
     tool: str
@@ -76,6 +82,7 @@ class ActionRequest(BaseModel):
 
 class CanonicalAction(BaseModel):
     """Server-assigned canonical action with monotonic sequence and hash."""
+
     action_id: str
     session_id: str
     seq: int
@@ -87,6 +94,7 @@ class CanonicalAction(BaseModel):
 
 class Event(BaseModel):
     """Event element in session history H_t."""
+
     event_id: str
     session_id: str
     seq: int
@@ -100,6 +108,7 @@ class Event(BaseModel):
 
 class SessionState(BaseModel):
     """Observable security state S_t."""
+
     state_version: str = CONTRACTS_VERSION
     head_hash: str
     seq: int = 0
@@ -116,6 +125,7 @@ class SessionState(BaseModel):
 
 class PolicyResult(BaseModel):
     """Outcome of deterministic policy evaluation."""
+
     verdict: PolicyVerdict
     matched_rules: list[str] = Field(default_factory=list)
     maybe_rules: list[str] = Field(default_factory=list)
@@ -127,6 +137,7 @@ class PolicyResult(BaseModel):
 
 class MonitorView(BaseModel):
     """Allow-listed information projection provided to monitors."""
+
     monitor_id: str
     action: CanonicalAction
     registry_facts: dict[str, Any] = Field(default_factory=dict)
@@ -139,6 +150,7 @@ class MonitorView(BaseModel):
 
 class MonitorAssessment(BaseModel):
     """Advisory assessment returned by an execution monitor."""
+
     verdict: MonitorVerdict
     score: Optional[float] = None
     score_kind: ScoreKind = ScoreKind.NONE
@@ -154,6 +166,7 @@ class MonitorAssessment(BaseModel):
 
 class VersionSet(BaseModel):
     """Set of component and config hashes active for a decision."""
+
     contracts: str = CONTRACTS_VERSION
     policy_hash: str
     registry_hash: str
@@ -165,6 +178,7 @@ class VersionSet(BaseModel):
 
 class DecisionRecord(BaseModel):
     """Immutable audit record of a firewall authorization decision."""
+
     decision_id: str
     action_id: str
     action_hash: str
@@ -181,6 +195,7 @@ class DecisionRecord(BaseModel):
 
 class AuthorizationToken(BaseModel):
     """Cryptographic authorization token authorizing tool execution."""
+
     token_id: str
     action_id: str
     action_hash: str
@@ -193,6 +208,7 @@ class AuthorizationToken(BaseModel):
 
 class ReviewerView(BaseModel):
     """Allow-listed summary presented to a human reviewer."""
+
     tool: str
     typed_arguments: dict[str, Any]
     policy_verdict: PolicyVerdict
@@ -204,6 +220,7 @@ class ReviewerView(BaseModel):
 
 class ReviewTicket(BaseModel):
     """Review ticket for actions requiring human oversight."""
+
     ticket_id: str
     action_id: str
     action_hash: str
@@ -218,6 +235,7 @@ class ReviewTicket(BaseModel):
 
 class ResultEnvelope(BaseModel):
     """Standardized result envelope for execution outcomes."""
+
     has_value: bool
     value: Optional[Any] = None
     error: Optional[dict[str, str]] = None
@@ -228,6 +246,7 @@ class ResultEnvelope(BaseModel):
 
 class StateEventEnvelope(BaseModel):
     """Canonical envelope for hash-chained state transitions."""
+
     session_id: str
     seq: int
     prior_head: str
@@ -240,6 +259,7 @@ class StateEventEnvelope(BaseModel):
 
 class EvidenceReceipt(BaseModel):
     """Cryptographically verifiable evidence receipt from trusted executor."""
+
     session_id: str
     action_id: str
     token_id: str

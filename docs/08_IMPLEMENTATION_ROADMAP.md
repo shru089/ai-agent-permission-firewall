@@ -26,8 +26,8 @@
 | **Deliverables** | Approved `01`; `contracts/` v0.1.0 (enums, `ActionRequest`, `CanonicalAction`, `Event`, `SessionState`, `PolicyResult`, `MonitorView`, `MonitorAssessment`, `DecisionRecord`, `AuthorizationToken`, `ReviewTicket`); canonical hashing; golden JSON-Schema snapshot test; repo skeleton, CI (ruff, mypy, pytest), `CODEOWNERS`; written decisions on the Phase-1 open items below. |
 | **Owners** | All four; Akshat (repo/CI), Shrishti (state/monitor models), Karishma (policy models), Snehal (review/audit models). |
 | **Dependencies** | None. |
-| **Exit criteria** | (1) Team approves `D-10`, `D-13`, `D-16`, `D-17`, `D-24`, `D-31` or records alternatives; (2) `T-GW-006` passes; (3) schema snapshot test passes in CI; (4) a one-page "policy semantics" example (`03` §3) walked through by all four with no unresolved disagreement; (5) the TEST-NOVEL families are chosen **and sealed** (hash only) before any monitor development (`06` §5.1). |
-| **Risks** | Disagreement on binding mode or `MR` → mitigated by deciding in this phase (`OQ-06`, `OQ-07`). |
+| **Exit criteria** | (1) Team approves `D-10`, `D-13`, `D-16`, `D-17`, `D-24`, `D-31` (Approved unanimously on 2026-10-29); (2) `T-GW-006` passes; (3) schema snapshot test passes in CI (verified 2026-10-29); (4) a one-page "policy semantics" example (`03` §3) walked through by all four with no unresolved disagreement; (5) the TEST-NOVEL families are chosen **and sealed** (hash only) before any monitor development (`06` §5.1). |
+| **Risks** | Disagreement on binding mode or `MR` → mitigated by deciding in this phase (`OQ-06` open; `OQ-07` resolved via `D-13` approval). |
 
 ### Phase 2 — Deterministic policy engine and registry
 

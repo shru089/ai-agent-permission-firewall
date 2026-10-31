@@ -30,7 +30,12 @@ from firewall.contracts.models import (
     StateEventEnvelope,
     TaggedValue,
 )
-from firewall.state.errors import StateContinuityError, StateIntegrityError
+from firewall.state.errors import (
+    EvidenceVerificationError,
+    StateContinuityError,
+    StateIntegrityError,
+)
+from firewall.state.evidence import EvidenceVerifier
 from firewall.state.registry import Registry
 
 
@@ -156,93 +161,53 @@ def _extract_trusted_row_count(
     fields: dict[str, Any],
     evidence: Any,
     payload: Optional[dict[str, Any]] = None,
+    verifier: Optional[EvidenceVerifier] = None,
+    expected_session_id: Optional[str] = None,
+    expected_action_id: Optional[str] = None,
+    expected_token_id: Optional[str] = None,
+    expected_tool: Optional[str] = None,
+    is_replay: bool = False,
 ) -> tuple[Optional[int], int]:
     """
-    Extracts row and byte counts strictly from validated execution evidence (INV-07).
-    Accepts only Provenance.TOOL_TYPED, Provenance.GATEWAY, or EvidenceReceipt.
-    Any values tagged with TOOL_FREETEXT or AGENT_CLAIM are strictly rejected.
+    Extracts row and byte counts strictly from authenticated execution evidence
+    (INV-07, SEC-01, SEC-02). Requires an authenticated EvidenceReceipt verified
+    via an EvidenceVerifier (D-33, D-34). Loose payload fields and caller-constructed
+    TaggedValue instances are strictly rejected for egress counter updates (SEC-02).
     """
-    rows: Optional[int] = None
-    bytes_count: int = 0
+    # Egress counters for execute_export require an authenticated EvidenceReceipt (SEC-02, D-34).
+    # Loose dictionary fields, payload entries, and unverified TaggedValues are strictly rejected.
+    if evidence is None:
+        return None, 0
 
-    # 1. Check EvidenceReceipt if provided
-    if isinstance(evidence, EvidenceReceipt):
-        obs = evidence.observed_state or {}
-        if "rows" in obs or "rows_exported" in obs:
-            val = obs.get("rows", obs.get("rows_exported"))
-            if val is not None:
-                rows = int(val)
-        if "bytes" in obs or "bytes_exported" in obs:
-            b_val = obs.get("bytes", obs.get("bytes_exported"))
-            if b_val is not None:
-                bytes_count = int(b_val)
-        return rows, bytes_count
+    if not isinstance(evidence, EvidenceReceipt):
+        raise EvidenceVerificationError(
+            f"Invalid evidence type: expected EvidenceReceipt, got {type(evidence).__name__}"
+        )
 
-    # 2. Check tagged fields for rows_exported or rows
-    for key in ("rows_exported", "rows"):
-        tv = fields.get(key)
-        if tv is not None:
-            if isinstance(tv, TaggedValue):
-                if tv.provenance in (
-                    Provenance.TOOL_TYPED,
-                    Provenance.GATEWAY,
-                    Provenance.REGISTRY,
-                ):
-                    rows = int(tv.value)
-                    break
-            elif isinstance(tv, dict) and "provenance" in tv:
-                p_str = tv.get("provenance")
-                if p_str in (
-                    Provenance.TOOL_TYPED.value,
-                    Provenance.GATEWAY.value,
-                    Provenance.REGISTRY.value,
-                    Provenance.TOOL_TYPED,
-                    Provenance.GATEWAY,
-                    Provenance.REGISTRY,
-                ):
-                    rows = int(tv.get("value", 0))
-                    break
+    if verifier is None:
+        raise EvidenceVerificationError(
+            "Missing evidence verifier: verifier configuration is mandatory "
+            "to authenticate execution evidence"
+        )
 
-    for key in ("bytes_exported", "bytes"):
-        tv = fields.get(key)
-        if tv is not None:
-            if isinstance(tv, TaggedValue):
-                if tv.provenance in (
-                    Provenance.TOOL_TYPED,
-                    Provenance.GATEWAY,
-                    Provenance.REGISTRY,
-                ):
-                    bytes_count = int(tv.value)
-                    break
-            elif isinstance(tv, dict) and "provenance" in tv:
-                p_str = tv.get("provenance")
-                if p_str in (
-                    Provenance.TOOL_TYPED.value,
-                    Provenance.GATEWAY.value,
-                    Provenance.REGISTRY.value,
-                    Provenance.TOOL_TYPED,
-                    Provenance.GATEWAY,
-                    Provenance.REGISTRY,
-                ):
-                    bytes_count = int(tv.get("value", 0))
-                    break
+    token_exp: Optional[int] = None
+    now_ms: Optional[int] = None
+    if payload:
+        if isinstance(payload.get("token_expires_at_ms"), int):
+            token_exp = payload["token_expires_at_ms"]
+        if isinstance(payload.get("ingestion_timestamp_ms"), int):
+            now_ms = payload["ingestion_timestamp_ms"]
 
-    # 3. Check payload level if provided
-    if rows is None and payload:
-        if "rows" in payload and "provenance" in payload:
-            prov = payload["provenance"]
-            if prov in (
-                Provenance.TOOL_TYPED,
-                Provenance.GATEWAY,
-                Provenance.REGISTRY,
-                Provenance.TOOL_TYPED.value,
-                Provenance.GATEWAY.value,
-                Provenance.REGISTRY.value,
-            ):
-                rows = int(payload["rows"])
-                if "bytes" in payload:
-                    bytes_count = int(payload.get("bytes", 0))
-
+    rows, bytes_count = verifier.verify(
+        receipt=evidence,
+        expected_session_id=expected_session_id or "",
+        expected_action_id=expected_action_id or "",
+        expected_token_id=expected_token_id or "",
+        expected_tool=expected_tool or "",
+        token_expires_at_ms=token_exp,
+        now_ms=now_ms,
+        is_replay=is_replay,
+    )
     return rows, bytes_count
 
 
@@ -250,32 +215,47 @@ def apply_event(
     state: SessionState,
     event: StateEventEnvelope | Event,
     registry: Registry,
+    expected_session_id: str,
     binding_mode: BindingMode = BindingMode.IMPLICIT,
-    expected_session_id: Optional[str] = None,
+    verifier: Optional[EvidenceVerifier] = None,
+    is_replay: bool = False,
 ) -> SessionState:
     """
     Pure state transition function: Φ(S_{t-1}, e_t, Registry) -> S_t (INV-12).
 
     Validates:
-    - Session identity matching genesis head / expected session id.
+    - Authoritative expected_session_id is mandatory and non-empty (SEC-03).
+    - Event session_id strictly matches expected_session_id on every transition.
+    - Genesis head hash matches expected_session_id on first transition (seq == 0).
     - Monotonic sequence continuity (e_t.seq == S_{t-1}.seq + 1).
     - Prior-head hash continuity (e_t.prior_head == S_{t-1}.head_hash).
     - Provenance integrity: only registry/gateway/typed evidence sets security state (INV-07).
     - Denied/failed actions append to hash chain without mutating security state.
     """
-    # 1. Session Identity Validation
+    # 1. Authoritative Session Identity Validation (SEC-03)
+    if (
+        expected_session_id is None
+        or not isinstance(expected_session_id, str)
+        or not expected_session_id.strip()
+    ):
+        raise StateContinuityError(
+            "Missing or empty expected_session_id: authoritative session identity "
+            "is mandatory for every state transition"
+        )
+
+    if event.session_id != expected_session_id:
+        raise StateContinuityError(
+            f"Session identity mismatch: expected '{expected_session_id}', got '{event.session_id}'"
+        )
+
     if state.seq == 0:
-        expected_genesis = compute_genesis_head(event.session_id)
+        expected_genesis = compute_genesis_head(expected_session_id)
         if state.head_hash != expected_genesis:
             raise StateContinuityError(
-                f"Session identity mismatch: state genesis head {state.head_hash} "
-                f"does not match event session_id {event.session_id} (computed: {expected_genesis})"
+                f"Session genesis mismatch: state genesis head {state.head_hash} "
+                f"does not match expected session '{expected_session_id}' "
+                f"(computed: {expected_genesis})"
             )
-
-    if expected_session_id is not None and event.session_id != expected_session_id:
-        raise StateContinuityError(
-            f"Session identity mismatch: expected {expected_session_id}, got {event.session_id}"
-        )
 
     # 2. Monotonic Sequence Continuity Validation
     if event.seq != state.seq + 1:
@@ -408,11 +388,7 @@ def apply_event(
                 r_refs = []
 
             dest_ref_job = str(arguments.get("destination_ref", ""))
-            job_zone = (
-                registry.get_destination_zone(dest_ref_job)
-                if dest_ref_job
-                else Zone.UNKNOWN
-            )
+            job_zone = registry.get_destination_zone(dest_ref_job) if dest_ref_job else Zone.UNKNOWN
             if dest_ref_job and not registry.has_destination(dest_ref_job):
                 if Anomaly.UNKNOWN_DESTINATION.value not in anomalies:
                     anomalies.append(Anomaly.UNKNOWN_DESTINATION.value)
@@ -446,8 +422,23 @@ def apply_event(
             if destination is not None:
                 target_zone = destination.zone
 
-        # Extract verified execution evidence (INV-07)
-        rows_added, bytes_added = _extract_trusted_row_count(fields, evidence, payload_dict)
+        # Extract verified execution evidence (INV-07, SEC-01, SEC-02)
+        evt_token_id = (
+            event.token_id
+            if isinstance(event, StateEventEnvelope)
+            else str(event.fields.get("token_id", ""))
+        )
+        rows_added, bytes_added = _extract_trusted_row_count(
+            fields=fields,
+            evidence=evidence,
+            payload=payload_dict,
+            verifier=verifier,
+            expected_session_id=expected_session_id,
+            expected_action_id=event.action_id,
+            expected_token_id=evt_token_id,
+            expected_tool=tool,
+            is_replay=is_replay,
+        )
 
         if rows_added is None:
             # Missing or unverified security-critical execution evidence
@@ -491,18 +482,27 @@ def replay_events(
     session_id: str,
     registry: Registry,
     binding_mode: BindingMode = BindingMode.IMPLICIT,
+    verifier: Optional[EvidenceVerifier] = None,
 ) -> SessionState:
     """
     Reconstructs observable session state S_t by replaying an ordered event log from S_0 (INV-12).
     Pure, deterministic, bit-for-bit reproducible.
     """
+    if not session_id or not isinstance(session_id, str) or not session_id.strip():
+        raise StateContinuityError(
+            "Missing or empty session_id: replay requires authoritative session identity"
+        )
+    if verifier is not None and hasattr(verifier, "reset_seen"):
+        verifier.reset_seen(session_id)
     state = initial_state(session_id)
     for evt in events:
         state = apply_event(
             state=state,
             event=evt,
             registry=registry,
-            binding_mode=binding_mode,
             expected_session_id=session_id,
+            binding_mode=binding_mode,
+            verifier=verifier,
+            is_replay=True,
         )
     return state

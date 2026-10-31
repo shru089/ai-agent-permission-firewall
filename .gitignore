@@ -30,3 +30,5 @@ htmlcov/
 # Security: Test labels must never be committed
 **/labels.sqlite
 labels.sqlite
+.DS_Store
+
