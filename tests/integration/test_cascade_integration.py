@@ -181,19 +181,18 @@ def test_02_evidence_missing_returns_review_on_fast_path(cascade_registry: Regis
 
 
 # ==============================================================================
-# 3. UNDETERMINED with valid monitor ALLOW -> ALLOW (Cascade Path)
+# 3. UNDETERMINED with valid monitor BENIGN -> REVIEW (Cascade Path)
 # ==============================================================================
 
 
 def test_03_undetermined_with_valid_monitor_allow(cascade_registry: Registry) -> None:
     """
-    Rule: UNDETERMINED with valid monitor ALLOW -> ALLOW
-    When policy verdict is UNDETERMINED and monitor returns benign / allow:
-    - Decision is ALLOW
-    - Execution proceeds to EXECUTED
+    Rule: UNDETERMINED with monitor BENIGN -> REVIEW
+    Under AASF security invariants, policy uncertainty must escalate:
+    - UNDETERMINED + BENIGN = REVIEW (never ALLOW or execute)
     - Cascade path is used
     - Monitor was invoked
-    - Decision latency is recorded
+    - Review ticket created
     """
     # Monitor returns ALLOW token
     fake_monitor = MagicMock(return_value="ALLOW")
@@ -211,14 +210,13 @@ def test_03_undetermined_with_valid_monitor_allow(cascade_registry: Registry) ->
     )
     resp = fw.submit(req)
 
-    # Assert execution outcome
-    assert resp.status == "EXECUTED"
-    assert resp.decision == Decision.ALLOW
+    # Invariant: UNDETERMINED + BENIGN must produce REVIEW, never execute
+    assert resp.status == "PENDING_REVIEW"
+    assert resp.decision == Decision.REVIEW
     assert resp.policy_verdict == PolicyVerdict.UNDETERMINED
     assert resp.monitor_verdict == MonitorVerdict.BENIGN
-    assert resp.result is not None
-    assert resp.result.has_value is True
-    assert resp.result.confirmation_level == ConfirmationLevel.CONFIRMED_COMPLETED
+    assert resp.ticket_id is not None
+    assert resp.result is None
 
     # Assert monitor was invoked
     assert fake_monitor.called
@@ -230,7 +228,7 @@ def test_03_undetermined_with_valid_monitor_allow(cascade_registry: Registry) ->
     assert trace.is_cascade_path is True
     assert trace.is_fast_path is False
     assert trace.monitor_invoked is True
-    assert trace.final_decision == Decision.ALLOW
+    assert trace.final_decision == Decision.REVIEW
     assert trace.policy_verdict == PolicyVerdict.UNDETERMINED
     assert trace.monitor_verdict == MonitorVerdict.BENIGN
     assert trace.latency_ms > 0.0
@@ -242,7 +240,7 @@ def test_03_undetermined_with_valid_monitor_allow(cascade_registry: Registry) ->
 def test_03b_undetermined_with_structured_json_monitor_allow(
     cascade_registry: Registry,
 ) -> None:
-    """Verify monitor returning valid structured JSON payload authorizing an action."""
+    """Verify monitor returning valid structured JSON payload results in REVIEW escalation."""
     json_monitor = MagicMock(
         return_value='{"verdict": "BENIGN", "confidence": 0.99, "reasoning": "Normal telemetry"}'
     )
@@ -260,12 +258,15 @@ def test_03b_undetermined_with_structured_json_monitor_allow(
     )
     resp = fw.submit(req)
 
-    assert resp.status == "EXECUTED"
-    assert resp.decision == Decision.ALLOW
+    # Invariant: UNDETERMINED + BENIGN must produce REVIEW, never execute
+    assert resp.status == "PENDING_REVIEW"
+    assert resp.decision == Decision.REVIEW
+    assert resp.ticket_id is not None
+    assert resp.result is None
     assert resp.route_trace is not None
     assert resp.route_trace.path == "cascade_path"
     assert resp.route_trace.monitor_invoked is True
-    assert resp.route_trace.final_decision == Decision.ALLOW
+    assert resp.route_trace.final_decision == Decision.REVIEW
 
 
 # ==============================================================================
