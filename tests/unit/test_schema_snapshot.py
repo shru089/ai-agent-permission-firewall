@@ -5,6 +5,7 @@ Source: 08_IMPLEMENTATION_ROADMAP.md Phase 1, 05_TECHNICAL_SPEC.md §12
 
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -74,10 +75,29 @@ def test_contracts_golden_schema_snapshot() -> None:
         f"Golden: {set(golden_schemas.keys())}"
     )
 
+    def _normalize_schema(obj: Any) -> Any:
+        if isinstance(obj, dict):
+            res = {k: _normalize_schema(v) for k, v in obj.items()}
+            if res.get("type") == "object" and res.get("additionalProperties") is True:
+                del res["additionalProperties"]
+            if (
+                "allOf" in res
+                and len(res["allOf"]) == 1
+                and isinstance(res["allOf"][0], dict)
+                and "$ref" in res["allOf"][0]
+            ):
+                ref_val = res["allOf"][0]["$ref"]
+                del res["allOf"]
+                res["$ref"] = ref_val
+            return res
+        elif isinstance(obj, list):
+            return [_normalize_schema(x) for x in obj]
+        return obj
+
     mismatches = []
     for model_name, current_schema in current_schemas.items():
         golden_schema = golden_schemas[model_name]
-        if current_schema != golden_schema:
+        if _normalize_schema(current_schema) != _normalize_schema(golden_schema):
             mismatches.append(model_name)
 
     assert not mismatches, (

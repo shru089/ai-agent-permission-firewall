@@ -639,6 +639,7 @@ class FirewallCore:
                 # d. If current policy verdict is PROHIBIT, return DENY and do not execute
                 if policy_result.verdict == PolicyVerdict.PROHIBIT:
                     reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or ["POLICY_PROHIBIT"]
+                    reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
                     self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(
                         action_id=action.action_id,
