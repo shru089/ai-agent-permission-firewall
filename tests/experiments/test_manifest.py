@@ -35,22 +35,28 @@ def test_manifest_checksums_match_all_files() -> None:
 
     expected_files = {
         "README.md",
-        "traces.jsonl",
-        "labels.jsonl",
-        "provenance.json",
-        "split_isolation.json",
-        "label_audit.jsonl",
+        "h1_impl.py",
         "h1_manipulation_check.json",
         "information_barrier_audit.json",
+        "label_audit.jsonl",
+        "labels.jsonl",
+        "protocol.md",
+        "provenance.json",
+        "split_isolation.json",
+        "traces.jsonl",
     }
 
-    assert set(entries.keys()) == expected_files, f"Manifest keys mismatch: {set(entries.keys())} vs {expected_files}"
+    assert set(entries.keys()) == expected_files, (
+        f"Manifest keys mismatch: {set(entries.keys())} vs {expected_files}"
+    )
 
     for filename, expected_sha in entries.items():
         target_path = dev_dir / filename
         assert target_path.exists(), f"Delivered file missing: {filename}"
         actual_sha = compute_sha256(target_path)
-        assert actual_sha == expected_sha, f"SHA mismatch for {filename}: expected {expected_sha}, got {actual_sha}"
+        assert actual_sha == expected_sha, (
+            f"SHA mismatch for {filename}: expected {expected_sha}, got {actual_sha}"
+        )
 
 
 def test_no_untracked_files_in_dev_package() -> None:
@@ -60,16 +66,16 @@ def test_no_untracked_files_in_dev_package() -> None:
 
     allowed_files = {
         "README.md",
-        "traces.jsonl",
-        "labels.jsonl",
-        "provenance.json",
-        "split_isolation.json",
-        "label_audit.jsonl",
+        "h1_impl.py",
         "h1_manipulation_check.json",
         "information_barrier_audit.json",
+        "label_audit.jsonl",
+        "labels.jsonl",
         "manifest.sha256",
         "protocol.md",
-        "h1_impl.py",
+        "provenance.json",
+        "split_isolation.json",
+        "traces.jsonl",
     }
 
     unexpected = actual_files - allowed_files
