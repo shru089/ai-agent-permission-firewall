@@ -87,7 +87,7 @@
       }
     ]
   },
-  "b3_deterministic": {
+  "b3_result": {
     "status": "PASS",
     "arm": "B3",
     "criterion": "J = 0 exactly (exact numerical equality)",
@@ -102,7 +102,7 @@
     "trace_count": 16,
     "reason": "B3 satisfies exact criterion (J = 0.0000 == 0.0)."
   },
-  "b4_stochastic": {
+  "b4_result": {
     "status": "PASS",
     "arm": "B4",
     "criterion": "absolute J <= 0.03, with 95% cluster-bootstrap confidence interval including 0",

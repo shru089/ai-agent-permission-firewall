@@ -74,7 +74,7 @@ class ActionDInvarianceChecker:
             (all_passed, pair_matches, summary_metrics)
         """
         traces_by_id = {t["trace_id"]: t for t in traces}
-        labels_by_id = {l["trace_id"]: l for l in labels} if labels else {}
+        labels_by_id = {lbl["trace_id"]: lbl for lbl in labels} if labels else {}
 
         # Identify history-dependent pairs
         history_traces = [t for t in traces if t.get("is_history_dependent", False)]
@@ -120,9 +120,15 @@ class ActionDInvarianceChecker:
             twin_trace = traces_by_id[twin_id]
 
             # Determine which is attack and which is benign
-            if trace.get("scenario_type") == "attack" and twin_trace.get("scenario_type") == "benign":
+            if (
+                trace.get("scenario_type") == "attack"
+                and twin_trace.get("scenario_type") == "benign"
+            ):
                 atk_trace, ben_trace = trace, twin_trace
-            elif trace.get("scenario_type") == "benign" and twin_trace.get("scenario_type") == "attack":
+            elif (
+                trace.get("scenario_type") == "benign"
+                and twin_trace.get("scenario_type") == "attack"
+            ):
                 atk_trace, ben_trace = twin_trace, trace
             else:
                 pair_matches.append(
@@ -153,7 +159,12 @@ class ActionDInvarianceChecker:
             atk_actions = atk_trace.get("actions", [])
             ben_actions = ben_trace.get("actions", [])
 
-            if t_star < 0 or t_star >= len(atk_actions) or t_star_ben < 0 or t_star_ben >= len(ben_actions):
+            if (
+                t_star < 0
+                or t_star >= len(atk_actions)
+                or t_star_ben < 0
+                or t_star_ben >= len(ben_actions)
+            ):
                 pair_matches.append(
                     PairedTraceMatch(
                         pair_id=f"{atk_trace['trace_id']}__{ben_trace['trace_id']}",
@@ -182,7 +193,7 @@ class ActionDInvarianceChecker:
             tool_ben = act_ben.get("tool", "")
 
             # Action D invariance check: tool and canonical json arguments
-            tool_match = (tool_atk == tool_ben)
+            tool_match = tool_atk == tool_ben
             args_atk_canon = canonical_json(act_atk.get("arguments", {}))
             args_ben_canon = canonical_json(act_ben.get("arguments", {}))
             action_d_identical = tool_match and (args_atk_canon == args_ben_canon)
@@ -190,7 +201,7 @@ class ActionDInvarianceChecker:
             # Prior history divergence check
             hist_atk = canonical_hash(atk_actions[:t_star])
             hist_ben = canonical_hash(ben_actions[:t_star_ben])
-            prior_history_diverges = (hist_atk != hist_ben)
+            prior_history_diverges = hist_atk != hist_ben
 
             # Check ground-truth label divergence
             if labels_by_id:
@@ -200,17 +211,16 @@ class ActionDInvarianceChecker:
                 lbl_atk = self.oracle.evaluate_trace(atk_trace).verdict.value
                 lbl_ben = self.oracle.evaluate_trace(ben_trace).verdict.value
 
-            labels_diverge = (lbl_atk == OracleVerdict.MALICIOUS.value and lbl_ben == OracleVerdict.BENIGN.value)
+            labels_diverge = (
+                lbl_atk == OracleVerdict.MALICIOUS.value and lbl_ben == OracleVerdict.BENIGN.value
+            )
 
             # Check zero classification tokens in Action D arguments
             d_args_str = str(act_atk.get("arguments", {}))
             zero_leakage = not any(tok in d_args_str for tok in FORBIDDEN_LEAKAGE_TOKENS)
 
             pair_valid = (
-                action_d_identical
-                and prior_history_diverges
-                and labels_diverge
-                and zero_leakage
+                action_d_identical and prior_history_diverges and labels_diverge and zero_leakage
             )
 
             if not pair_valid:
@@ -230,7 +240,10 @@ class ActionDInvarianceChecker:
                 benign_verdict=lbl_ben,
                 zero_leakage_tokens=zero_leakage,
                 is_valid=pair_valid,
-                details="Verified: byte-identical action D, divergent history, divergent oracle labels, zero leakage tokens.",
+                details=(
+                    "Verified: byte-identical action D, divergent history, "
+                    "divergent oracle labels, zero leakage tokens."
+                ),
             )
             pair_matches.append(match_record)
 

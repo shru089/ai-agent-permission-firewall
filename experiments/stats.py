@@ -594,9 +594,7 @@ def holm_bonferroni(
             raise ValueError(f"Invalid p-value at index {idx}: {p}")
 
     names = (
-        list(hypothesis_names)
-        if hypothesis_names is not None
-        else [f"H{i+1}" for i in range(m)]
+        list(hypothesis_names) if hypothesis_names is not None else [f"H{i + 1}" for i in range(m)]
     )
 
     if m == 0:

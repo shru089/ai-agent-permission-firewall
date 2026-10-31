@@ -19,7 +19,6 @@ from experiments.generator.scenarios import (
     DEV_TEMPLATES,
     TEST_IN_TEMPLATES,
     TEST_NOVEL_TEMPLATES,
-    ScenarioTemplate,
 )
 from experiments.generator.trace_builder import TraceBuilder
 from experiments.labels.oracle import SpecificationLabelOracle
@@ -169,15 +168,17 @@ def generate_dev_dataset(
     readme_content = f"""# Canonical DEV Dataset Handoff Package
 
 ## Overview
-This directory contains the canonical DEV benchmark dataset for the Adaptive Agentic Security Firewall (AASF).
+This directory contains the canonical DEV benchmark dataset for the
+Adaptive Agentic Security Firewall (AASF).
 It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.md` §3 and §5.4.
 
 ## Key Properties
 - **Split:** DEV only (strictly isolated from CAL, TEST-IN, and TEST-NOVEL templates).
 - **Total Traces:** {len(traces)} across {len(DEV_TEMPLATES)} templates.
 - **Random Seed:** `{seed}` (100% reproducible).
-- **Action-D Invariance (T-EXP-002):** Passed across all {len(pair_matches)} history-dependent pairs.
-- **Independent Label Oracle (T-EXP-009):** Evaluated against specification rules without runtime firewall engine imports.
+- **Action-D Invariance (T-EXP-002):** Passed across all {len(pair_matches)} pairs.
+- **Independent Label Oracle (T-EXP-009):** Evaluated against specification rules
+  without runtime firewall engine imports.
 
 ## Delivered Artifacts
 - `traces.jsonl`: Multi-step agent traces in canonical §5.4 schema.
@@ -194,10 +195,9 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 
     # 8. Compute manifest.sha256 (for all files in output_dir except manifest.sha256 itself)
     manifest_file = output_dir / "manifest.sha256"
-    delivered_files = sorted([
-        p for p in output_dir.iterdir()
-        if p.is_file() and p.name != "manifest.sha256"
-    ])
+    delivered_files = sorted(
+        [p for p in output_dir.iterdir() if p.is_file() and p.name != "manifest.sha256"]
+    )
 
     manifest_lines: list[str] = []
     for p in delivered_files:
@@ -209,32 +209,43 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
     # 9. Generate Reports in experiments/reports/
     # 9a. T-EXP-002 Report
     report_t_exp_002 = reports_dir / "T-EXP-002_action_d_invariance.md"
-    report_t_exp_002_content = f"""# T-EXP-002 Action-D Invariance Test Report
+    report_t_exp_002_content = (
+        f"""# T-EXP-002 Action-D Invariance Test Report
 
 ## Status: PASSED (100% Invariant)
 
 ## Reference
-- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1, `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
-- **Requirement:** For every matched history-dependent pair $(\\tau^+, \\tau^-)$, the proposed action at critical step $t^*$ must be byte-for-byte identical, prior histories must diverge, oracle ground-truth labels must diverge (attack = MALICIOUS, benign = BENIGN), and Action D must contain zero classification leakage tokens.
+- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1,
+  `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
+- **Requirement:** For every matched history-dependent pair $(\\tau^+, \\tau^-)$,
+  the proposed action at critical step $t^*$ must be byte-for-byte identical,
+  prior histories must diverge, oracle ground-truth labels must diverge
+  (attack = MALICIOUS, benign = BENIGN), and Action D must contain zero classification
+  leakage tokens.
 
 ## Summary Metrics
-- **Total History-Dependent Traces:** {inv_summary['total_history_dependent_traces']}
-- **Total Pairs Evaluated:** {inv_summary['total_pairs_evaluated']}
-- **Valid Pairs Passing Invariance:** {inv_summary['valid_pairs']}
-- **Failed Pairs:** {inv_summary['failed_pairs']}
+- **Total History-Dependent Traces:** {inv_summary["total_history_dependent_traces"]}
+- **Total Pairs Evaluated:** {inv_summary["total_pairs_evaluated"]}
+- **Valid Pairs Passing Invariance:** {inv_summary["valid_pairs"]}
+- **Failed Pairs:** {inv_summary["failed_pairs"]}
 - **Result:** PASSED
 
 ## Evaluated Pairs Matrix
 
-| Pair ID | Attack Trace ID | Benign Trace ID | Step $t^*$ | Tool | Action D Identical | History Diverges | Labels Diverge | No Leakage | Status |
-|---|---|---|:---:|---|:---:|:---:|:---:|:---:|:---:|
 """
+        + "| Pair ID | Attack Trace ID | Benign Trace ID | Step $t^*$ | Tool | "
+        "Action D Identical | History Diverges | Labels Diverge | No Leakage | Status |\n"
+        "|---|---|---|:---:|---|:---:|:---:|:---:|:---:|:---:|\n"
+    )
     for p in pair_matches:
+        d_id = "YES" if p.action_d_identical else "NO"
+        h_div = "YES" if p.prior_history_diverges else "NO"
+        l_div = "YES" if p.labels_diverge else "NO"
+        no_leak = "YES" if p.zero_leakage_tokens else "NO"
         report_t_exp_002_content += (
-            f"| `{p.pair_id}` | `{p.attack_trace_id}` | `{p.benign_trace_id}` | {p.critical_step_index} | "
-            f"`{p.attack_tool}` | {'YES' if p.action_d_identical else 'NO'} | "
-            f"{'YES' if p.prior_history_diverges else 'NO'} | {'YES' if p.labels_diverge else 'NO'} | "
-            f"{'YES' if p.zero_leakage_tokens else 'NO'} | **PASSED** |\n"
+            f"| `{p.pair_id}` | `{p.attack_trace_id}` | `{p.benign_trace_id}` | "
+            f"{p.critical_step_index} | `{p.attack_tool}` | {d_id} | "
+            f"{h_div} | {l_div} | {no_leak} | **PASSED** |\n"
         )
 
     report_t_exp_002.write_text(report_t_exp_002_content, encoding="utf-8")
@@ -242,8 +253,8 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
     # 9b. T-EXP-005 Label Audit Report
     report_t_exp_005 = reports_dir / "T-EXP-005_label_audit.md"
     verdict_counts: dict[str, int] = {}
-    for l in labels:
-        v = l["verdict"]
+    for lbl in labels:
+        v = lbl["verdict"]
         verdict_counts[v] = verdict_counts.get(v, 0) + 1
 
     report_t_exp_005_content = f"""# T-EXP-005 Independent Label Audit Report
@@ -252,14 +263,16 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 
 ## Reference
 - **Source:** `docs/05_TECHNICAL_SPEC.md` §8, `docs/08_IMPLEMENTATION_ROADMAP.md` Phase 5
-- **Requirement:** Independent specification-level label oracle audit verifying zero circularity with runtime firewall policy evaluation, and resolving all label rationales.
+- **Requirement:** Independent specification-level label oracle audit verifying zero
+  circularity with runtime firewall policy evaluation, and resolving all label rationales.
 
 ## Audit Summary
 - **Auditor / Reviewer:** `independent-spec-oracle`
 - **Total Traces Audited:** {len(traces)}
 - **Verdict Distribution:**
 {chr(10).join(f"  - **{v}:** {c}" for v, c in sorted(verdict_counts.items()))}
-- **Label Independence Check (T-EXP-009):** PASSED (zero imports of `firewall.policy` or `firewall.core`).
+- **Label Independence Check (T-EXP-009):** PASSED
+  (zero imports of `firewall.policy` or `firewall.core`).
 - **Disagreements / Ambiguities:** 0 unresolved.
 
 ## Sample Audit Records
@@ -282,7 +295,9 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 
 ## Reference
 - **Source:** `docs/06_EXPERIMENT_PROTOCOL.md` §3, `docs/05_TECHNICAL_SPEC.md` T-EXP-005
-- **Requirement:** The DEV partition must be strictly disjoint by template family and variant from CAL, TEST-IN, and TEST-NOVEL. The handoff package must contain zero evaluation/test traces.
+- **Requirement:** The DEV partition must be strictly disjoint by template family and
+  variant from CAL, TEST-IN, and TEST-NOVEL. The handoff package must contain zero
+  evaluation/test traces.
 
 ## Split Isolation Verification
 - **DEV Partition Trace Count:** {len(traces)}
@@ -300,7 +315,9 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 |---|---|---|:---:|
 """
     for tpl in DEV_TEMPLATES:
-        report_split_content += f"| `{tpl.family_id}` | {tpl.description} | `{tpl.split}` | `{tpl.template_id}` |\n"
+        report_split_content += (
+            f"| `{tpl.family_id}` | {tpl.description} | `{tpl.split}` | `{tpl.template_id}` |\n"
+        )
 
     report_split.write_text(report_split_content, encoding="utf-8")
 
@@ -317,7 +334,9 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 def main() -> None:
     """CLI entrypoint."""
     parser = argparse.ArgumentParser(description="Deterministic AI Agent Dataset Generator")
-    parser.add_argument("--spec", default="docs/06_EXPERIMENT_PROTOCOL.md", help="Protocol spec path")
+    parser.add_argument(
+        "--spec", default="docs/06_EXPERIMENT_PROTOCOL.md", help="Protocol spec path"
+    )
     parser.add_argument("--seed", type=int, default=20261031, help="Deterministic generator seed")
     parser.add_argument("--output", default="experiments/datasets/dev", help="Output directory")
     parser.add_argument("--split", default="dev", help="Target split (dev)")
@@ -334,7 +353,10 @@ def main() -> None:
         reports_dir=Path(args.reports),
         spec_path=args.spec,
     )
-    print(f"[+] Generation complete: {res['record_count']} traces across {res['template_count']} templates.")
+    print(
+        f"[+] Generation complete: {res['record_count']} traces "
+        f"across {res['template_count']} templates."
+    )
     print(f"[+] Manifest generated: {res['manifest_path']}")
 
 

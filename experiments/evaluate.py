@@ -378,9 +378,7 @@ class BaselineArm:
     def submit(self, request: ActionRequest) -> FirewallResponse:
         raise NotImplementedError
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         raise NotImplementedError
 
 
@@ -396,9 +394,7 @@ class B0AlwaysAllow(BaselineArm):
             policy_verdict=PolicyVerdict.PERMIT,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         return FirewallResponse(
             action_id=ticket_id,
             status="EXECUTED",
@@ -419,9 +415,7 @@ class B1AlwaysDeny(BaselineArm):
             policy_verdict=PolicyVerdict.PROHIBIT,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         return FirewallResponse(
             action_id=ticket_id,
             status="DENIED",
@@ -448,9 +442,7 @@ class B2AlwaysReview(BaselineArm):
             ticket_id=ticket_id,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         norm = outcome.strip().upper()
         if norm in ("APPROVE", "APPROVED"):
             return FirewallResponse(
@@ -547,9 +539,7 @@ def build_arm_firewall(
     """
     arm_norm = arm.strip().upper()
     if arm_norm not in CANONICAL_ARMS:
-        raise ValueError(
-            f"Invalid arm: {arm!r}. Supported canonical arms: {CANONICAL_ARMS}"
-        )
+        raise ValueError(f"Invalid arm: {arm!r}. Supported canonical arms: {CANONICAL_ARMS}")
 
     reg = registry or create_default_eval_registry()
     cfg = decision_config or DecisionConfig()
@@ -703,12 +693,9 @@ def run_mode_a(
             )
             points_all.append(dp)
 
-            is_crit_step = (
-                action.is_critical
-                or (
-                    trace.critical_step_index is not None
-                    and action.step_index == trace.critical_step_index
-                )
+            is_crit_step = action.is_critical or (
+                trace.critical_step_index is not None
+                and action.step_index == trace.critical_step_index
             )
             if is_crit_step:
                 points_crit.append(dp)
@@ -729,6 +716,7 @@ def run_mode_a(
     j_ci = None
 
     if points_crit and bootstrap_reps > 0:
+
         def _rec_stat(dps: Sequence[DecisionPoint]) -> Optional[float]:
             cm = build_confusion_matrix(dps)
             return recall(cm)
@@ -969,6 +957,7 @@ def run_mode_b(
     lts_ci = None
 
     if trace_outcomes and bootstrap_reps > 0:
+
         def _apr_stat(tos: Sequence[TraceOutcome]) -> Optional[float]:
             atk = [t for t in tos if t.is_attack]
             if not atk:

@@ -138,7 +138,7 @@ class SpecificationLabelOracle:
             is_malicious=False,
             label=0,
             rule_id="SPEC-FALLBACK-UNRECOGNIZED",
-            rationale="Trace behavior did not match any positive benign or malicious specification rule.",
+            rationale="Trace behavior did not match any specification rule.",
             critical_step_index=crit_idx,
             is_history_dependent=is_hist,
             oracle_version=self.oracle_version,
@@ -164,12 +164,14 @@ class SpecificationLabelOracle:
         rule_evals: list[dict[str, Any]] = []
         for rule in self.rules:
             matched, rationale = rule.evaluator(trace)
-            rule_evals.append({
-                "rule_id": rule.id,
-                "target_verdict": rule.target_verdict.value,
-                "matched": matched,
-                "rationale": rationale,
-            })
+            rule_evals.append(
+                {
+                    "rule_id": rule.id,
+                    "target_verdict": rule.target_verdict.value,
+                    "matched": matched,
+                    "rationale": rationale,
+                }
+            )
 
         final_result = self.evaluate_trace(trace, timestamp=audit_ts)
 

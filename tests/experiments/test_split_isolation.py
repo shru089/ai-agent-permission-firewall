@@ -20,7 +20,9 @@ from experiments.generator.scenarios import (
 
 
 def test_t_exp_005_templates_are_pairwise_disjoint() -> None:
-    """Verifies that all registered templates across DEV, CAL, TEST-IN, and TEST-NOVEL are mutually disjoint."""
+    """Verifies that all registered templates across DEV, CAL, TEST-IN,
+    and TEST-NOVEL are mutually disjoint.
+    """
     dev_ids = {t.template_id for t in DEV_TEMPLATES}
     cal_ids = {t.template_id for t in CAL_TEMPLATES}
     test_in_ids = {t.template_id for t in TEST_IN_TEMPLATES}
@@ -28,18 +30,30 @@ def test_t_exp_005_templates_are_pairwise_disjoint() -> None:
 
     # Verify no overlaps
     assert dev_ids.isdisjoint(cal_ids), f"Overlap between DEV and CAL: {dev_ids & cal_ids}"
-    assert dev_ids.isdisjoint(test_in_ids), f"Overlap between DEV and TEST-IN: {dev_ids & test_in_ids}"
-    assert dev_ids.isdisjoint(test_novel_ids), f"Overlap between DEV and TEST-NOVEL: {dev_ids & test_novel_ids}"
-    assert cal_ids.isdisjoint(test_in_ids), f"Overlap between CAL and TEST-IN: {cal_ids & test_in_ids}"
-    assert cal_ids.isdisjoint(test_novel_ids), f"Overlap between CAL and TEST-NOVEL: {cal_ids & test_novel_ids}"
-    assert test_in_ids.isdisjoint(test_novel_ids), f"Overlap between TEST-IN and TEST-NOVEL: {test_in_ids & test_novel_ids}"
+    assert dev_ids.isdisjoint(test_in_ids), (
+        f"Overlap between DEV and TEST-IN: {dev_ids & test_in_ids}"
+    )
+    assert dev_ids.isdisjoint(test_novel_ids), (
+        f"Overlap between DEV and TEST-NOVEL: {dev_ids & test_novel_ids}"
+    )
+    assert cal_ids.isdisjoint(test_in_ids), (
+        f"Overlap between CAL and TEST-IN: {cal_ids & test_in_ids}"
+    )
+    assert cal_ids.isdisjoint(test_novel_ids), (
+        f"Overlap between CAL and TEST-NOVEL: {cal_ids & test_novel_ids}"
+    )
+    assert test_in_ids.isdisjoint(test_novel_ids), (
+        f"Overlap between TEST-IN and TEST-NOVEL: {test_in_ids & test_novel_ids}"
+    )
 
     total_expected = len(dev_ids) + len(cal_ids) + len(test_in_ids) + len(test_novel_ids)
     assert len(ALL_TEMPLATES) == total_expected, "Total template count mismatch."
 
 
 def test_canonical_dev_traces_contain_only_dev_split() -> None:
-    """Verifies that every trace in the canonical DEV traces.jsonl is strictly assigned to DEV split."""
+    """Verifies that every trace in the canonical DEV traces.jsonl
+    is strictly assigned to DEV split.
+    """
     traces_file = Path("experiments/datasets/dev/traces.jsonl")
     assert traces_file.exists()
 
@@ -52,7 +66,9 @@ def test_canonical_dev_traces_contain_only_dev_split() -> None:
             if not line.strip():
                 continue
             trace: dict[str, Any] = json.loads(line)
-            assert trace["split"] == "DEV", f"Trace {trace['trace_id']} has non-DEV split: {trace['split']}"
+            assert trace["split"] == "DEV", (
+                f"Trace {trace['trace_id']} has non-DEV split: {trace['split']}"
+            )
             assert trace["template_id"] not in cal_test_ids, (
                 f"Trace {trace['trace_id']} uses held-out template: {trace['template_id']}"
             )

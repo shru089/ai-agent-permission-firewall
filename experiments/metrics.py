@@ -508,11 +508,7 @@ def count_policy_violations(points: Sequence[DecisionPoint]) -> int:
 
     Works on both TF and OL mode decision points.
     """
-    return sum(
-        1
-        for p in points
-        if p.policy_verdict == "PROHIBIT" and p.executed
-    )
+    return sum(1 for p in points if p.policy_verdict == "PROHIBIT" and p.executed)
 
 
 # ---------------------------------------------------------------------------
@@ -563,9 +559,7 @@ def build_latency_stats(
     pts = list(points)[warmup_discard:]
 
     valid_lats: list[float] = [
-        p.latency_ms
-        for p in pts
-        if p.latency_ms is not None and not math.isnan(p.latency_ms)
+        p.latency_ms for p in pts if p.latency_ms is not None and not math.isnan(p.latency_ms)
     ]
     mon_lats: list[float] = [
         p.latency_ms
@@ -717,4 +711,3 @@ P1_TABLE_FIXTURES = {
     "stress_test_flagged": 12,
     "stress_test_total": 12,
 }
-

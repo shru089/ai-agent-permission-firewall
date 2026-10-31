@@ -12,8 +12,6 @@ Verifies:
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from experiments.validation.information_barrier import (
     CANARIES,
     BoundaryAuditResult,
@@ -23,19 +21,12 @@ from experiments.validation.information_barrier import (
 )
 from firewall.contracts.enums import (
     Classification,
-    Decision,
     PolicyVerdict,
-    Provenance,
     ToolClass,
-    Zone,
 )
 from firewall.contracts.models import (
     CanonicalAction,
-    DestinationRef,
-    Event,
-    MonitorView,
     ResourceRef,
-    TaggedValue,
 )
 from firewall.state.engine import initial_state
 from firewall.state.registry import Registry, ToolInfo
@@ -48,7 +39,9 @@ from firewall.state.views import (
 
 
 def test_information_barrier_audit_passes_on_live_architecture() -> None:
-    """Verifies that the live architecture passes all static and runtime information-barrier checks."""
+    """Verifies that the live architecture passes all static and runtime
+    information-barrier checks.
+    """
     result = run_information_barrier_audit_on_dev()
 
     assert result.passed is True
@@ -62,7 +55,9 @@ def test_information_barrier_audit_passes_on_live_architecture() -> None:
 
 
 def test_ground_truth_labels_do_not_reach_policy_or_monitor() -> None:
-    """Verifies that ground-truth labels and oracle metadata cannot enter PolicyView or MonitorView."""
+    """Verifies that ground-truth labels and oracle metadata cannot enter
+    PolicyView or MonitorView.
+    """
     registry = Registry(
         tools={"execute_export": ToolInfo(tool_class=ToolClass.EGRESS_EXTERNAL, args={})}
     )
@@ -111,12 +106,16 @@ def test_prohibited_metadata_cannot_leak_through_nested_structures() -> None:
 
 
 def test_credentials_secrets_stripped_from_monitor_and_reviewer_views() -> None:
-    """Verifies that API keys, passwords, and tokens are absent from MonitorView and ReviewerView."""
+    """Verifies that API keys, passwords, and tokens are absent from
+    MonitorView and ReviewerView.
+    """
     registry = Registry(
         tools={"execute_export": ToolInfo(tool_class=ToolClass.EGRESS_EXTERNAL, args={})}
     )
     state = initial_state("sess_test")
-    state.bound_resource = ResourceRef(ref="public_data", classification=Classification.PUBLIC, selected_seq=1)
+    state.bound_resource = ResourceRef(
+        ref="public_data", classification=Classification.PUBLIC, selected_seq=1
+    )
 
     sensitive_args = {
         "batch_size": 20,
@@ -156,7 +155,8 @@ def test_credentials_secrets_stripped_from_monitor_and_reviewer_views() -> None:
     # ReviewerView must contain zero oracle labels or canary credentials
     rv_findings = find_canaries_in_object(rv)
     oracle_leaks = [
-        k for _, k, _ in rv_findings
+        k
+        for _, k, _ in rv_findings
         if k in ("GROUND_TRUTH_LABEL", "ORACLE_RATIONALE", "ORACLE_RULE_ID")
     ]
     assert len(oracle_leaks) == 0, f"Oracle metadata leaked into ReviewerView: {oracle_leaks}"

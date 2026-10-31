@@ -13,7 +13,6 @@ cannot reach downstream decision-making components.
 """
 
 import ast
-import copy
 import json
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -33,19 +32,16 @@ from firewall.contracts.models import (
     CanonicalAction,
     DestinationRef,
     Event,
-    MonitorView,
     ResourceRef,
-    SessionState,
     TaggedValue,
 )
 from firewall.decision.combinator import DecisionConfig, decide
-from firewall.state.engine import apply_event, initial_state
+from firewall.state.engine import initial_state
 from firewall.state.registry import Registry, ToolInfo
 from firewall.state.views import (
     build_monitor_view,
     build_policy_view,
     build_reviewer_view,
-    sanitize_data,
 )
 
 # Prohibited Canaries
@@ -176,10 +172,16 @@ class InformationBarrierValidator:
                 if isinstance(node, ast.Import):
                     for alias in node.names:
                         if any(alias.name.startswith(f) for f in forbidden_in_firewall):
-                            leakage_paths.append(f"{py_path.relative_to(self.repo_root)} imports {alias.name}")
+                            leakage_paths.append(
+                                f"{py_path.relative_to(self.repo_root)} imports {alias.name}"
+                            )
                 elif isinstance(node, ast.ImportFrom):
-                    if node.module and any(node.module.startswith(f) for f in forbidden_in_firewall):
-                        leakage_paths.append(f"{py_path.relative_to(self.repo_root)} imports from {node.module}")
+                    if node.module and any(
+                        node.module.startswith(f) for f in forbidden_in_firewall
+                    ):
+                        leakage_paths.append(
+                            f"{py_path.relative_to(self.repo_root)} imports from {node.module}"
+                        )
 
         # 2. Inspect labels files
         if labels_dir.exists():
@@ -189,22 +191,34 @@ class InformationBarrierValidator:
                     if isinstance(node, ast.Import):
                         for alias in node.names:
                             if any(alias.name.startswith(f) for f in forbidden_in_labels):
-                                leakage_paths.append(f"{py_path.relative_to(self.repo_root)} imports {alias.name}")
+                                leakage_paths.append(
+                                    f"{py_path.relative_to(self.repo_root)} imports {alias.name}"
+                                )
                     elif isinstance(node, ast.ImportFrom):
-                        if node.module and any(node.module.startswith(f) for f in forbidden_in_labels):
-                            leakage_paths.append(f"{py_path.relative_to(self.repo_root)} imports from {node.module}")
+                        if node.module and any(
+                            node.module.startswith(f) for f in forbidden_in_labels
+                        ):
+                            leakage_paths.append(
+                                f"{py_path.relative_to(self.repo_root)} imports from {node.module}"
+                            )
 
         passed = len(leakage_paths) == 0
         return BoundaryAuditResult(
             boundary_id="BOUNDARY_STATIC_IMPORTS",
-            description="Static AST import-graph separation between firewall core and experiment/oracle modules",
+            description=(
+                "Static AST import-graph separation between firewall core "
+                "and experiment/oracle modules"
+            ),
             target_component="Import Graph (firewall <-> labels/generator)",
             passed=passed,
             leakage_detected=not passed,
             leakage_paths=leakage_paths,
-            evidence="Verified 0 forbidden cross-boundary imports across firewall and labels source files."
-            if passed
-            else f"Forbidden imports detected: {leakage_paths}",
+            evidence=(
+                "Verified 0 forbidden cross-boundary imports across firewall and "
+                "labels source files."
+                if passed
+                else f"Forbidden imports detected: {leakage_paths}"
+            ),
         )
 
     def run_runtime_boundary_checks(self) -> list[BoundaryAuditResult]:
@@ -217,13 +231,19 @@ class InformationBarrierValidator:
         # Setup test registry
         registry = Registry(
             tools={
-                "execute_export": ToolInfo(tool_class=ToolClass.EGRESS_EXTERNAL, args={"batch_size": "int"}),
-                "select_resource": ToolInfo(tool_class=ToolClass.READ_LOW, args={"resource_ref": "str"}),
+                "execute_export": ToolInfo(
+                    tool_class=ToolClass.EGRESS_EXTERNAL, args={"batch_size": "int"}
+                ),
+                "select_resource": ToolInfo(
+                    tool_class=ToolClass.READ_LOW, args={"resource_ref": "str"}
+                ),
             }
         )
 
         state = initial_state("sess_canary")
-        state.bound_resource = ResourceRef(ref="customer_records", classification=Classification.PUBLIC, selected_seq=1)
+        state.bound_resource = ResourceRef(
+            ref="customer_records", classification=Classification.PUBLIC, selected_seq=1
+        )
         state.destination = DestinationRef(ref="internal_archive", zone=Zone.INTERNAL)
 
         # ----------------------------------------------------------------------
@@ -231,14 +251,17 @@ class InformationBarrierValidator:
         # ----------------------------------------------------------------------
         eval_leaks: list[str] = []
         try:
-            # ActionRequest specifies extra="forbid". Ingesting dict with dataset metadata must fail.
-            ActionRequest.model_validate({
-                "session_id": "sess_canary",
-                "tool": "execute_export",
-                "arguments": {"batch_size": 10},
-                "ground_truth": CANARIES["GROUND_TRUTH_LABEL"],
-                "scenario_type": CANARIES["SCENARIO_TYPE"],
-            })
+            # ActionRequest specifies extra="forbid".
+            # Ingesting dict with dataset metadata must fail.
+            ActionRequest.model_validate(
+                {
+                    "session_id": "sess_canary",
+                    "tool": "execute_export",
+                    "arguments": {"batch_size": 10},
+                    "ground_truth": CANARIES["GROUND_TRUTH_LABEL"],
+                    "scenario_type": CANARIES["SCENARIO_TYPE"],
+                }
+            )
             eval_leaks.append("ActionRequest failed to reject extra dataset metadata fields!")
         except Exception:
             # Expected Pydantic validation error
@@ -247,12 +270,17 @@ class InformationBarrierValidator:
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_EVALUATOR_TO_ACTION_REQUEST",
-                description="Dataset metadata rejection on ActionRequest ingestion (extra='forbid')",
+                description=(
+                    "Dataset metadata rejection on ActionRequest ingestion (extra='forbid')"
+                ),
                 target_component="ActionRequest",
                 passed=len(eval_leaks) == 0,
                 leakage_detected=len(eval_leaks) > 0,
                 leakage_paths=eval_leaks,
-                evidence="ActionRequest strictly rejected extraneous ground_truth and scenario_type fields.",
+                evidence=(
+                    "ActionRequest strictly rejected extraneous ground_truth "
+                    "and scenario_type fields."
+                ),
             )
         )
 
@@ -283,22 +311,37 @@ class InformationBarrierValidator:
         # ----------------------------------------------------------------------
         policy_view = build_policy_view(action, state, registry)
         pv_findings = find_canaries_in_object(policy_view)
-        # Note: PolicyView contains authoritative CanonicalAction arguments (for deterministic policy),
-        # but must NEVER contain oracle labels, scenario types, or critical step index.
+        # Note: PolicyView contains authoritative CanonicalAction arguments
+        # (for deterministic policy), but must NEVER contain oracle labels,
+        # scenario types, or critical step index.
         pv_leaks = [
             f"{path}: leaked {k}"
             for path, k, _ in pv_findings
-            if k in ("GROUND_TRUTH_LABEL", "ORACLE_RATIONALE", "ORACLE_RULE_ID", "CRITICAL_INDEX", "TWIN_TRACE_ID", "SCENARIO_TYPE")
+            if k
+            in (
+                "GROUND_TRUTH_LABEL",
+                "ORACLE_RATIONALE",
+                "ORACLE_RULE_ID",
+                "CRITICAL_INDEX",
+                "TWIN_TRACE_ID",
+                "SCENARIO_TYPE",
+            )
         ]
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_POLICY_VIEW",
-                description="PolicyView contains zero oracle ground-truth, twin IDs, or scenario classification",
+                description=(
+                    "PolicyView contains zero oracle ground-truth, twin IDs, "
+                    "or scenario classification"
+                ),
                 target_component="PolicyEngine (PolicyView)",
                 passed=len(pv_leaks) == 0,
                 leakage_detected=len(pv_leaks) > 0,
                 leakage_paths=pv_leaks,
-                evidence="PolicyView contains strictly canonical action and session state; zero oracle metadata.",
+                evidence=(
+                    "PolicyView contains strictly canonical action and session state; "
+                    "zero oracle metadata."
+                ),
             )
         )
 
@@ -316,12 +359,18 @@ class InformationBarrierValidator:
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_MONITOR_VIEW_ACTION_ONLY",
-                description="Action-only MonitorView sanitizes sensitive credentials and excludes oracle metadata",
+                description=(
+                    "Action-only MonitorView sanitizes sensitive credentials "
+                    "and excludes oracle metadata"
+                ),
                 target_component="Monitor (ActionOnly / B4)",
                 passed=len(mv_ao_leaks) == 0,
                 leakage_detected=len(mv_ao_leaks) > 0,
                 leakage_paths=mv_ao_leaks,
-                evidence="All sensitive credentials (API key, password, bearer token, private key) recursively sanitized; zero oracle metadata.",
+                evidence=(
+                    "All sensitive credentials (API key, password, bearer token, "
+                    "private key) recursively sanitized; zero oracle metadata."
+                ),
             )
         )
 
@@ -363,12 +412,18 @@ class InformationBarrierValidator:
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_MONITOR_VIEW_TRANSCRIPT",
-                description="Transcript MonitorView formats event history without sensitive credentials or oracle labels",
+                description=(
+                    "Transcript MonitorView formats event history without "
+                    "sensitive credentials or oracle labels"
+                ),
                 target_component="Monitor (Transcript / B5)",
                 passed=len(mv_tr_leaks) == 0,
                 leakage_detected=len(mv_tr_leaks) > 0,
                 leakage_paths=mv_tr_leaks,
-                evidence="Transcript projection cleanly formatted with sanitized arguments; zero canary credentials or labels.",
+                evidence=(
+                    "Transcript projection cleanly formatted with sanitized arguments; "
+                    "zero canary credentials or labels."
+                ),
             )
         )
 
@@ -387,12 +442,18 @@ class InformationBarrierValidator:
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_MONITOR_VIEW_HYBRID",
-                description="Hybrid MonitorView typed state summary sanitizes credentials and excludes oracle metadata",
+                description=(
+                    "Hybrid MonitorView typed state summary sanitizes credentials "
+                    "and excludes oracle metadata"
+                ),
                 target_component="Monitor (Hybrid / P1)",
                 passed=len(mv_hy_leaks) == 0,
                 leakage_detected=len(mv_hy_leaks) > 0,
                 leakage_paths=mv_hy_leaks,
-                evidence="State summary includes only allow-listed typed fields; zero canary leaks.",
+                evidence=(
+                    "State summary includes only allow-listed typed fields; "
+                    "zero canary leaks."
+                ),
             )
         )
 
@@ -411,17 +472,31 @@ class InformationBarrierValidator:
         rv_leaks = [
             f"{path}: leaked {k}"
             for path, k, _ in rv_findings
-            if k in ("GROUND_TRUTH_LABEL", "ORACLE_RATIONALE", "ORACLE_RULE_ID", "CRITICAL_INDEX", "TWIN_TRACE_ID", "SCENARIO_TYPE")
+            if k
+            in (
+                "GROUND_TRUTH_LABEL",
+                "ORACLE_RATIONALE",
+                "ORACLE_RULE_ID",
+                "CRITICAL_INDEX",
+                "TWIN_TRACE_ID",
+                "SCENARIO_TYPE",
+            )
         ]
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_REVIEWER_VIEW",
-                description="ReviewerView bound to action and state without oracle ground truth or scenario tags",
+                description=(
+                    "ReviewerView bound to action and state without oracle ground truth "
+                    "or scenario tags"
+                ),
                 target_component="ReviewService (ReviewerView)",
                 passed=len(rv_leaks) == 0,
                 leakage_detected=len(rv_leaks) > 0,
                 leakage_paths=rv_leaks,
-                evidence="ReviewerView contains only session state, sanitized action, and policy facts; zero oracle labels.",
+                evidence=(
+                    "ReviewerView contains only session state, sanitized action, "
+                    "and policy facts; zero oracle labels."
+                ),
             )
         )
 
@@ -441,12 +516,17 @@ class InformationBarrierValidator:
         results.append(
             BoundaryAuditResult(
                 boundary_id="BOUNDARY_FIREWALL_CORE_DECISION",
-                description="FirewallCore decision combinator operates strictly on allow-listed verdicts",
+                description=(
+                    "FirewallCore decision combinator operates strictly on allow-listed verdicts"
+                ),
                 target_component="Decision Combinator (decide)",
                 passed=len(dec_leaks) == 0,
                 leakage_detected=len(dec_leaks) > 0,
                 leakage_paths=dec_leaks,
-                evidence="Decision combinator is purely mathematical function over allow-listed enums; zero dataset metadata input.",
+                evidence=(
+                    "Decision combinator is purely mathematical function over "
+                    "allow-listed enums; zero dataset metadata input."
+                ),
             )
         )
 
@@ -493,11 +573,14 @@ def run_information_barrier_audit_on_dev(
 
     report_md = f"""# End-to-End Information Barrier & Anti-Leakage Audit Report
 
-## Status: **{'PASSED (Zero Leakage)' if result.passed else 'FAILED (Leakage Detected)'}**
+## Status: **{"PASSED (Zero Leakage)" if result.passed else "FAILED (Leakage Detected)"}**
 
 ## Reference & Security Invariant
-- **Source:** `docs/05_TECHNICAL_SPEC.md` §8.2, `docs/01_THREAT_MODEL.md` (INV-08), `docs/06_EXPERIMENT_PROTOCOL.md` §5.3
-- **Requirement:** Ground-truth labels, oracle metadata, twin IDs, scenario classifications, and sensitive credentials must never enter downstream decision components, monitor views, policy inputs, or execution tokens.
+- **Source:** `docs/05_TECHNICAL_SPEC.md` §8.2, `docs/01_THREAT_MODEL.md` (INV-08),
+  `docs/06_EXPERIMENT_PROTOCOL.md` §5.3
+- **Requirement:** Ground-truth labels, oracle metadata, twin IDs, scenario classifications,
+  and sensitive credentials must never enter downstream decision components, monitor views,
+  policy inputs, or execution tokens.
 
 ## Architecture Data-Flow & Information Barriers
 
@@ -551,7 +634,10 @@ flowchart TD
     for b in result.boundaries:
         status_str = "**PASSED**" if b.passed else "**FAILED**"
         leak_cnt = len(b.leakage_paths)
-        report_md += f"| `{b.boundary_id}` | {b.description} | `{b.target_component}` | {status_str} | {leak_cnt} |\n"
+        report_md += (
+            f"| `{b.boundary_id}` | {b.description} | `{b.target_component}` | "
+            f"{status_str} | {leak_cnt} |\n"
+        )
 
     report_md += f"""
 ## Prohibited & Sensitive Fields Tested
@@ -571,10 +657,14 @@ flowchart TD
 | Credentials | `NESTED_SECRET` | Arbitrary deep nested credentials (`secret`) |
 
 ## Audit Findings & Verification
-- **Static AST Checks:** PASSED (zero cross-boundary imports between `src/firewall/` and `experiments/labels`).
-- **Runtime Canary Ingestion:** PASSED (all canaries recursively sanitized from `MonitorView`, `ReviewerView`, and execution tokens).
-- **Extraneous Metadata Rejection:** PASSED (`ActionRequest` extra field rejection verified).
-- **Overall Result:** **PASSED** (Total Boundaries Checked: {result.total_boundaries_checked}, Leakage Paths Found: 0).
+- **Static AST Checks:** PASSED
+  (zero cross-boundary imports between `src/firewall/` and `experiments/labels`).
+- **Runtime Canary Ingestion:** PASSED
+  (all canaries recursively sanitized from `MonitorView`, `ReviewerView`, and execution tokens).
+- **Extraneous Metadata Rejection:** PASSED
+  (`ActionRequest` extra field rejection verified).
+- **Overall Result:** **PASSED**
+  (Total Boundaries Checked: {result.total_boundaries_checked}, Leakage Paths Found: 0).
 """
     output_report_path.write_text(report_md, encoding="utf-8")
 

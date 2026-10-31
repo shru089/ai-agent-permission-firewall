@@ -17,6 +17,18 @@ This protocol formalizes the H1 manipulation check for the canonical DEV dataset
 - `docs/prereg/PREREG-001_DRAFT.md`:
   - §3 (Lines 41–43): Approved threshold table for H1.
 
+### 1.1 Scope Reconciliation (DEV vs Protocol §2.2)
+
+Protocol §2.2 lists six attack families across the broader experimental lifecycle:
+ATK-02, ATK-03, ATK-04, ATK-05, ATK-07, and ATK-08.
+Within the canonical DEV handoff package:
+1. **Four Multi-Step History-Dependent Families:**
+   ATK-02, ATK-03, ATK-04, and ATK-08 are instantiated across 2 variants each (v00, v01) and paired 1-to-1 with matched benign baselines BEN-01, BEN-02, BEN-04, and BEN-09. This yields exactly 8 matched Action-D invariant pairs (16 traces total) forming the critical history-dependent domain $\Omega_{\text{crit}}$.
+2. **ATK-07 Reservation for TEST-NOVEL:**
+   ATK-07 (Cross-Session State Replay) is strictly reserved as an unseen held-out family for the TEST-NOVEL split per Decision D-22 and protocol §5.1. Placing ATK-07 in the DEV partition would violate benchmark split isolation ($T\text{-EXP-005}$) and compromise held-out evaluation integrity.
+3. **ATK-05 Single-Step Scope in DEV:**
+   ATK-05 (Privilege Escalation via Unchecked Delegation) is implemented in DEV as a direct single-step administrative action (`relabel_resource`) rather than a multi-step history-dependent export sequence, so it does not participate in $\Omega_{\text{crit}}$ matched pairs.
+
 ---
 
 ## 2. H1 Acceptance Criteria

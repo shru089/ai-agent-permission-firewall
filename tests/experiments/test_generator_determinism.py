@@ -15,7 +15,9 @@ from experiments.generator.cli import generate_dev_dataset
 
 
 def test_t_exp_001_seed_determinism() -> None:
-    """Verifies that two independent generation runs with the same seed produce byte-identical traces and labels."""
+    """Verifies that two independent generation runs with the same seed
+    produce byte-identical traces and labels.
+    """
     with TemporaryDirectory() as tmp1, TemporaryDirectory() as tmp2:
         dir1 = Path(tmp1)
         dir2 = Path(tmp2)
@@ -65,8 +67,16 @@ def test_seed_variation_changes_trace_ids() -> None:
             reports_dir=dir2 / "reports",
         )
 
-        traces1 = [json.loads(l) for l in (dir1 / "dev" / "traces.jsonl").read_text().splitlines() if l.strip()]
-        traces2 = [json.loads(l) for l in (dir2 / "dev" / "traces.jsonl").read_text().splitlines() if l.strip()]
+        traces1 = [
+            json.loads(line)
+            for line in (dir1 / "dev" / "traces.jsonl").read_text().splitlines()
+            if line.strip()
+        ]
+        traces2 = [
+            json.loads(line)
+            for line in (dir2 / "dev" / "traces.jsonl").read_text().splitlines()
+            if line.strip()
+        ]
 
         ids1 = {t["trace_id"] for t in traces1}
         ids2 = {t["trace_id"] for t in traces2}

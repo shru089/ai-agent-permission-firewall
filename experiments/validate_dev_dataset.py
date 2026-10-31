@@ -155,11 +155,7 @@ class ValidationReport:
             lines.append("| Family ID | Traces | Templates |")
             lines.append("|---|---|---|")
             for fam, count in sorted(self.summary.family_counts.items()):
-                t_count = sum(
-                    1
-                    for t, f in self.summary.template_family_map.items()
-                    if f == fam
-                )
+                t_count = sum(1 for t, f in self.summary.template_family_map.items() if f == fam)
                 lines.append(f"| `{fam}` | {count} | {t_count} |")
             lines.append("")
 
@@ -984,9 +980,7 @@ def validate_sample_counts_and_power(
         )
 
     # Check single-instance templates
-    single_inst_templates = [
-        tmpl for tmpl, count in summary.template_counts.items() if count < 2
-    ]
+    single_inst_templates = [tmpl for tmpl, count in summary.template_counts.items() if count < 2]
     if single_inst_templates:
         issues.append(
             ValidationIssue(
@@ -1106,9 +1100,7 @@ def validate_dev_dataset(
         manifest_verified = man_res
         all_issues.extend(man_issues)
 
-        trace_files = sorted(
-            list(d_path.glob("*.json")) + list(d_path.glob("*.jsonl"))
-        )
+        trace_files = sorted(list(d_path.glob("*.json")) + list(d_path.glob("*.jsonl")))
         # Exclude manifest files
         trace_files = [
             f

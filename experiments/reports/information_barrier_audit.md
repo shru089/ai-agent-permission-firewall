@@ -3,8 +3,11 @@
 ## Status: **PASSED (Zero Leakage)**
 
 ## Reference & Security Invariant
-- **Source:** `docs/05_TECHNICAL_SPEC.md` §8.2, `docs/01_THREAT_MODEL.md` (INV-08), `docs/06_EXPERIMENT_PROTOCOL.md` §5.3
-- **Requirement:** Ground-truth labels, oracle metadata, twin IDs, scenario classifications, and sensitive credentials must never enter downstream decision components, monitor views, policy inputs, or execution tokens.
+- **Source:** `docs/05_TECHNICAL_SPEC.md` §8.2, `docs/01_THREAT_MODEL.md` (INV-08),
+  `docs/06_EXPERIMENT_PROTOCOL.md` §5.3
+- **Requirement:** Ground-truth labels, oracle metadata, twin IDs, scenario classifications,
+  and sensitive credentials must never enter downstream decision components, monitor views,
+  policy inputs, or execution tokens.
 
 ## Architecture Data-Flow & Information Barriers
 
@@ -80,7 +83,11 @@ flowchart TD
 | Credentials | `NESTED_SECRET` | Arbitrary deep nested credentials (`secret`) |
 
 ## Audit Findings & Verification
-- **Static AST Checks:** PASSED (zero cross-boundary imports between `src/firewall/` and `experiments/labels`).
-- **Runtime Canary Ingestion:** PASSED (all canaries recursively sanitized from `MonitorView`, `ReviewerView`, and execution tokens).
-- **Extraneous Metadata Rejection:** PASSED (`ActionRequest` extra field rejection verified).
-- **Overall Result:** **PASSED** (Total Boundaries Checked: 8, Leakage Paths Found: 0).
+- **Static AST Checks:** PASSED
+  (zero cross-boundary imports between `src/firewall/` and `experiments/labels`).
+- **Runtime Canary Ingestion:** PASSED
+  (all canaries recursively sanitized from `MonitorView`, `ReviewerView`, and execution tokens).
+- **Extraneous Metadata Rejection:** PASSED
+  (`ActionRequest` extra field rejection verified).
+- **Overall Result:** **PASSED**
+  (Total Boundaries Checked: 8, Leakage Paths Found: 0).

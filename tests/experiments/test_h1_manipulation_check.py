@@ -11,46 +11,37 @@ Verifies:
 7. Real dataset schema and pair linkage (twin_trace_id) correctly pass all checks.
 """
 
-import json
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from experiments.datasets.dev.h1_impl import (
-    ActionDInvarianceResult,
     B3CheckResult,
     B4CheckResult,
-    H1ManipulationCheckReport,
     H1Status,
     cluster_bootstrap_b4,
     compute_youden_j,
-    default_b3_evaluator,
-    default_b4_evaluator,
     evaluate_b3_determinism,
     evaluate_b4_stochastic,
-    extract_matched_history_pairs,
     run_h1_check,
     verify_action_d_invariance,
 )
 from experiments.validation.h1_manipulation_check import (
-    AUTHORITATIVE_CRITERIA,
     H1ManipulationCheckValidator,
-    H1ValidationResult,
-    H1ValidationStatus,
-    run_h1_validation_on_dev,
 )
 
 
 def test_h1_authoritative_criterion_source_and_quote() -> None:
-    """Verifies that the validator records the exact source file, line/section, and quoted criterion."""
+    """Verifies that validator records exact source file, line/section, and quoted criterion."""
     validator = H1ManipulationCheckValidator()
     assert validator.criterion_metadata["protocol_file"] == "docs/06_EXPERIMENT_PROTOCOL.md"
     assert "§2.1" in validator.criterion_metadata["protocol_section"]
     assert "§2.2" in validator.criterion_metadata["protocol_section"]
     assert "J = 0 exactly" in validator.criterion_metadata["b3_quoted_criterion"]
     assert "absolute J <= 0.03" in validator.criterion_metadata["b4_quoted_criterion"]
-    assert "95% cluster-bootstrap confidence interval including 0" in validator.criterion_metadata["b4_quoted_criterion"]
+    assert (
+        "95% cluster-bootstrap confidence interval including 0"
+        in validator.criterion_metadata["b4_quoted_criterion"]
+    )
 
 
 def test_h1_protocol_artifact_contains_no_results() -> None:
@@ -145,7 +136,9 @@ def test_h1_action_d_invariance_verification_not_hardcoded() -> None:
             "is_history_dependent": True,
             "scenario_type": "attack",
             "critical_step_index": 0,
-            "actions": [{"step": 0, "tool": "export", "arguments": {"bucket": "dest", "leak": True}}],
+            "actions": [
+                {"step": 0, "tool": "export", "arguments": {"bucket": "dest", "leak": True}}
+            ],
         },
         {
             "trace_id": "ben_0",
@@ -153,7 +146,9 @@ def test_h1_action_d_invariance_verification_not_hardcoded() -> None:
             "is_history_dependent": True,
             "scenario_type": "benign",
             "critical_step_index": 0,
-            "actions": [{"step": 0, "tool": "export", "arguments": {"bucket": "dest", "leak": False}}],
+            "actions": [
+                {"step": 0, "tool": "export", "arguments": {"bucket": "dest", "leak": False}}
+            ],
         },
     ]
 

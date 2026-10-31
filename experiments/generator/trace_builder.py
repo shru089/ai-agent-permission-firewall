@@ -5,7 +5,6 @@ Constructs complete agent execution traces strictly conforming to
 docs/06_EXPERIMENT_PROTOCOL.md §5.4 JSON schema.
 """
 
-from datetime import datetime, timezone
 from typing import Any, Optional
 
 from experiments.generator.scenarios import ScenarioTemplate
@@ -47,18 +46,22 @@ class TraceBuilder:
         actions: list[dict[str, Any]] = []
         for builder in template.step_builders:
             step_def = builder(variant_idx)
-            actions.append({
-                "step": step_def.step,
-                "tool": step_def.tool,
-                "arguments": step_def.arguments,
-                "declared_intent": step_def.declared_intent,
-            })
+            actions.append(
+                {
+                    "step": step_def.step,
+                    "tool": step_def.tool,
+                    "arguments": step_def.arguments,
+                    "declared_intent": step_def.declared_intent,
+                }
+            )
 
         # Calculate RFC-8785 canonical digest over actions
         content_digest = canonical_hash(actions)
 
         # Context length approximation (~4 characters per token)
-        raw_text_len = sum(len(str(a["arguments"])) + len(a["tool"]) + len(a["declared_intent"]) for a in actions)
+        raw_text_len = sum(
+            len(str(a["arguments"])) + len(a["tool"]) + len(a["declared_intent"]) for a in actions
+        )
         context_length_tokens = max(32, raw_text_len // 4)
 
         provenance = {

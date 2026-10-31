@@ -92,7 +92,11 @@ def test_action_d_invariance_history_divergence_requirement(
     tampered_traces = [json.loads(json.dumps(t)) for t in dev_traces]
 
     # Find a pair and overwrite benign trace history with attack trace history
-    atk_trace = next(t for t in tampered_traces if t.get("is_history_dependent") and t.get("scenario_type") == "attack")
+    atk_trace = next(
+        t
+        for t in tampered_traces
+        if t.get("is_history_dependent") and t.get("scenario_type") == "attack"
+    )
     twin_id = atk_trace["twin_trace_id"]
     ben_trace = next(t for t in tampered_traces if t["trace_id"] == twin_id)
 
