@@ -45,5 +45,29 @@ This document records key technical, architectural, and security methodology dec
 ### D-05: Cryptographic Integrity & Manifest Handoff
 - **Context:** Delivery to Shrishti requires cryptographic verification that artifacts have not been modified or corrupted.
 - **Decision:**
-  - Generated `experiments/datasets/dev/manifest.sha256` hashing all delivered files (`traces.jsonl`, `labels.jsonl`, `provenance.json`, `split_isolation.json`, `label_audit.jsonl`, `README.md`).
+  - Generated `experiments/datasets/dev/manifest.sha256` hashing all delivered files (`traces.jsonl`, `labels.jsonl`, `provenance.json`, `split_isolation.json`, `label_audit.jsonl`, `h1_manipulation_check.json`, `information_barrier_audit.json`, `README.md`).
   - Checksums are verified via standard unix `shasum -a 256 -c manifest.sha256` and unit tests in `tests/experiments/test_manifest.py`.
+
+### D-06: Authoritative H1 Manipulation-Check Criterion (docs/06 §2.1–§2.2, PREREG-001 §3)
+- **Context:** H1 evaluates history necessity on matched pairs $\Omega_{\text{crit}}$. Acceptance must apply the formally established criterion without inventing tolerances or assuming numerical approximations.
+- **Decision:**
+  - Located the authoritative criterion in `docs/06_EXPERIMENT_PROTOCOL.md` §2.1 (Line 45), §2.2 (Lines 78–89) and `docs/prereg/PREREG-001_DRAFT.md` §3 (Line 43):
+    - Deterministic B3: `"B3: J = 0 exactly."` (exact numerical equality $J == 0.0$).
+    - Stochastic B4: `"absolute J <= 0.03, with a 95% cluster-bootstrap confidence interval including 0."`
+  - Implemented `H1ManipulationCheckValidator` in `experiments/validation/h1_manipulation_check.py`.
+  - Evaluated on the canonical DEV dataset: $J = 0.0000$ exactly across all 8 history-dependent pairs ($Recall = FPR = 1.0$), confirming `PASS`.
+  - Tested in `tests/experiments/test_h1_manipulation_check.py` to ensure zero tolerance is invented and that missing criteria yield `BLOCKED`.
+
+### D-07: End-to-End Information Barrier & Anti-Leakage Audit (INV-08, docs/05 §8.2)
+- **Context:** Benchmark integrity requires proving that ground-truth labels, oracle metadata, scenario tags, and sensitive credentials cannot enter downstream decision-making components.
+- **Decision:**
+  - Implemented `InformationBarrierValidator` in `experiments/validation/information_barrier.py` auditing 8 boundaries:
+    1. Static AST imports: zero cross-boundary imports between `src/firewall/` and `experiments/labels`.
+    2. Evaluator $\to$ `ActionRequest`: extraneous metadata fields strictly rejected via Pydantic `extra="forbid"`.
+    3. `PolicyView`: zero oracle ground truth or scenario classification.
+    4. `MonitorView` (ActionOnly): sensitive keys (`api_key`, `password`, `token`, `secret`, `private_key`) scrubbed via `sanitize_data`.
+    5. `MonitorView` (Transcript): event history formatted without credentials or oracle labels.
+    6. `MonitorView` (Hybrid): typed state summary contains only allow-listed state fields.
+    7. `ReviewerView`: review tickets contain only session state and sanitized action; no oracle labels.
+    8. `FirewallCore` decision combinator: operates strictly on allow-listed enums.
+  - Tested in `tests/experiments/test_information_barrier.py` with planted canaries and simulated leakage injection.

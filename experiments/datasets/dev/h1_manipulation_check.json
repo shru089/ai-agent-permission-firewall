@@ -1,0 +1,18 @@
+{
+  "status": "PASS",
+  "arm": "B3",
+  "criterion_source": "docs/06_EXPERIMENT_PROTOCOL.md \u00a72.1 (Line 45) and \u00a72.2 (Lines 78\u201382); docs/prereg/PREREG-001_DRAFT.md \u00a73 (Line 43)",
+  "quoted_criterion": "B3: J = 0 exactly. (Deterministic B3 must have Youden\u2019s J exactly 0.)",
+  "computed_j": 0.0,
+  "recall": 1.0,
+  "fpr": 1.0,
+  "tp": 8,
+  "fn": 0,
+  "fp": 8,
+  "tn": 0,
+  "pair_count": 8,
+  "trace_count": 16,
+  "reason": "B3 satisfies exact criterion (J = 0.0000 == 0.0).",
+  "ci_lower": null,
+  "ci_upper": null
+}

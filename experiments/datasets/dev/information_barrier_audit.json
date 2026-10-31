@@ -1,0 +1,94 @@
+{
+  "passed": true,
+  "static_checks_passed": true,
+  "runtime_checks_passed": true,
+  "total_boundaries_checked": 8,
+  "boundaries": [
+    {
+      "boundary_id": "BOUNDARY_STATIC_IMPORTS",
+      "description": "Static AST import-graph separation between firewall core and experiment/oracle modules",
+      "target_component": "Import Graph (firewall <-> labels/generator)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "Verified 0 forbidden cross-boundary imports across firewall and labels source files."
+    },
+    {
+      "boundary_id": "BOUNDARY_EVALUATOR_TO_ACTION_REQUEST",
+      "description": "Dataset metadata rejection on ActionRequest ingestion (extra='forbid')",
+      "target_component": "ActionRequest",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "ActionRequest strictly rejected extraneous ground_truth and scenario_type fields."
+    },
+    {
+      "boundary_id": "BOUNDARY_POLICY_VIEW",
+      "description": "PolicyView contains zero oracle ground-truth, twin IDs, or scenario classification",
+      "target_component": "PolicyEngine (PolicyView)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "PolicyView contains strictly canonical action and session state; zero oracle metadata."
+    },
+    {
+      "boundary_id": "BOUNDARY_MONITOR_VIEW_ACTION_ONLY",
+      "description": "Action-only MonitorView sanitizes sensitive credentials and excludes oracle metadata",
+      "target_component": "Monitor (ActionOnly / B4)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "All sensitive credentials (API key, password, bearer token, private key) recursively sanitized; zero oracle metadata."
+    },
+    {
+      "boundary_id": "BOUNDARY_MONITOR_VIEW_TRANSCRIPT",
+      "description": "Transcript MonitorView formats event history without sensitive credentials or oracle labels",
+      "target_component": "Monitor (Transcript / B5)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "Transcript projection cleanly formatted with sanitized arguments; zero canary credentials or labels."
+    },
+    {
+      "boundary_id": "BOUNDARY_MONITOR_VIEW_HYBRID",
+      "description": "Hybrid MonitorView typed state summary sanitizes credentials and excludes oracle metadata",
+      "target_component": "Monitor (Hybrid / P1)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "State summary includes only allow-listed typed fields; zero canary leaks."
+    },
+    {
+      "boundary_id": "BOUNDARY_REVIEWER_VIEW",
+      "description": "ReviewerView bound to action and state without oracle ground truth or scenario tags",
+      "target_component": "ReviewService (ReviewerView)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "ReviewerView contains only session state, sanitized action, and policy facts; zero oracle labels."
+    },
+    {
+      "boundary_id": "BOUNDARY_FIREWALL_CORE_DECISION",
+      "description": "FirewallCore decision combinator operates strictly on allow-listed verdicts",
+      "target_component": "Decision Combinator (decide)",
+      "passed": true,
+      "leakage_detected": false,
+      "leakage_paths": [],
+      "evidence": "Decision combinator is purely mathematical function over allow-listed enums; zero dataset metadata input."
+    }
+  ],
+  "tested_prohibited_fields": [
+    "GROUND_TRUTH_LABEL",
+    "ORACLE_RATIONALE",
+    "ORACLE_RULE_ID",
+    "CRITICAL_INDEX",
+    "TWIN_TRACE_ID",
+    "SCENARIO_TYPE",
+    "API_KEY",
+    "PASSWORD",
+    "PRIVATE_KEY",
+    "AUTH_TOKEN",
+    "NESTED_SECRET"
+  ],
+  "leakage_paths": []
+}
