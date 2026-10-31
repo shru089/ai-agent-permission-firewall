@@ -310,14 +310,53 @@ class FirewallCore:
                 review_reason = reason
 
             elif policy_result.verdict == PolicyVerdict.PERMIT:
-                # Policy PERMIT: check if escalate_only monitor is configured
+                # Rule: PERMIT
                 path = "fast_path"
-                if (
+                if tool_info.tool_class in self.decision_config.mandatory_review_classes:
+                    # Mandatory-review tool class results in REVIEW even on PERMIT (INV-04)
+                    decision = Decision.REVIEW
+                    reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
+                    reason_codes = [reason]
+                    review_reason = reason
+                    if (
+                        self.monitor is not None
+                        or (self.cascade_adapter and self.cascade_adapter.monitor is not None)
+                    ):
+                        monitor_invoked = True
+                        active_mon = self.monitor or self.cascade_adapter
+                        cand_id = getattr(active_mon, "monitor_id", None)
+                        mon_id = cand_id if isinstance(cand_id, str) else "monitor"
+                        monitor_view = build_monitor_view(
+                            monitor_type=mon_id,
+                            action=canonical_action,
+                            state=state,
+                            registry=self.registry,
+                        )
+                        if self.monitor is not None:
+                            monitor_assessment = self.monitor.assess(monitor_view)
+                            monitor_verdict = monitor_assessment.verdict
+                        else:
+                            advisory = self.cascade_adapter.decide(
+                                policy_verdict=PolicyVerdict.PERMIT,
+                                action=canonical_action,
+                                view=monitor_view,
+                            )
+                            monitor_verdict = advisory.monitor_verdict
+                            monitor_assessment = MonitorAssessment(
+                                verdict=advisory.monitor_verdict,
+                                score=0.0 if advisory.verdict == "LOW_RISK" else 1.0,
+                                rationale=advisory.reason,
+                                raw_output=advisory.raw_output,
+                                monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
+                                error=advisory.error,
+                            )
+                elif (
                     self.decision_config.monitor_authority == "escalate_only"
-                    and self.monitor is not None
+                    and (self.monitor is not None or (self.cascade_adapter and self.cascade_adapter.monitor is not None))
                 ):
                     monitor_invoked = True
-                    cand_id = getattr(self.monitor, "monitor_id", None)
+                    active_mon = self.monitor or self.cascade_adapter
+                    cand_id = getattr(active_mon, "monitor_id", None)
                     mon_id = cand_id if isinstance(cand_id, str) else "monitor"
                     monitor_view = build_monitor_view(
                         monitor_type=mon_id,
@@ -325,8 +364,25 @@ class FirewallCore:
                         state=state,
                         registry=self.registry,
                     )
-                    monitor_assessment = self.monitor.assess(monitor_view)
-                    monitor_verdict = monitor_assessment.verdict
+                    if self.monitor is not None:
+                        monitor_assessment = self.monitor.assess(monitor_view)
+                        monitor_verdict = monitor_assessment.verdict
+                    else:
+                        advisory = self.cascade_adapter.decide(
+                            policy_verdict=PolicyVerdict.PERMIT,
+                            action=canonical_action,
+                            view=monitor_view,
+                        )
+                        monitor_verdict = advisory.monitor_verdict
+                        monitor_assessment = MonitorAssessment(
+                            verdict=advisory.monitor_verdict,
+                            score=0.0 if advisory.verdict == "LOW_RISK" else 1.0,
+                            rationale=advisory.reason,
+                            raw_output=advisory.raw_output,
+                            monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
+                            error=advisory.error,
+                        )
+
                     decision, reason_codes = decide(
                         valid=True,
                         policy_verdict=policy_result.verdict,
@@ -374,52 +430,48 @@ class FirewallCore:
                 monitor_invoked = self.cascade_adapter.monitor is not None
                 monitor_verdict = cascade_res.monitor_verdict
 
-                # Invariant: Never return ALLOW after a monitor failure (INV-04)
-                monitor_failed = (
-                    cascade_res.monitor_verdict == MonitorVerdict.UNKNOWN
-                    or cascade_res.error is not None
-                    or cascade_res.reason in [r.value for r in CascadeFailureReason]
-                )
-
-                if monitor_failed or cascade_res.decision == Decision.REVIEW:
-                    decision = Decision.REVIEW
-                    reason = cascade_res.reason
-                    reason_codes = cascade_res.reason_codes or [reason]
+                # Core independently enforces final decisions:
+                # 1. UNDETERMINED + BENIGN/LOW_RISK = REVIEW. Never ALLOW or execute.
+                # 2. Rejection cascade is ADVISORY ONLY.
+                decision = Decision.REVIEW
+                if tool_info.tool_class in self.decision_config.mandatory_review_classes:
+                    reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
+                    reason_codes = [reason, cascade_res.reason] if cascade_res.reason != reason else [reason]
                     review_reason = reason
-                    if cascade_res.error or monitor_failed:
-                        failure_reason = reason
-                elif cascade_res.decision == Decision.DENY:
-                    decision = Decision.DENY
-                    reason = cascade_res.reason
-                    reason_codes = cascade_res.reason_codes or [reason]
-                    failure_reason = reason
-                elif cascade_res.decision == Decision.ALLOW:
-                    # Enforce mandatory review classes (INV-04, D-5c)
-                    if tool_info.tool_class in self.decision_config.mandatory_review_classes:
-                        decision = Decision.REVIEW
-                        reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
-                        reason_codes = [reason]
-                        review_reason = reason
-                    else:
-                        decision = Decision.ALLOW
-                        reason = cascade_res.reason
+                elif cascade_res.verdict == "LOW_RISK" or cascade_res.monitor_verdict == MonitorVerdict.BENIGN:
+                    reason = "UNDETERMINED_BENIGN_REQUIRES_REVIEW"
+                    reason_codes = ["UNDETERMINED_BENIGN_REQUIRES_REVIEW", cascade_res.reason]
+                    review_reason = reason
+                elif cascade_res.verdict == "ELEVATED_RISK" or cascade_res.monitor_verdict == MonitorVerdict.SUSPICIOUS:
+                    if self.decision_config.suspicious_map == Decision.DENY:
+                        decision = Decision.DENY
+                        reason = cascade_res.reason or "MONITOR_SUSPICIOUS"
                         reason_codes = cascade_res.reason_codes or [reason]
+                        failure_reason = reason
+                    else:
+                        decision = Decision.REVIEW
+                        reason = cascade_res.reason or "MONITOR_SUSPICIOUS"
+                        reason_codes = cascade_res.reason_codes or [reason]
+                        review_reason = reason
                 else:
-                    # Defensive fallback: fail-closed to REVIEW
+                    # UNCERTAIN, UNAVAILABLE, or monitor failure
                     decision = Decision.REVIEW
-                    reason = "UNRECOGNIZED_CASCADE_DECISION"
-                    reason_codes = ["UNRECOGNIZED_CASCADE_DECISION"]
+                    reason = cascade_res.reason
+                    reason_codes = cascade_res.reason_codes or [reason]
                     review_reason = reason
+                    if cascade_res.error or cascade_res.verdict == "UNAVAILABLE":
+                        failure_reason = reason
 
-                # Populate monitor_assessment for review ticket if applicable
+                # Populate monitor_assessment for review ticket
                 monitor_assessment = MonitorAssessment(
                     verdict=cascade_res.monitor_verdict,
-                    score=0.0 if decision == Decision.ALLOW else 1.0,
+                    score=0.0 if cascade_res.verdict == "LOW_RISK" else 1.0,
                     rationale=cascade_res.reason,
                     raw_output=cascade_res.raw_output,
                     monitor_version=getattr(self.cascade_adapter, "version", "0.1.0"),
                     error=cascade_res.error,
                 )
+
 
             else:
                 # Unexpected policy verdict -> fail-closed to DENY
@@ -626,6 +678,7 @@ class FirewallCore:
                 recorded_state_head = self._ticket_state_heads.get(ticket_id)
                 if recorded_state_head is None:
                     for r in reversed(self.audit_store.get_records(session_id)):
+                        # pyrefly: ignore[missing-attribute]
                         if r.record_type == "DECISION" and r.payload.get("action_id") == action.action_id:
                             recorded_state_head = r.payload.get("state_head_hash")
                             break
@@ -643,8 +696,9 @@ class FirewallCore:
                         ticket_id=ticket_id,
                     )
 
-                # e. If the state head changed since ticket creation, return DENY; do not execute directly
-                if recorded_state_head is not None and recorded_state_head != state.head_hash:
+                # e. If the state head changed since ticket creation (or is missing), return DENY; do not execute directly
+                if recorded_state_head is None or recorded_state_head != state.head_hash:
+                    self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(
                         action_id=action.action_id,
                         status="DENIED",

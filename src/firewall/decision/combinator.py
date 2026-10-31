@@ -50,8 +50,8 @@ def decide(
     - D4c: V_t = PERMIT, escalate_only, u_t = SUSPICIOUS -> suspicious_map (REVIEW / DENY)
     - D4d: V_t = PERMIT, escalate_only, u_t = UNKNOWN / NOT_CONSULTED -> REVIEW (P-FAILCLOSED)
     - D5a: V_t = UNDETERMINED, monitor_authority = none -> REVIEW
-    - D5b: V_t = UNDETERMINED, u_t = BENIGN, c(a_t) not in MR -> ALLOW
-    - D5c: V_t = UNDETERMINED, u_t = BENIGN, c(a_t) in MR -> REVIEW
+    - D5b: V_t = UNDETERMINED, u_t = BENIGN -> REVIEW (UNDETERMINED_BENIGN_REQUIRES_REVIEW)
+    - D5c: V_t = UNDETERMINED, u_t = BENIGN, c(a_t) in MR -> REVIEW (CLASS_REQUIRES_REVIEW)
     - D5d: V_t = UNDETERMINED, u_t = SUSPICIOUS -> suspicious_map (REVIEW / DENY)
     - D5e: V_t = UNDETERMINED, u_t = UNKNOWN / NOT_CONSULTED -> REVIEW (P-FAILCLOSED)
 
