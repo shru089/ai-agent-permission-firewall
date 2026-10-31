@@ -20,8 +20,13 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-import experiments.metrics as metrics
-from experiments.evaluate import (
+# Ensure workspace root is in sys.path for direct script execution
+_ROOT_DIR = Path(__file__).resolve().parent.parent
+if str(_ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(_ROOT_DIR))
+
+import experiments.metrics as metrics  # noqa: E402
+from experiments.evaluate import (  # noqa: E402
     CANONICAL_ARMS,
     load_dataset,
     run_mode_a,
