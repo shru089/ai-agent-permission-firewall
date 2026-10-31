@@ -114,9 +114,11 @@ class CascadeAdapter:
         monitor: Optional[Any] = None,
         *,
         default_timeout_ms: Optional[int] = None,
+        suspicious_map: Decision = Decision.DENY,
     ) -> None:
         self.monitor = monitor
         self.default_timeout_ms = default_timeout_ms
+        self.suspicious_map = suspicious_map
 
     def decide(
         self,

@@ -127,7 +127,10 @@ class FirewallCore:
         self.audit_store = audit_store or AuditStore()
         self.token_store = token_store or TokenStore()
         self.review_service = review_service or ReviewService()
-        self.verifier = verifier or HmacEvidenceVerifier(key=b"firewall_default_key")
+        if executor is not None and verifier is None and getattr(executor, "verifier", None):
+            self.verifier = executor.verifier
+        else:
+            self.verifier = verifier or HmacEvidenceVerifier(key=b"firewall_default_key")
         self.executor = executor or ControlledExecutor(
             token_store=self.token_store, verifier=self.verifier
         )
@@ -137,7 +140,10 @@ class FirewallCore:
                 if isinstance(cascade_adapter.monitor, Monitor):
                     self.monitor = SafeMonitorWrapper(cascade_adapter.monitor)
         else:
-            self.cascade_adapter = CascadeAdapter(monitor=self.monitor or monitor)
+            self.cascade_adapter = CascadeAdapter(
+                monitor=self.monitor or monitor,
+                suspicious_map=self.decision_config.suspicious_map,
+            )
 
         # Session control state
         self._global_lock = threading.Lock()
@@ -686,6 +692,7 @@ class FirewallCore:
                 # d. If current policy verdict is PROHIBIT, return DENY and do not execute
                 if policy_result.verdict == PolicyVerdict.PROHIBIT:
                     reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or ["POLICY_PROHIBIT"]
+                    reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
                     self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(
                         action_id=action.action_id,

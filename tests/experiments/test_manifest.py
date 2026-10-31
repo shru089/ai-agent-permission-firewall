@@ -40,6 +40,8 @@ def test_manifest_checksums_match_all_files() -> None:
         "provenance.json",
         "split_isolation.json",
         "label_audit.jsonl",
+        "h1_manipulation_check.json",
+        "information_barrier_audit.json",
     }
 
     assert set(entries.keys()) == expected_files, f"Manifest keys mismatch: {set(entries.keys())} vs {expected_files}"
@@ -63,6 +65,8 @@ def test_no_untracked_files_in_dev_package() -> None:
         "provenance.json",
         "split_isolation.json",
         "label_audit.jsonl",
+        "h1_manipulation_check.json",
+        "information_barrier_audit.json",
         "manifest.sha256",
     }
 

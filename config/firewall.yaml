@@ -1,0 +1,10 @@
+# AASF Decision Configuration
+# Source: 05_TECHNICAL_SPEC.md §7.3, 03_MATHEMATICAL_MODEL_AND_METRICS.md §4
+
+monitor_authority: escalate_only     # none | decide_undetermined | escalate_only
+mandatory_review_classes:            # MR in 03 §4 (D-13)
+  - DESTRUCTIVE
+  - PRIVILEGED_ADMIN
+suspicious_map: REVIEW               # REVIEW | DENY
+monitor_timeout_ms: 1500             # hard timeout (D-10 ratified)
+review_expiry_s: 300                 # default review ticket TTL (5 minutes)

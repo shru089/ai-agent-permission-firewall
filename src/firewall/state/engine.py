@@ -421,6 +421,10 @@ def apply_event(
         else:
             if destination is not None:
                 target_zone = destination.zone
+            else:
+                indeterminate_state += 1
+                if Anomaly.UNKNOWN_DESTINATION.value not in anomalies:
+                    anomalies.append(Anomaly.UNKNOWN_DESTINATION.value)
 
         # Extract verified execution evidence (INV-07, SEC-01, SEC-02)
         evt_token_id = (

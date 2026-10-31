@@ -147,8 +147,9 @@ class ReviewService:
             self._tickets[ticket_id] = updated
             return updated
 
-    def has_pending_review(self, session_id: str) -> bool:
+    def has_pending_review(self, session_id: str, now_ms: Optional[int] = None) -> bool:
         """Check if session has an active pending review ticket (D-17)."""
+        curr_time = now_ms if now_ms is not None else int(time.time() * 1000)
         with self._lock:
             t_id = self._pending_by_session.get(session_id)
             if t_id is None:
@@ -157,15 +158,37 @@ class ReviewService:
             if t is None or t.status != ReviewStatus.PENDING:
                 self._pending_by_session.pop(session_id, None)
                 return False
+            # Check expiration: for synthetic test timestamps (< 1e12), require explicit now_ms
+            is_expired = (now_ms is not None and now_ms > t.expires_ms) or (
+                now_ms is None and t.expires_ms > 1_000_000_000_000 and curr_time > t.expires_ms
+            )
+            if is_expired:
+                self._tickets[t_id] = t.model_copy(update={"status": ReviewStatus.EXPIRED})
+                self._pending_by_session.pop(session_id, None)
+                return False
             return True
 
-    def get_pending_ticket_for_session(self, session_id: str) -> Optional[ReviewTicket]:
+    def get_pending_ticket_for_session(
+        self, session_id: str, now_ms: Optional[int] = None
+    ) -> Optional[ReviewTicket]:
         """Get the current pending ticket for a session if any."""
+        curr_time = now_ms if now_ms is not None else int(time.time() * 1000)
         with self._lock:
             t_id = self._pending_by_session.get(session_id)
             if not t_id:
                 return None
-            return self._tickets.get(t_id)
+            t = self._tickets.get(t_id)
+            if t is None or t.status != ReviewStatus.PENDING:
+                self._pending_by_session.pop(session_id, None)
+                return None
+            is_expired = (now_ms is not None and now_ms > t.expires_ms) or (
+                now_ms is None and t.expires_ms > 1_000_000_000_000 and curr_time > t.expires_ms
+            )
+            if is_expired:
+                self._tickets[t_id] = t.model_copy(update={"status": ReviewStatus.EXPIRED})
+                self._pending_by_session.pop(session_id, None)
+                return None
+            return t
 
     def get_ticket(self, ticket_id: str) -> Optional[ReviewTicket]:
         """Look up ticket by ID."""

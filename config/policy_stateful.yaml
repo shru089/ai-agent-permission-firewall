@@ -1,0 +1,35 @@
+# AASF Stateful Policy Rules
+# Source: 05_TECHNICAL_SPEC.md §7.2, 03_MATHEMATICAL_MODEL_AND_METRICS.md §3
+
+policy_version: "0.1.0"
+binding_mode: implicit            # implicit | explicit
+rules:
+  - id: R1-no-confidential-external-export
+    effect: PROHIBIT
+    tool: execute_export
+    when:
+      - { state: bound_resource.classification, op: eq, value: CONFIDENTIAL }
+      - { state: destination.zone,             op: eq, value: EXTERNAL }
+  - id: R2-permit-public-external-export
+    effect: PERMIT
+    tool: execute_export
+    when:
+      - { state: bound_resource.classification, op: eq, value: PUBLIC }
+      - { state: destination.zone,             op: eq, value: EXTERNAL }
+      - { state: job_created,                  op: eq, value: true }
+  - id: R3-permit-internal-export
+    effect: PERMIT
+    tool: execute_export
+    when:
+      - { state: destination.zone, op: eq, value: INTERNAL }
+  - id: P-filler-read-low
+    effect: PERMIT
+    tool_class: READ_LOW
+  - id: R4-agents-cannot-relabel
+    effect: PROHIBIT
+    tool: relabel_resource
+  - id: R5-cumulative-external-egress-limit
+    effect: PROHIBIT
+    tool: execute_export
+    when:
+      - { state: egress_counters.EXTERNAL.rows_plus_pending, op: gt, value: 1000 }

@@ -1,0 +1,38 @@
+# AASF Resource, Destination, and Tool Registry
+# Source: 05_TECHNICAL_SPEC.md §7.1
+
+version: "0.1.0"
+resources:
+  customer_records:
+    classification: CONFIDENTIAL
+    rows: 5000
+  public_records:
+    classification: PUBLIC
+    rows: 800
+  backup_bucket:
+    classification: CONFIDENTIAL
+    rows: 10000
+destinations:
+  external_storage:
+    zone: EXTERNAL
+  internal_archive:
+    zone: INTERNAL
+  backup_bucket:
+    zone: EXTERNAL
+tools:
+  select_resource:
+    tool_class: READ_SENSITIVE
+  create_export_job:
+    tool_class: WRITE_INTERNAL
+  configure_destination:
+    tool_class: WRITE_INTERNAL
+  execute_export:
+    tool_class: EGRESS_EXTERNAL
+  reset_context:
+    tool_class: WRITE_INTERNAL
+  validate_schema:
+    tool_class: READ_LOW
+  read_resource:
+    tool_class: READ_SENSITIVE
+  relabel_resource:
+    tool_class: PRIVILEGED_ADMIN

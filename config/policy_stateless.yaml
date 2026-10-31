@@ -1,0 +1,12 @@
+# AASF Stateless Policy Rules
+# Source: 05_TECHNICAL_SPEC.md §7.1
+
+policy_version: "0.1.0"
+binding_mode: explicit
+rules:
+  - id: P-stateless-read-low
+    effect: PERMIT
+    tool_class: READ_LOW
+  - id: R-stateless-prohibit-relabel
+    effect: PROHIBIT
+    tool: relabel_resource
