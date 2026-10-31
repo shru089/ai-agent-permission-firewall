@@ -8,6 +8,7 @@ Enforces all 24 required test cases across:
 """
 
 from unittest.mock import MagicMock
+
 import pytest
 
 from firewall.cascade.adapter import (
@@ -28,7 +29,6 @@ from firewall.contracts.models import (
     ActionRequest,
     CanonicalAction,
     MonitorAssessment,
-    MonitorView,
     ResourceRef,
     StateEventEnvelope,
 )
@@ -201,7 +201,9 @@ def test_case_06_adapter_exception_maps_to_unavailable_review() -> None:
 
 
 @pytest.mark.unit
-def test_case_07_undetermined_plus_benign_equals_review_never_allow(test_registry: Registry) -> None:
+def test_case_07_undetermined_plus_benign_equals_review_never_allow(
+    test_registry: Registry,
+) -> None:
     """Case 7: UNDETERMINED + BENIGN = REVIEW, never ALLOW or execution."""
     cfg = DecisionConfig(monitor_authority="decide_undetermined")
     dec, reasons = decide(
@@ -262,8 +264,20 @@ def test_case_08_prohibit_plus_benign_equals_deny(test_registry: Registry) -> No
     )
     fw = FirewallCore(registry=test_registry, monitor=mock_mon)
     session_id = "sess_c8"
-    fw.submit(ActionRequest(session_id=session_id, tool="select_resource", arguments={"resource_ref": "customer_records"}))
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="select_resource",
+            arguments={"resource_ref": "customer_records"},
+        )
+    )
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
     # Binding confidential resource and external storage makes execute_export PROHIBIT under R1
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
     assert resp.decision == Decision.DENY
@@ -292,8 +306,20 @@ def test_case_09_prohibit_plus_suspicious_equals_deny(test_registry: Registry) -
     )
     fw = FirewallCore(registry=test_registry, monitor=mock_mon)
     session_id = "sess_c9"
-    fw.submit(ActionRequest(session_id=session_id, tool="select_resource", arguments={"resource_ref": "customer_records"}))
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="select_resource",
+            arguments={"resource_ref": "customer_records"},
+        )
+    )
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
     assert resp.decision == Decision.DENY
     assert resp.status == "DENIED"
@@ -321,22 +347,48 @@ def test_case_10_prohibit_plus_unknown_equals_deny(test_registry: Registry) -> N
     )
     fw = FirewallCore(registry=test_registry, monitor=mock_mon)
     session_id = "sess_c10"
-    fw.submit(ActionRequest(session_id=session_id, tool="select_resource", arguments={"resource_ref": "customer_records"}))
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="select_resource",
+            arguments={"resource_ref": "customer_records"},
+        )
+    )
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
     assert resp.decision == Decision.DENY
     assert resp.status == "DENIED"
 
 
 @pytest.mark.unit
-def test_case_11_prohibit_plus_malformed_timeout_exception_equals_deny(test_registry: Registry) -> None:
+def test_case_11_prohibit_plus_malformed_timeout_exception_equals_deny(
+    test_registry: Registry,
+) -> None:
     """Case 11: PROHIBIT + malformed/timeout/exception = DENY."""
     for exc in [TimeoutError("Timeout"), RuntimeError("Crash"), ValueError("Malformed")]:
         mock_mon = MagicMock(side_effect=exc)
         fw = FirewallCore(registry=test_registry, monitor=mock_mon)
         session_id = f"sess_c11_{type(exc).__name__}"
-        fw.submit(ActionRequest(session_id=session_id, tool="select_resource", arguments={"resource_ref": "customer_records"}))
-        fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+        fw.submit(
+            ActionRequest(
+                session_id=session_id,
+                tool="select_resource",
+                arguments={"resource_ref": "customer_records"},
+            )
+        )
+        fw.submit(
+            ActionRequest(
+                session_id=session_id,
+                tool="configure_destination",
+                arguments={"destination_ref": "external_storage"},
+            )
+        )
         resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
         assert resp.decision == Decision.DENY
         assert resp.status == "DENIED"
@@ -375,8 +427,10 @@ def test_case_12_allow_plus_suspicious_elevated_risk_equals_review(test_registry
 
 
 @pytest.mark.unit
-def test_case_13_allow_plus_benign_low_risk_for_non_mandatory_tool_may_allow(test_registry: Registry) -> None:
-    """Case 13: Policy PERMIT + BENIGN/LOW_RISK for non-mandatory tool may ALLOW only if all checks pass."""
+def test_case_13_allow_plus_benign_low_risk_for_non_mandatory_tool_may_allow(
+    test_registry: Registry,
+) -> None:
+    """Case 13: Policy PERMIT + BENIGN/LOW_RISK may ALLOW if all checks pass."""
     cfg = DecisionConfig(monitor_authority="escalate_only")
     dec, reasons = decide(
         valid=True,
@@ -409,7 +463,9 @@ def test_case_13_allow_plus_benign_low_risk_for_non_mandatory_tool_may_allow(tes
 
 
 @pytest.mark.unit
-def test_case_14_mandatory_review_tool_class_results_in_review_even_with_benign(test_registry: Registry) -> None:
+def test_case_14_mandatory_review_tool_class_results_in_review_even_with_benign(
+    test_registry: Registry,
+) -> None:
     """Case 14: Mandatory-review tool class results in REVIEW even with BENIGN monitor output."""
     mock_mon = MagicMock()
     mock_mon.assess.return_value = MonitorAssessment(
@@ -526,7 +582,9 @@ def test_case_18_monitor_exception_results_in_review(test_registry: Registry) ->
 
 
 @pytest.mark.unit
-def test_case_19_monitor_mutation_of_action_does_not_change_original_action(test_registry: Registry) -> None:
+def test_case_19_monitor_mutation_of_action_does_not_change_original_action(
+    test_registry: Registry,
+) -> None:
     """Case 19: Monitor attempt to mutate action object does not change original action."""
     original_action = CanonicalAction(
         action_id="act_iso_19",
@@ -557,7 +615,9 @@ def test_case_19_monitor_mutation_of_action_does_not_change_original_action(test
 
 
 @pytest.mark.unit
-def test_case_20_monitor_mutation_of_state_summary_does_not_change_original_state(test_registry: Registry) -> None:
+def test_case_20_monitor_mutation_of_state_summary_does_not_change_original_state(
+    test_registry: Registry,
+) -> None:
     """Case 20: Monitor attempt to mutate state summary does not change original state."""
     state = initial_state("sess_iso_20").model_copy(
         update={
@@ -605,7 +665,7 @@ def test_case_20_monitor_mutation_of_state_summary_does_not_change_original_stat
 
 @pytest.mark.unit
 def test_case_21_sensitive_fields_not_exposed_through_monitor_view(test_registry: Registry) -> None:
-    """Case 21: Sensitive fields (tokens, passwords, api keys) are not exposed through MonitorView."""
+    """Case 21: Sensitive fields (tokens, passwords, keys) are not exposed through MonitorView."""
     action = CanonicalAction(
         action_id="act_iso_21",
         session_id="sess_iso_21",
@@ -654,13 +714,21 @@ def test_case_21_sensitive_fields_not_exposed_through_monitor_view(test_registry
 
 
 @pytest.mark.unit
-def test_case_22_review_approval_cannot_execute_if_policy_becomes_prohibit(test_registry: Registry) -> None:
+def test_case_22_review_approval_cannot_execute_if_policy_becomes_prohibit(
+    test_registry: Registry,
+) -> None:
     """Case 22: Review approval cannot execute if policy becomes PROHIBIT."""
     fw = FirewallCore(registry=test_registry)
     session_id = "sess_c22"
 
     # Step 1: Configure external destination
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
 
     # Step 2: execute_export without bound resource enters PENDING_REVIEW (EVIDENCE_MISSING)
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
@@ -668,7 +736,7 @@ def test_case_22_review_approval_cannot_execute_if_policy_becomes_prohibit(test_
     ticket_id = resp.ticket_id
     assert ticket_id is not None
 
-    # Step 3: State changes such that CONFIDENTIAL resource is bound, making export strictly PROHIBIT under R1
+    # Step 3: State changes so CONFIDENTIAL resource is bound; export becomes PROHIBIT under R1
     s_curr = fw._get_state(session_id)
     env_bound = StateEventEnvelope(
         session_id=session_id,
@@ -679,10 +747,14 @@ def test_case_22_review_approval_cannot_execute_if_policy_becomes_prohibit(test_
         token_id="tok_bind_conf",
         payload={"tool": "select_resource", "arguments": {"resource_ref": "customer_records"}},
     )
-    fw._states[session_id] = apply_event(s_curr, env_bound, fw.registry, expected_session_id=session_id)
+    fw._states[session_id] = apply_event(
+        s_curr, env_bound, fw.registry, expected_session_id=session_id
+    )
 
     # Step 4: Approver attempts to approve the ticket
-    resolve_resp = fw.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_1")
+    resolve_resp = fw.resolve_review(
+        ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_1"
+    )
 
     # Revalidation must prevent execution and return DENY
     assert resolve_resp.status != "EXECUTED"
@@ -691,12 +763,20 @@ def test_case_22_review_approval_cannot_execute_if_policy_becomes_prohibit(test_
 
 
 @pytest.mark.unit
-def test_case_23_review_approval_cannot_execute_if_state_head_changed(test_registry: Registry) -> None:
+def test_case_23_review_approval_cannot_execute_if_state_head_changed(
+    test_registry: Registry,
+) -> None:
     """Case 23: Review approval cannot execute if state head changed."""
     fw = FirewallCore(registry=test_registry)
     session_id = "sess_c23"
 
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
     assert resp.status == "PENDING_REVIEW"
     ticket_id = resp.ticket_id
@@ -713,10 +793,14 @@ def test_case_23_review_approval_cannot_execute_if_state_head_changed(test_regis
         token_id="tok_adv",
         payload={"tool": "select_resource", "arguments": {"resource_ref": "other_records"}},
     )
-    fw._states[session_id] = apply_event(s_curr, env_adv, fw.registry, expected_session_id=session_id)
+    fw._states[session_id] = apply_event(
+        s_curr, env_adv, fw.registry, expected_session_id=session_id
+    )
 
     # Approver approves ticket
-    resolve_resp = fw.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_2")
+    resolve_resp = fw.resolve_review(
+        ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_2"
+    )
 
     # Must detect stale state head and refuse execution
     assert resolve_resp.status != "EXECUTED"
@@ -725,13 +809,21 @@ def test_case_23_review_approval_cannot_execute_if_state_head_changed(test_regis
 
 
 @pytest.mark.unit
-def test_case_24_review_approval_can_execute_only_when_policy_and_state_remain_valid(test_registry: Registry) -> None:
+def test_case_24_review_approval_can_execute_only_when_policy_and_state_remain_valid(
+    test_registry: Registry,
+) -> None:
     """Case 24: Review approval can execute only when policy and state remain valid."""
     fw = FirewallCore(registry=test_registry)
     session_id = "sess_c24"
 
     # Destination configured to external storage
-    fw.submit(ActionRequest(session_id=session_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
+    fw.submit(
+        ActionRequest(
+            session_id=session_id,
+            tool="configure_destination",
+            arguments={"destination_ref": "external_storage"},
+        )
+    )
 
     # execute_export with incomplete evidence creates a ticket (PENDING_REVIEW)
     resp = fw.submit(ActionRequest(session_id=session_id, tool="execute_export", arguments={}))
@@ -740,7 +832,9 @@ def test_case_24_review_approval_can_execute_only_when_policy_and_state_remain_v
     assert ticket_id is not None
 
     # State has NOT changed and policy is NOT PROHIBIT
-    resolve_resp = fw.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_3")
+    resolve_resp = fw.resolve_review(
+        ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_3"
+    )
 
     # Ticket approval executes cleanly
     assert resolve_resp.status == "EXECUTED"

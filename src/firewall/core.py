@@ -16,7 +16,7 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from firewall.audit.store import AuditStore
-from firewall.cascade.adapter import CascadeAdapter, CascadeFailureReason
+from firewall.cascade.adapter import CascadeAdapter
 from firewall.contracts.enums import (
     Decision,
     EventType,
@@ -358,7 +358,10 @@ class FirewallCore:
                             )
                 elif (
                     self.decision_config.monitor_authority == "escalate_only"
-                    and (self.monitor is not None or (self.cascade_adapter and self.cascade_adapter.monitor is not None))
+                    and (
+                        self.monitor is not None
+                        or (self.cascade_adapter and self.cascade_adapter.monitor is not None)
+                    )
                 ):
                     monitor_invoked = True
                     active_mon = self.monitor or self.cascade_adapter
@@ -442,13 +445,23 @@ class FirewallCore:
                 decision = Decision.REVIEW
                 if tool_info.tool_class in self.decision_config.mandatory_review_classes:
                     reason = f"CLASS_REQUIRES_REVIEW:{tool_info.tool_class.value}"
-                    reason_codes = [reason, cascade_res.reason] if cascade_res.reason != reason else [reason]
+                    reason_codes = (
+                        [reason, cascade_res.reason]
+                        if cascade_res.reason != reason
+                        else [reason]
+                    )
                     review_reason = reason
-                elif cascade_res.verdict == "LOW_RISK" or cascade_res.monitor_verdict == MonitorVerdict.BENIGN:
+                elif (
+                    cascade_res.verdict == "LOW_RISK"
+                    or cascade_res.monitor_verdict == MonitorVerdict.BENIGN
+                ):
                     reason = "UNDETERMINED_BENIGN_REQUIRES_REVIEW"
                     reason_codes = ["UNDETERMINED_BENIGN_REQUIRES_REVIEW", cascade_res.reason]
                     review_reason = reason
-                elif cascade_res.verdict == "ELEVATED_RISK" or cascade_res.monitor_verdict == MonitorVerdict.SUSPICIOUS:
+                elif (
+                    cascade_res.verdict == "ELEVATED_RISK"
+                    or cascade_res.monitor_verdict == MonitorVerdict.SUSPICIOUS
+                ):
                     if self.decision_config.suspicious_map == Decision.DENY:
                         decision = Decision.DENY
                         reason = cascade_res.reason or "MONITOR_SUSPICIOUS"
@@ -685,13 +698,16 @@ class FirewallCore:
                 if recorded_state_head is None:
                     for r in reversed(self.audit_store.get_records(session_id)):
                         # pyrefly: ignore[missing-attribute]
-                        if r.record_type == "DECISION" and r.payload.get("action_id") == action.action_id:
+                        if r.type == "DECISION" and r.payload.get("action_id") == action.action_id:
                             recorded_state_head = r.payload.get("state_head_hash")
                             break
 
                 # d. If current policy verdict is PROHIBIT, return DENY and do not execute
                 if policy_result.verdict == PolicyVerdict.PROHIBIT:
-                    reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or ["POLICY_PROHIBIT"]
+                    reasons = (
+                        [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules]
+                        or ["POLICY_PROHIBIT"]
+                    )
                     reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
                     self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(
@@ -703,19 +719,23 @@ class FirewallCore:
                         ticket_id=ticket_id,
                     )
 
-                # e. If the state head changed since ticket creation (or is missing), return DENY; do not execute directly
+                # e. If state head changed or is missing, return DENY; do not execute directly
                 if recorded_state_head is None or recorded_state_head != state.head_hash:
                     self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
                     return FirewallResponse(
                         action_id=action.action_id,
                         status="DENIED",
                         decision=Decision.DENY,
-                        reason_codes=["STATE_CHANGED", f"RECORDED:{recorded_state_head}", f"CURRENT:{state.head_hash}"],
+                        reason_codes=[
+                            "STATE_CHANGED",
+                            f"RECORDED:{recorded_state_head}",
+                            f"CURRENT:{state.head_hash}",
+                        ],
                         policy_verdict=policy_result.verdict,
                         ticket_id=ticket_id,
                     )
 
-                # f. Only if policy is not PROHIBIT and state is fresh may it issue a token and execute
+                # f. If policy is not PROHIBIT and state is fresh, issue token and execute
                 decision_id = f"dec_rev_{uuid.uuid4().hex[:10]}"
 
                 token = self.token_store.issue_token(

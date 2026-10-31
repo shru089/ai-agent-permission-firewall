@@ -17,7 +17,6 @@ import pytest
 
 from firewall.cascade.adapter import CascadeAdapter, CascadeFailureReason
 from firewall.contracts.enums import (
-    ConfirmationLevel,
     Decision,
     MonitorVerdict,
     PolicyVerdict,

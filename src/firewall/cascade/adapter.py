@@ -6,6 +6,7 @@ Source: 05_TECHNICAL_SPEC.md §9, 06_EXPERIMENT_PROTOCOL.md §2,
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ from firewall.contracts.models import (
     MonitorView,
     PolicyResult,
 )
+from firewall.state.views import sanitize_data
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +71,7 @@ class MonitorAdvisory:
     monitor_verdict: MonitorVerdict = MonitorVerdict.NOT_CONSULTED
     error: Optional[str] = None
     raw_output: Optional[str] = None
-    decision: Optional[Decision] = None  # Always None; adapter does not make authorization decisions
+    decision: Optional[Decision] = None  # Adapter never makes authorization decisions
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Decision):
@@ -764,9 +766,6 @@ class CascadeAdapter:
         tool: Optional[str],
         arguments: Optional[dict[str, Any]],
     ) -> MonitorView:
-        import copy
-        from firewall.state.views import sanitize_data
-
         if isinstance(action, MonitorView):
             sanitized_args = sanitize_data(copy.deepcopy(action.action.arguments))
             c_action = CanonicalAction(

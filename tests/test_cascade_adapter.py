@@ -16,8 +16,8 @@ Test coverage:
 - Record structured failure reason for REVIEW escalation
 """
 
-from unittest.mock import MagicMock
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -175,7 +175,7 @@ def test_undetermined_calls_monitor_deny() -> None:
 
 @pytest.mark.unit
 def test_undetermined_with_string_decision_allow() -> None:
-    """Monitor returning valid string 'PASS' / 'ALLOW' maps to advisory LOW_RISK, not Decision.ALLOW."""
+    """Monitor returning string 'PASS' / 'ALLOW' maps to advisory LOW_RISK, not Decision.ALLOW."""
     fake_monitor = MagicMock(return_value="PASS")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
@@ -186,7 +186,7 @@ def test_undetermined_with_string_decision_allow() -> None:
 
 @pytest.mark.unit
 def test_undetermined_with_string_decision_fail() -> None:
-    """Monitor returning valid string 'FAIL' / 'DENY' maps to advisory ELEVATED_RISK, not Decision.DENY."""
+    """String 'FAIL' / 'DENY' from monitor maps to advisory ELEVATED_RISK, not Decision.DENY."""
     fake_monitor = MagicMock(return_value="FAIL")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
