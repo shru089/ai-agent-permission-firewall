@@ -2,7 +2,8 @@
 Characterization tests for newly agreed AASF decision and review-revalidation semantics:
 1. UNDETERMINED + BENIGN must produce REVIEW, not ALLOW.
 2. PROHIBIT must always produce DENY, even if the monitor is BENIGN or a reviewer approves.
-3. Reviewer approval must revalidate current policy and state freshness before issuing an execution authorization token.
+3. Reviewer approval must revalidate current policy and state freshness before issuing
+   an execution authorization token.
 4. A stale review approval must never directly execute an action.
 """
 
@@ -73,7 +74,8 @@ def test_undetermined_plus_benign_results_in_review():
 def test_prohibit_plus_benign_results_in_deny():
     """
     Agreed semantic 2: PROHIBIT must always produce DENY, even if monitor is BENIGN.
-    Characterization test: Verifies that PROHIBIT supremacy holds unconditionally over BENIGN monitor.
+    Characterization test: Verifies that PROHIBIT supremacy holds unconditionally
+    over BENIGN monitor.
     """
     cfg = DecisionConfig(monitor_authority="decide_undetermined")
     decision, reasons = decide(
@@ -84,9 +86,7 @@ def test_prohibit_plus_benign_results_in_deny():
         config=cfg,
         matched_rules=["R1-no-confidential-external-export"],
     )
-    assert decision == Decision.DENY, (
-        f"Expected DENY for PROHIBIT + BENIGN, got {decision}."
-    )
+    assert decision == Decision.DENY, f"Expected DENY for PROHIBIT + BENIGN, got {decision}."
     assert any("POLICY_PROHIBIT" in r for r in reasons), (
         f"Expected POLICY_PROHIBIT reason code, got {reasons}."
     )
@@ -122,7 +122,8 @@ def test_reviewer_cannot_override_prohibition(test_registry: Registry):
     ticket_id = resp.ticket_id
     assert ticket_id is not None
 
-    # Step 3: Session state now has CONFIDENTIAL resource bound, making export strictly PROHIBIT under R1
+    # Step 3: Session state now has CONFIDENTIAL resource bound, making export
+    # strictly PROHIBIT under R1
     s_curr = fw._get_state(session_id)
     env_bound = StateEventEnvelope(
         session_id=session_id,
@@ -133,7 +134,9 @@ def test_reviewer_cannot_override_prohibition(test_registry: Registry):
         token_id="tok_bind_conf",
         payload={"tool": "select_resource", "arguments": {"resource_ref": "customer_records"}},
     )
-    fw._states[session_id] = apply_event(s_curr, env_bound, fw.registry, expected_session_id=session_id)
+    fw._states[session_id] = apply_event(
+        s_curr, env_bound, fw.registry, expected_session_id=session_id
+    )
 
     # Step 4: Reviewer approves the ticket
     resolve_resp = fw.resolve_review(
@@ -145,10 +148,11 @@ def test_reviewer_cannot_override_prohibition(test_registry: Registry):
     # Agreed semantics: Reviewer approval cannot override policy prohibition.
     # Must revalidate policy, reject execution, and produce DENY.
     assert resolve_resp.status != "EXECUTED", (
-        f"Action was executed despite policy PROHIBIT! Reviewer bypassed prohibition."
+        "Action was executed despite policy PROHIBIT! Reviewer bypassed prohibition."
     )
     assert resolve_resp.decision == Decision.DENY, (
-        f"Expected decision DENY when reviewer approves prohibited action, got {resolve_resp.decision}."
+        f"Expected decision DENY when reviewer approves prohibited action, "
+        f"got {resolve_resp.decision}."
     )
 
 
@@ -194,7 +198,9 @@ def test_review_approval_revalidates_changed_state(test_registry: Registry):
         token_id="tok_state_advance",
         payload={"tool": "select_resource", "arguments": {"resource_ref": "other_records"}},
     )
-    fw._states[session_id] = apply_event(s_curr, env_advance, fw.registry, expected_session_id=session_id)
+    fw._states[session_id] = apply_event(
+        s_curr, env_advance, fw.registry, expected_session_id=session_id
+    )
 
     # Step 4: Reviewer approves the ticket
     resolve_resp = fw.resolve_review(
@@ -203,9 +209,10 @@ def test_review_approval_revalidates_changed_state(test_registry: Registry):
         reviewer_id="reviewer_bob",
     )
 
-    # Agreed semantics: Approval must detect state change and revalidate rather than blindly executing
+    # Agreed semantics: Approval must detect state change and revalidate rather
+    # than blindly executing
     assert resolve_resp.status != "EXECUTED", (
-        f"Action was directly executed despite session state changing during review!"
+        "Action was directly executed despite session state changing during review!"
     )
 
 

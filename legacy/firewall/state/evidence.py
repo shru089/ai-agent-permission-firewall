@@ -178,9 +178,7 @@ class HmacEvidenceVerifier:
         if not isinstance(receipt.observed_state, dict):
             raise EvidenceVerificationError("Evidence observed_state must be a dictionary")
 
-        raw_rows = receipt.observed_state.get(
-            "rows", receipt.observed_state.get("rows_exported")
-        )
+        raw_rows = receipt.observed_state.get("rows", receipt.observed_state.get("rows_exported"))
         if raw_rows is None:
             raise EvidenceVerificationError(
                 "Missing required 'rows' observation in evidence receipt"

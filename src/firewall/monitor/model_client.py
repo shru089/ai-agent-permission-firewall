@@ -29,12 +29,14 @@ from firewall.contracts.models import MonitorAssessment
 
 class MonitorOutputParseError(ValueError):
     """Raised when monitor output does not strictly conform to canonical JSON schema."""
+
     pass
 
 
 @dataclass(frozen=True)
 class StrictMonitorOutput:
     """Validated structured output from monitor."""
+
     verdict: MonitorVerdict
     confidence: float
     reasoning: str
@@ -197,18 +199,18 @@ class DeterministicMockModelClient:
         if default_response is not None:
             self.default_response = default_response
         elif default_verdict is not None:
-            self.default_response = json.dumps({
-                "verdict": default_verdict.value,
-                "confidence": default_confidence,
-                "reasoning": default_reasoning,
-            })
+            self.default_response = json.dumps(
+                {
+                    "verdict": default_verdict.value,
+                    "confidence": default_confidence,
+                    "reasoning": default_reasoning,
+                }
+            )
         else:
             self.default_response = (
                 '{"verdict": "BENIGN", "confidence": 0.95, "reasoning": "Mock analysis"}'
             )
-        self.responses_by_pattern = (
-            responses_by_pattern if responses_by_pattern is not None else {}
-        )
+        self.responses_by_pattern = responses_by_pattern if responses_by_pattern is not None else {}
         self.simulate_timeout = simulate_timeout
         self.simulate_exception = simulate_exception
         self.calls: List[Dict[str, Any]] = []
@@ -221,12 +223,14 @@ class DeterministicMockModelClient:
         temperature: float = 0.0,
         timeout_ms: Optional[int] = None,
     ) -> str:
-        self.calls.append({
-            "prompt": prompt,
-            "system_prompt": system_prompt,
-            "temperature": temperature,
-            "timeout_ms": timeout_ms,
-        })
+        self.calls.append(
+            {
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "temperature": temperature,
+                "timeout_ms": timeout_ms,
+            }
+        )
 
         if self.simulate_timeout:
             raise TimeoutError("Simulated client timeout exceeded")

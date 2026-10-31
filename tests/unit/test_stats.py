@@ -48,7 +48,6 @@ from experiments.stats import (  # noqa: E402
 
 
 class TestWilsonScoreInterval:
-
     def test_normal_case_half(self):
         """50/100 gives proportion=0.5 with symmetric interval."""
         res = wilson_score_interval(50, 100, confidence=0.95)
@@ -94,7 +93,6 @@ class TestWilsonScoreInterval:
 
 
 class TestExactMcNemarTest:
-
     def test_complete_agreement(self):
         """When all pairs agree, b=0, c=0, p-value=1.0."""
         arm1 = [1, 1, 0, 0, 1]
@@ -166,7 +164,6 @@ class TestExactMcNemarTest:
 
 
 class TestClusterBootstrapCI:
-
     def test_reproducibility_with_seed(self):
         data = [
             {"cluster": "T1", "val": 1.0},
@@ -199,7 +196,7 @@ class TestClusterBootstrapCI:
         assert ci1.upper == ci2.upper
 
     def test_different_seed_different_replicates(self):
-        data = [{"cluster": f"T{i%4}", "val": float(i % 2)} for i in range(40)]
+        data = [{"cluster": f"T{i % 4}", "val": float(i % 2)} for i in range(40)]
 
         def _mean_stat(sample):
             return sum(x["val"] for x in sample) / len(sample)
@@ -215,7 +212,7 @@ class TestClusterBootstrapCI:
         assert ci2.n_valid_replicates == 200
 
     def test_one_sided_lower_bound(self):
-        data = [{"cluster": f"T{i//5}", "val": 1.0} for i in range(20)]
+        data = [{"cluster": f"T{i // 5}", "val": 1.0} for i in range(20)]
 
         def _mean_stat(sample):
             return sum(x["val"] for x in sample) / len(sample)
@@ -231,7 +228,7 @@ class TestClusterBootstrapCI:
         assert ci.upper is None
 
     def test_one_sided_upper_bound(self):
-        data = [{"cluster": f"T{i//5}", "val": 0.5} for i in range(20)]
+        data = [{"cluster": f"T{i // 5}", "val": 0.5} for i in range(20)]
 
         def _mean_stat(sample):
             return sum(x["val"] for x in sample) / len(sample)
@@ -273,7 +270,6 @@ class TestClusterBootstrapCI:
 
 
 class TestPairedClusterComparison:
-
     def test_paired_comparison_preserves_correlation(self):
         # 10 templates, 4 traces each. Arm 1 always beats Arm 2 by 0.25
         pairs = []
@@ -333,7 +329,6 @@ class TestPairedClusterComparison:
 
 
 class TestHolmBonferroni:
-
     def test_textbook_stepdown_example(self):
         """
         4 hypotheses with raw p-values: [0.01, 0.04, 0.03, 0.20].
@@ -379,7 +374,6 @@ class TestHolmBonferroni:
 
 
 class TestPowerAnalysis:
-
     def test_zero_event_sample_size_matches_spec(self):
         """
         doc/03 §12.6:
@@ -429,7 +423,6 @@ class TestPowerAnalysis:
 
 
 class TestLatencyPercentilesCI:
-
     def test_latency_ci_normal(self):
         lats = [float(i) for i in range(1, 101)]  # 1..100 ms
         cis = latency_percentiles_ci(

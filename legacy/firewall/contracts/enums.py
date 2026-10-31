@@ -9,6 +9,7 @@ from enum import Enum
 
 class Decision(str, Enum):
     """Final gateway / decision function outcome."""
+
     ALLOW = "ALLOW"
     DENY = "DENY"
     REVIEW = "REVIEW"
@@ -16,6 +17,7 @@ class Decision(str, Enum):
 
 class PolicyVerdict(str, Enum):
     """Deterministic three-valued policy engine evaluation verdict."""
+
     PROHIBIT = "PROHIBIT"
     PERMIT = "PERMIT"
     UNDETERMINED = "UNDETERMINED"
@@ -24,6 +26,7 @@ class PolicyVerdict(str, Enum):
 
 class MonitorVerdict(str, Enum):
     """Advisory assessment verdict returned by an execution monitor."""
+
     BENIGN = "BENIGN"
     SUSPICIOUS = "SUSPICIOUS"
     UNKNOWN = "UNKNOWN"
@@ -32,6 +35,7 @@ class MonitorVerdict(str, Enum):
 
 class ScoreKind(str, Enum):
     """Semantics of monitor risk scores."""
+
     NONE = "NONE"
     HEURISTIC_RISK = "HEURISTIC_RISK"
     MODEL_PROBABILITY_UNCALIBRATED = "MODEL_PROBABILITY_UNCALIBRATED"
@@ -41,6 +45,7 @@ class ScoreKind(str, Enum):
 
 class ToolClass(str, Enum):
     """Sensitivity class assigned to registered tools in config/registry.yaml."""
+
     READ_LOW = "READ_LOW"
     READ_SENSITIVE = "READ_SENSITIVE"
     WRITE_INTERNAL = "WRITE_INTERNAL"
@@ -51,6 +56,7 @@ class ToolClass(str, Enum):
 
 class Classification(str, Enum):
     """Data sensitivity classification for resources."""
+
     PUBLIC = "PUBLIC"
     INTERNAL = "INTERNAL"
     CONFIDENTIAL = "CONFIDENTIAL"
@@ -59,6 +65,7 @@ class Classification(str, Enum):
 
 class Zone(str, Enum):
     """Destination network/storage zones."""
+
     INTERNAL = "INTERNAL"
     EXTERNAL = "EXTERNAL"
     UNKNOWN = "UNKNOWN"
@@ -66,6 +73,7 @@ class Zone(str, Enum):
 
 class Provenance(str, Enum):
     """Attestation source for field values in state tracking."""
+
     GATEWAY = "GATEWAY"
     REGISTRY = "REGISTRY"
     TOOL_TYPED = "TOOL_TYPED"
@@ -75,6 +83,7 @@ class Provenance(str, Enum):
 
 class ExecStatus(str, Enum):
     """Terminal outcome of tool execution."""
+
     EXECUTED = "EXECUTED"
     FAILED = "FAILED"
     EXEC_UNKNOWN = "EXEC_UNKNOWN"
@@ -83,6 +92,7 @@ class ExecStatus(str, Enum):
 
 class OutcomeContract(str, Enum):
     """Declared execution outcome contract from tool specification."""
+
     SYNCHRONOUS_CONFIRMED = "SYNCHRONOUS_CONFIRMED"
     ACCEPTED_ASYNC = "ACCEPTED_ASYNC"
     BEST_EFFORT_DISPATCH = "BEST_EFFORT_DISPATCH"
@@ -90,6 +100,7 @@ class OutcomeContract(str, Enum):
 
 class ConfirmationLevel(str, Enum):
     """Level of external effect confirmation verified for an execution outcome."""
+
     CONFIRMED_COMPLETED = "CONFIRMED_COMPLETED"
     DISPATCH_ACKNOWLEDGED = "DISPATCH_ACKNOWLEDGED"
     ATTEMPTED_DISPATCH = "ATTEMPTED_DISPATCH"
@@ -98,6 +109,7 @@ class ConfirmationLevel(str, Enum):
 
 class ReviewStatus(str, Enum):
     """Status of human oversight review tickets."""
+
     PENDING = "PENDING"
     APPROVED = "APPROVED"
     REJECTED = "REJECTED"
@@ -108,6 +120,7 @@ class ReviewStatus(str, Enum):
 
 class EventType(str, Enum):
     """Lifecycle event types recorded in session history."""
+
     ACTION_RECEIVED = "ACTION_RECEIVED"
     ACTION_DENIED = "ACTION_DENIED"
     EXECUTED = "EXECUTED"
@@ -120,6 +133,7 @@ class EventType(str, Enum):
 
 class Anomaly(str, Enum):
     """State anomaly flags detected during session state folding."""
+
     CONFLICTING_SELECTION = "CONFLICTING_SELECTION"
     UNKNOWN_CLASSIFICATION = "UNKNOWN_CLASSIFICATION"
     UNKNOWN_DESTINATION = "UNKNOWN_DESTINATION"

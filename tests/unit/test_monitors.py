@@ -44,6 +44,7 @@ from firewall.state.views import build_monitor_view, format_transcript
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_action(
     tool: str = "bash",
     args: Dict[str, Any] | None = None,
@@ -82,33 +83,40 @@ def _make_view(
 # 1. ModelClient and Strict JSON Parser Tests
 # ---------------------------------------------------------------------------
 
+
 class TestModelClientAndStrictParser:
     def test_strict_parser_valid_cases(self) -> None:
-        raw_benign = json.dumps({
-            "verdict": "BENIGN",
-            "confidence": 0.95,
-            "reasoning": "Standard read command",
-        })
+        raw_benign = json.dumps(
+            {
+                "verdict": "BENIGN",
+                "confidence": 0.95,
+                "reasoning": "Standard read command",
+            }
+        )
         parsed = parse_monitor_output(raw_benign)
         assert isinstance(parsed, StrictMonitorOutput)
         assert parsed.verdict == MonitorVerdict.BENIGN
         assert parsed.confidence == 0.95
         assert parsed.reasoning == "Standard read command"
 
-        raw_suspicious = json.dumps({
-            "verdict": "SUSPICIOUS",
-            "confidence": 0.88,
-            "reasoning": "Command attempts to exfiltrate private credentials",
-        })
+        raw_suspicious = json.dumps(
+            {
+                "verdict": "SUSPICIOUS",
+                "confidence": 0.88,
+                "reasoning": "Command attempts to exfiltrate private credentials",
+            }
+        )
         parsed_s = parse_monitor_output(raw_suspicious)
         assert parsed_s.verdict == MonitorVerdict.SUSPICIOUS
         assert parsed_s.confidence == 0.88
 
-        raw_unknown = json.dumps({
-            "verdict": "UNKNOWN",
-            "confidence": 0.5,
-            "reasoning": "Insufficient context to determine safety",
-        })
+        raw_unknown = json.dumps(
+            {
+                "verdict": "UNKNOWN",
+                "confidence": 0.5,
+                "reasoning": "Insufficient context to determine safety",
+            }
+        )
         parsed_u = parse_monitor_output(raw_unknown)
         assert parsed_u.verdict == MonitorVerdict.UNKNOWN
 
@@ -129,7 +137,7 @@ class TestModelClientAndStrictParser:
         with pytest.raises(MonitorOutputParseError, match="Malformed JSON"):
             parse_monitor_output("{'verdict': 'BENIGN'}")
         with pytest.raises(MonitorOutputParseError, match="Malformed JSON"):
-            parse_monitor_output("I think this is BENIGN: {\"verdict\": \"BENIGN\"}")
+            parse_monitor_output('I think this is BENIGN: {"verdict": "BENIGN"}')
 
     def test_strict_parser_rejects_non_dict_json(self) -> None:
         with pytest.raises(MonitorOutputParseError, match="Expected JSON object"):
@@ -246,6 +254,7 @@ class TestModelClientAndStrictParser:
 # ---------------------------------------------------------------------------
 # 2. B4 Action-Only Monitor Tests
 # ---------------------------------------------------------------------------
+
 
 class TestActionOnlyMonitorB4:
     def test_protocol_conformance(self) -> None:
@@ -374,6 +383,7 @@ class TestActionOnlyMonitorB4:
 # 3. B5 Transcript-Based Monitor Tests
 # ---------------------------------------------------------------------------
 
+
 class TestTranscriptMonitorB5:
     def test_protocol_conformance(self) -> None:
         monitor = TranscriptMonitor()
@@ -491,6 +501,7 @@ class TestTranscriptMonitorB5:
 # ---------------------------------------------------------------------------
 # 4. P1 Hybrid / Cascade Monitor Tests
 # ---------------------------------------------------------------------------
+
 
 class TestHybridMonitorP1:
     def test_protocol_conformance(self) -> None:

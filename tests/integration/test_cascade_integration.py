@@ -17,7 +17,6 @@ import pytest
 
 from firewall.cascade.adapter import CascadeAdapter, CascadeFailureReason
 from firewall.contracts.enums import (
-    ConfirmationLevel,
     Decision,
     MonitorVerdict,
     PolicyVerdict,
@@ -439,6 +438,7 @@ def test_06b_undetermined_with_timeout_exception_returns_review(
     cascade_registry: Registry,
 ) -> None:
     """Verify monitor raising explicit TimeoutError fails closed to REVIEW."""
+
     def timeout_func(*args: Any, **kwargs: Any) -> Any:
         raise TimeoutError("Cascade monitor call exceeded deadline of 200ms")
 
@@ -478,6 +478,7 @@ def test_07_undetermined_with_monitor_exception_returns_review(
     - Never returns ALLOW
     - Exception reason is recorded
     """
+
     def broken_monitor(*args: Any, **kwargs: Any) -> Any:
         raise ConnectionResetError("Connection closed unexpectedly by upstream peer")
 

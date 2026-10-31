@@ -6,6 +6,7 @@ Source: 05_TECHNICAL_SPEC.md §8.2, 01_THREAT_MODEL.md (INV-08)
 
 import copy
 import json
+import re
 from typing import Any, Optional, Sequence
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -35,10 +36,14 @@ SENSITIVE_KEY_NAMES = {
     "auth_token",
     "access_token",
     "session_token",
+    "refresh_token",
+    "id_token",
+    "client_secret",
     "bearer",
     "credential",
     "credentials",
     "private_key",
+    "privatekey",
 }
 
 SENSITIVE_KEY_SUBSTRINGS = (
@@ -52,6 +57,19 @@ SENSITIVE_KEY_SUBSTRINGS = (
     "access_token",
     "bearer_token",
     "session_token",
+    "client_secret",
+)
+
+_PRIVATE_KEY_PATTERN = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"
+)
+_SECRET_KV_PATTERN = re.compile(
+    r"""(?i)\b(api[_-]?key|secret(?:[_-]?key)?|password|passwd|token[s]?|token[_-]?id|auth[_-]?token|access[_-]?token|session[_-]?token|refresh[_-]?token|id[_-]?token|client[_-]?secret|bearer|credential[s]?)\b\s*[:=]\s*(['"]?)([^'"\s,;{}]{3,})\2"""
+)
+_BEARER_PATTERN = re.compile(r"""(?i)\b(bearer\s+)([A-Za-z0-9\-_.~+/=]{6,})""")
+_JWT_PATTERN = re.compile(r"""\beyJ[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\.[A-Za-z0-9\-_=]+\b""")
+_TOKEN_PREFIX_PATTERN = re.compile(
+    r"""\b(sk-[A-Za-z0-9]{16,}|ghp_[A-Za-z0-9]{16,}|gho_[A-Za-z0-9]{16,}|xox[baprs]-[A-Za-z0-9\-]{16,})\b"""
 )
 
 
@@ -63,10 +81,36 @@ def is_sensitive_field(key: str) -> bool:
     return any(sub in k for sub in SENSITIVE_KEY_SUBSTRINGS)
 
 
+def scrub_text(text: str) -> str:
+    """
+    Scrub sensitive credentials (bearer tokens, passwords, API keys, private keys,
+    high-entropy tokens) from plain text, logs, error strings, and transcripts.
+    """
+    if not text or not isinstance(text, str):
+        return text
+
+    # Redact PEM private key blocks first
+    res = _PRIVATE_KEY_PATTERN.sub("[REDACTED_PRIVATE_KEY]", text)
+
+    # Redact standard JWTs
+    res = _JWT_PATTERN.sub("[REDACTED_JWT]", res)
+
+    # Redact known API token prefixes
+    res = _TOKEN_PREFIX_PATTERN.sub("[REDACTED_TOKEN]", res)
+
+    # Redact Bearer tokens
+    res = _BEARER_PATTERN.sub(r"\1[REDACTED]", res)
+
+    # Redact key-value assignments
+    res = _SECRET_KV_PATTERN.sub(r"\1=\2[REDACTED]\2", res)
+
+    return res
+
+
 def sanitize_data(obj: Any) -> Any:
     """
     Recursively remove sensitive data (credentials, tokens, API keys, raw secrets)
-    from dictionaries, lists, and tuples before exposing to monitors.
+    from dictionaries, lists, tuples, and string values before exposing to monitors.
     """
     if isinstance(obj, dict):
         cleaned: dict[str, Any] = {}
@@ -79,6 +123,20 @@ def sanitize_data(obj: Any) -> Any:
         return [sanitize_data(item) for item in obj]
     elif isinstance(obj, tuple):
         return tuple(sanitize_data(item) for item in obj)
+    elif isinstance(obj, set):
+        return {sanitize_data(item) for item in obj}
+    elif isinstance(obj, str):
+        trimmed = obj.strip()
+        if (trimmed.startswith("{") and trimmed.endswith("}")) or (
+            trimmed.startswith("[") and trimmed.endswith("]")
+        ):
+            try:
+                parsed = json.loads(trimmed)
+                cleaned_parsed = sanitize_data(parsed)
+                return scrub_text(json.dumps(cleaned_parsed, sort_keys=True))
+            except Exception:
+                pass
+        return scrub_text(obj)
     return obj
 
 
@@ -116,7 +174,8 @@ def format_transcript(
     Includes sequence number, event type, action ID, canonical tool name, typed arguments,
     and bounded output text per [P1] specification.
     Excludes any oracle labels, future actions, or scenario metadata.
-    Excludes internal tokens and sensitive credentials.
+    Excludes internal tokens and sensitive credentials across arguments, outputs, free_text,
+    and errors.
     """
     lines: list[str] = []
     for evt in events:
@@ -133,14 +192,48 @@ def format_transcript(
                     parts.append(f"arguments={json.dumps(sanitized_args, sort_keys=True)}")
                 else:
                     parts.append(f"arguments={sanitized_args}")
-            output = (
-                payload.get("output")
-                or payload.get("free_text")
-                or payload.get("error")
-            )
-            if output is not None:
-                bounded_output = str(output)[:max_output_chars]
-                parts.append(f"output={bounded_output}")
+
+            # Scrub output, free_text, and error fields
+            out_val = payload.get("output")
+            ft_val = payload.get("free_text")
+            err_val = payload.get("error")
+
+            if out_val is not None:
+                sanitized_out = sanitize_data(copy.deepcopy(out_val))
+                out_str = (
+                    json.dumps(sanitized_out, sort_keys=True)
+                    if isinstance(sanitized_out, (dict, list, tuple))
+                    else str(sanitized_out)
+                )
+                scrubbed_out = scrub_text(out_str)[:max_output_chars]
+                parts.append(f"output={scrubbed_out}")
+
+            if ft_val is not None and ft_val != out_val:
+                sanitized_ft = sanitize_data(copy.deepcopy(ft_val))
+                ft_str = (
+                    json.dumps(sanitized_ft, sort_keys=True)
+                    if isinstance(sanitized_ft, (dict, list, tuple))
+                    else str(sanitized_ft)
+                )
+                scrubbed_ft = scrub_text(ft_str)[:max_output_chars]
+                if out_val is None:
+                    parts.append(f"output={scrubbed_ft}")
+                else:
+                    parts.append(f"free_text={scrubbed_ft}")
+
+            if err_val is not None and err_val != out_val and err_val != ft_val:
+                sanitized_err = sanitize_data(copy.deepcopy(err_val))
+                err_str = (
+                    json.dumps(sanitized_err, sort_keys=True)
+                    if isinstance(sanitized_err, (dict, list, tuple))
+                    else str(sanitized_err)
+                )
+                scrubbed_err = scrub_text(err_str)[:max_output_chars]
+                if out_val is None and ft_val is None:
+                    parts.append(f"output={scrubbed_err}")
+                else:
+                    parts.append(f"error={scrubbed_err}")
+
             lines.append(" ".join(parts))
         elif isinstance(evt, Event):
             parts = [f"[{evt.seq}] {evt.type} action_id={evt.action_id}"]
@@ -157,8 +250,8 @@ def format_transcript(
             if evt.decision:
                 parts.append(f"decision={evt.decision.value}")
             if evt.free_text:
-                bounded_output = evt.free_text[:max_output_chars]
-                parts.append(f"output={bounded_output}")
+                scrubbed_ft = scrub_text(evt.free_text)[:max_output_chars]
+                parts.append(f"output={scrubbed_ft}")
             lines.append(" ".join(parts))
     return "\n".join(lines)
 
@@ -243,7 +336,6 @@ def build_monitor_view(
         transcript=transcript,
         state_summary=state_summary,
     )
-
 
 
 def build_reviewer_view(
