@@ -74,17 +74,21 @@ class SafeMonitorWrapper:
 
         except TimeoutError as te:
             elapsed_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+            raw_v = getattr(self.monitor, "version", "0.1.0")
+            v_str = raw_v if isinstance(raw_v, str) else "0.1.0"
             return MonitorAssessment(
                 verdict=MonitorVerdict.UNKNOWN,
-                monitor_version=self.monitor.version,
+                monitor_version=v_str,
                 error=f"TIMEOUT: {te}",
                 latency_ms=elapsed_ms,
             )
         except Exception as e:
             elapsed_ms = (time.perf_counter_ns() - start_ns) / 1_000_000.0
+            raw_v = getattr(self.monitor, "version", "0.1.0")
+            v_str = raw_v if isinstance(raw_v, str) else "0.1.0"
             return MonitorAssessment(
                 verdict=MonitorVerdict.UNKNOWN,
-                monitor_version=self.monitor.version,
+                monitor_version=v_str,
                 error=f"MONITOR_EXCEPTION: {type(e).__name__}: {e}",
                 latency_ms=elapsed_ms,
             )

@@ -458,3 +458,104 @@ def test_14_state_head_mismatch_invalidates_authorization():
     env, _ = executor.execute(token, action, "drifted_head_B")
     assert env.has_value is False
     assert "state_head_hash mismatch" in env.error["message"]
+
+
+def test_15_review_approval_re_evaluates_policy_prohibit(test_registry: Registry) -> None:
+    """Case 15: If policy evaluates to PROHIBIT upon review approval, execution is denied."""
+    from firewall.contracts.enums import Classification, Zone
+    from firewall.contracts.models import DestinationRef, ResourceRef
+
+    fw = FirewallCore(registry=test_registry)
+    session_id = "sess_15_re_eval"
+
+    resp = fw.submit(ActionRequest(
+        session_id=session_id,
+        tool="execute_export",
+        arguments={},
+    ))
+    assert resp.status == "PENDING_REVIEW"
+    ticket_id = resp.ticket_id
+    assert ticket_id is not None
+
+    # Simulate state transition making the action PROHIBIT before review approval
+    state = fw._get_state(session_id)
+    fw._states[session_id] = state.model_copy(update={
+        "bound_resource": ResourceRef(
+            ref="customer_records",
+            classification=Classification.CONFIDENTIAL,
+            selected_seq=1,
+        ),
+        "destination": DestinationRef(ref="external_storage", zone=Zone.EXTERNAL),
+    })
+
+    res_resp = fw.resolve_review(ticket_id, "APPROVE", "alice")
+    assert res_resp.status == "DENIED"
+    assert res_resp.decision == Decision.DENY
+    assert any("POLICY_PROHIBIT_ON_APPROVAL" in r for r in res_resp.reason_codes)
+
+
+def test_16_executor_verifier_key_synchronized_with_core(test_registry: Registry) -> None:
+    """Case 16: Custom executor verifier key is automatically synchronized with core."""
+    from firewall.executor.executor import ControlledExecutor
+
+    custom_key = b"custom_secret_key_32_bytes_long_"
+    token_store = TokenStore()
+    custom_verifier = HmacEvidenceVerifier(key=custom_key)
+    executor = ControlledExecutor(token_store=token_store, verifier=custom_verifier)
+
+    fw = FirewallCore(registry=test_registry, executor=executor)
+    assert fw.verifier._key == custom_key
+
+
+def test_17_review_ticket_natural_expiration_clears_busy() -> None:
+    """Case 17: Natural expiration of review ticket unlocks the session from BUSY."""
+    from firewall.contracts.models import ReviewerView
+    from firewall.oversight.service import ReviewService
+
+    review_service = ReviewService()
+    session_id = "sess_17_expiry"
+    action = CanonicalAction(
+        action_id="act_17",
+        session_id=session_id,
+        seq=1,
+        tool="execute_export",
+        arguments={},
+        action_hash="hash_17",
+    )
+    summary = ReviewerView(
+        tool="execute_export",
+        typed_arguments={},
+        policy_verdict=PolicyVerdict.UNDETERMINED,
+        reason_codes=["MANDATORY_REVIEW"],
+        state_facts={},
+    )
+    _ = review_service.create_ticket(action, summary, ttl_ms=100, now_ms=1000)
+    assert review_service.has_pending_review(session_id, now_ms=1050) is True
+    # At time 1150 (past 1000 + 100 = 1100), ticket is naturally expired
+    assert review_service.has_pending_review(session_id, now_ms=1150) is False
+
+
+def test_18_execute_export_without_destination_records_anomaly(test_registry: Registry) -> None:
+    """Case 18: Implicit execute_export without destination records UNKNOWN_DESTINATION."""
+    from firewall.contracts.models import StateEventEnvelope
+    from firewall.state.engine import apply_event, initial_state
+
+    session_id = "sess_18_no_dest"
+    state = initial_state(session_id)
+    envelope = StateEventEnvelope(
+        session_id=session_id,
+        seq=1,
+        prior_head=state.head_hash,
+        event_type="EXECUTED",
+        action_id="act_18",
+        token_id="tok_18",
+        payload={"tool": "execute_export", "arguments": {"rows": 100}},
+    )
+    new_state = apply_event(
+        state=state,
+        event=envelope,
+        registry=test_registry,
+        expected_session_id=session_id,
+    )
+    assert "UNKNOWN_DESTINATION" in new_state.anomalies
+    assert new_state.indeterminate_state > 0
