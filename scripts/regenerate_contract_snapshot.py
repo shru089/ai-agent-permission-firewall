@@ -6,8 +6,8 @@ and writes them to the golden snapshot file with exact ordering and formatting.
 """
 
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 # Ensure repository root and src are on sys.path
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -16,7 +16,7 @@ if str(REPO_ROOT / "src") not in sys.path:
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from firewall.contracts import (
+from firewall.contracts import (  # noqa: E402
     ActionRequest,
     AuthorizationToken,
     CanonicalAction,
