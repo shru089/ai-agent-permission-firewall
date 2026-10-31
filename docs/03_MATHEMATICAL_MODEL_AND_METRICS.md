@@ -106,21 +106,29 @@ Evaluated top to bottom; first match wins:
 | D4c | `V_t = PERMIT`, `escalate_only`, `u_t = SUSPICIOUS` | `suspicious_map` | `MONITOR_ESCALATION` |
 | D4d | `V_t = PERMIT`, `escalate_only`, `u_t = UNKNOWN` | `REVIEW` | `MONITOR_UNAVAILABLE` |
 | D5a | `V_t = UNDETERMINED`, `monitor_authority = none` | `REVIEW` | `NO_RULE_NO_MONITOR` |
-| D5b | `V_t = UNDETERMINED`, `u_t = BENIGN`, `c(a_t) ∉ MR` | `ALLOW` | `MONITOR_BENIGN` |
+| D5b | `V_t = UNDETERMINED`, `u_t = BENIGN`, `c(a_t) ∉ MR` | `REVIEW` | `UNDETERMINED_BENIGN_REQUIRES_REVIEW` |
 | D5c | `V_t = UNDETERMINED`, `u_t = BENIGN`, `c(a_t) ∈ MR` | `REVIEW` | `CLASS_REQUIRES_REVIEW` |
 | D5d | `V_t = UNDETERMINED`, `u_t = SUSPICIOUS` | `suspicious_map` | `MONITOR_SUSPICIOUS` |
 | D5e | `V_t = UNDETERMINED`, `u_t = UNKNOWN` | `REVIEW` | `MONITOR_UNAVAILABLE` |
 
 `REVIEW` never authorizes execution; it creates a ticket (`INV-05`).
 
+**Advisory-only monitor semantics and review revalidation:**
+- **Advisory Only:** The semantic monitor and rejection cascade are strictly advisory. A monitor assessment (even `BENIGN` / `LOW_RISK`) can never independently authorize or allow an action. Policy uncertainty must escalate: `UNDETERMINED + BENIGN` produces `REVIEW` (`UNDETERMINED_BENIGN_REQUIRES_REVIEW`), never `ALLOW` or direct execution.
+- **PROHIBIT Dominance:** `PROHIBIT` always wins. Any action evaluated to `PROHIBIT` by the policy engine results in `DENY`, regardless of monitor advisory verdicts (`BENIGN`, `SUSPICIOUS`, `UNKNOWN`, timeout, malformed JSON, or exceptions).
+- **Review Approval Revalidation (`INV-05`):** When a human approver or review gateway resolves a ticket as approved (`resolve_review`), the core firewall revalidates authoritative state before token issuance or execution:
+  1. Compares the ticket's recorded state head hash (`recorded_state_head`) against the current live state head hash (`state.head_hash`). If the state head changed, approval is rejected and fails closed to `DENY` (`STALE_DECISION`).
+  2. Re-evaluates the deterministic policy engine against current state. If the policy now evaluates to `PROHIBIT`, execution is denied (`POLICY_PROHIBIT`).
+  3. Execution authorization is issued only when both policy verdict and state freshness remain valid.
+
 **Provable properties** (verified by exhaustive enumeration of the finite input space, `T-DEC-001`, `T-INV-03`, `T-INV-11`):
 
 - **P-PROHIB** `V_t = PROHIBIT ⇒ D_t = DENY` for every `u_t`, `κ`.
-- **P-FAILCLOSED** For every row where the monitor is consulted and `u_t = UNKNOWN`, `D_t ≠ ALLOW`; for `V_t = EVIDENCE_MISSING`, `D_t ≠ ALLOW`.
+- **P-FAILCLOSED** For every row where the monitor is consulted and `u_t = UNKNOWN`, `D_t ≠ ALLOW`; for `V_t = EVIDENCE_MISSING`, `D_t ≠ ALLOW`; for `V_t = UNDETERMINED`, `D_t ≠ ALLOW` (all map to `REVIEW` or `DENY`).
 - **P-MONO** For fixed `(valid, V_t, c, κ)`, ordering monitor outputs `BENIGN ≺ UNKNOWN ≺ SUSPICIOUS`, a more suspicious output never yields a strictly less strict decision. (With `suspicious_map = REVIEW`, `UNKNOWN` and `SUSPICIOUS` give the same decision; the inequality is non-strict.)
 - **P-NOLEAK** `D_t` is a function only of `(valid, V_t, u_t, c(a_t), κ)`: it never reads `y_t`, and it never reads the score `R̂_t` directly (only the verdict `u_t` derived from it).
 
-**Design choice flagged for the team (`D-13`, `D-24`, `OQ-07`, `OQ-08`).** The monitor can resolve `UNDETERMINED` but cannot relax `EVIDENCE_MISSING` or `PROHIBIT`. Whether monitors may allow `EGRESS_EXTERNAL` actions (needed to replicate [P1]'s setting where the LLM decides SAFE/UNSAFE for exports) is controlled by `MR`. Per `D-13`, all experiment arms use `MR = {DESTRUCTIVE, PRIVILEGED_ADMIN}` identically, while a *production-style* configuration should add `EGRESS_EXTERNAL` until evidence supports otherwise (ablation `A-06`). `[REC]`
+**Design choice flagged for the team (`D-13`, `D-24`, `OQ-07`, `OQ-08`).** The monitor cannot independently authorize actions or relax `EVIDENCE_MISSING` or `PROHIBIT`. Per core security invariants, `UNDETERMINED + BENIGN` escalates to `REVIEW`. Whether monitors may allow actions is controlled by deterministic policy permitting the action first; mandatory review classes (`MR`) always require human review even when the monitor returns `BENIGN`. Per `D-13`, all experiment arms use `MR = {DESTRUCTIVE, PRIVILEGED_ADMIN}` identically, while a *production-style* configuration should add `EGRESS_EXTERNAL` until evidence supports otherwise (ablation `A-06`). `[REC]`
 
 ---
 

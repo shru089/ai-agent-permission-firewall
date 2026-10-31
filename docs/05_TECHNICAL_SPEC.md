@@ -340,6 +340,12 @@ monitor_timeout_ms: null                   # set after baseline latency measurem
 review_expiry_s: null                      # set per experiment
 ```
 
+**Security Invariants Enforced by Core:**
+1. **Advisory-Only Monitor / Rejection Cascade:** Semantic monitors and the rejection cascade are strictly advisory. The adapter and monitor never independently authorize (`ALLOW`), execute, or deny actions. The core firewall makes all final decisions.
+2. **PROHIBIT Dominance:** `PROHIBIT` always wins. Deterministic policy evaluations of `PROHIBIT` always map to `DENY` regardless of monitor advisory output (`BENIGN`, `SUSPICIOUS`, `UNKNOWN`, timeout, malformed JSON, or exception).
+3. **Escalation of Uncertainty:** Policy uncertainty must escalate. `UNDETERMINED + BENIGN` produces `REVIEW` (`UNDETERMINED_BENIGN_REQUIRES_REVIEW`), never `ALLOW`.
+4. **Mandatory Review:** Tools belonging to `mandatory_review_classes` always escalate to `REVIEW` even if the monitor advisory is `BENIGN` / `LOW_RISK`.
+
 ---
 
 ## 8. State tracking and views
@@ -360,7 +366,7 @@ review_expiry_s: null                      # set per experiment
 
 Denied or rejected actions append `ACTION_DENIED` and do not change security-relevant state.
 
-### 8.2 Information views (allow-lists)
+### 8.2 Information views (allow-lists) and isolation
 
 | View | Fields |
 |---|---|
@@ -369,6 +375,10 @@ Denied or rejected actions append `ACTION_DENIED` and do not change security-rel
 | `MonitorView[Transcript]` | as above + `transcript` (text serialization of `H_t`, including free text, as in [P1]) |
 | `MonitorView[Hybrid]` | action, registry facts, goal, policy text, `state_summary` (typed fields) + event refs |
 | `ReviewerView` | gateway-generated: tool, typed arguments, policy verdict, reason codes, state facts, monitor assessment labeled *advisory*; **never** `declared_intent` as fact |
+
+**MonitorView Isolation and Sanitization Guarantees:**
+- **Defensive Deep Copying:** All projections created for `MonitorView` (action, state summary, history, registry facts) are deep-copied. Any modification attempted by a monitor or cascade stage cannot mutate the core firewall's state or action objects.
+- **Sensitive Field Sanitization:** Sensitive internal fields—including authorization tokens, session keys, passwords, API keys, private keys, and secrets—are redacted or stripped from monitor views and transcripts before evaluation. Semantic monitors are never exposed to internal credentials or tokens.
 
 ---
 
@@ -389,6 +399,11 @@ Rules:
 4. `Transcript` and `Hybrid` monitors build their prompts only from the `MonitorView` fields.
 5. Mapping from [P3]-style tiers: `PASS → BENIGN`, `FAIL → SUSPICIOUS`, `UNSURE → UNKNOWN`.
 6. Scores follow `03` §5; `MODEL_VERBALIZED_CONFIDENCE` is stored but a type guard prevents its use in `Δ`.
+7. **Advisory Semantics in Adapter:** The cascade adapter converts monitor assessments into advisory verdicts: `BENIGN → LOW_RISK`, `SUSPICIOUS → ELEVATED_RISK`, `UNKNOWN → UNCERTAIN`, and errors/timeouts → `UNAVAILABLE`. The adapter returns `MonitorAdvisory` with `decision = None` and never directly maps to `ALLOW` or `DENY`.
+8. **Review Approval Revalidation (`INV-05`):** When a human approver resolves a ticket via `resolve_review()`, the firewall revalidates against current authoritative state and policy:
+   - Verifies state freshness (`recorded_state_head == state.head_hash`); if state has diverged, approval fails closed to `DENY` (`STALE_DECISION`).
+   - Re-evaluates deterministic policy; if policy now returns `PROHIBIT`, execution is denied (`POLICY_PROHIBIT`).
+   - Execution tokens are only minted when state and policy remain valid.
 
 ---
 
