@@ -633,7 +633,7 @@ class FirewallCore:
                 if recorded_state_head is None:
                     for r in reversed(self.audit_store.get_records(session_id)):
                         if (
-                            r.record_type == "DECISION"
+                            r.type == "DECISION"
                             and r.payload.get("action_id") == action.action_id
                         ):
                             recorded_state_head = r.payload.get("state_head_hash")

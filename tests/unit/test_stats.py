@@ -183,14 +183,14 @@ class TestClusterBootstrapCI:
         ci1 = cluster_bootstrap_ci(
             data=data,
             stat_fn=_mean_stat,
-            cluster_key=lambda x: x["cluster"],
+            cluster_key=lambda x: str(x["cluster"]),
             n_replicates=500,
             seed=42,
         )
         ci2 = cluster_bootstrap_ci(
             data=data,
             stat_fn=_mean_stat,
-            cluster_key=lambda x: x["cluster"],
+            cluster_key=lambda x: str(x["cluster"]),
             n_replicates=500,
             seed=42,
         )
@@ -205,10 +205,10 @@ class TestClusterBootstrapCI:
             return sum(x["val"] for x in sample) / len(sample)
 
         ci1 = cluster_bootstrap_ci(
-            data, _mean_stat, cluster_key=lambda x: x["cluster"], n_replicates=200, seed=1
+            data, _mean_stat, cluster_key=lambda x: str(x["cluster"]), n_replicates=200, seed=1
         )
         ci2 = cluster_bootstrap_ci(
-            data, _mean_stat, cluster_key=lambda x: x["cluster"], n_replicates=200, seed=2
+            data, _mean_stat, cluster_key=lambda x: str(x["cluster"]), n_replicates=200, seed=2
         )
         # Bounds may be close but replicate paths differ
         assert ci1.n_valid_replicates == 200
@@ -223,7 +223,7 @@ class TestClusterBootstrapCI:
         ci = cluster_bootstrap_ci(
             data,
             _mean_stat,
-            cluster_key=lambda x: x["cluster"],
+            cluster_key=lambda x: str(x["cluster"]),
             side="lower",
             seed=42,
         )
@@ -239,7 +239,7 @@ class TestClusterBootstrapCI:
         ci = cluster_bootstrap_ci(
             data,
             _mean_stat,
-            cluster_key=lambda x: x["cluster"],
+            cluster_key=lambda x: str(x["cluster"]),
             side="upper",
             seed=42,
         )
@@ -445,6 +445,7 @@ class TestLatencyPercentilesCI:
 
         assert p50.point_estimate == pytest.approx(50.0)
         assert p50.lower is not None and p50.upper is not None
+        assert p50.point_estimate is not None
         assert p50.lower <= p50.point_estimate <= p50.upper
 
         assert p95.point_estimate == pytest.approx(95.0)

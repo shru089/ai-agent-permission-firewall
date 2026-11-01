@@ -57,3 +57,11 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 check_untyped_defs = true
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+module = [
+    "tests",
+    "tests.*",
+    "tests.*.*",
+]
+disallow_untyped_defs = false

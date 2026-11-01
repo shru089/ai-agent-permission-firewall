@@ -395,6 +395,7 @@ def test_12_duplicate_review_approval_cannot_execute_twice(test_registry: Regist
     resp = fw.submit(ActionRequest(session_id="sess_test_12", tool="execute_export", arguments={}))
     assert resp.status == "PENDING_REVIEW"
     ticket_id = resp.ticket_id
+    assert ticket_id is not None
 
     # Resolve review: FIRST APPROVAL -> EXECUTED
     res1 = fw.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="reviewer_alice")
@@ -457,6 +458,7 @@ def test_14_state_head_mismatch_invalidates_authorization():
     # State head drifted from expected_head_A to drifted_head_B before execution
     env, _ = executor.execute(token, action, "drifted_head_B")
     assert env.has_value is False
+    assert env.error is not None
     assert "state_head_hash mismatch" in env.error["message"]
 
 
