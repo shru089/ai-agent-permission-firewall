@@ -77,3 +77,4 @@ Across all deterministic arms and replay runs, zero actions with `policy_verdict
   3. Action-D invariance preserved without information leakage.
   4. Decision latencies for deterministic arms are under 5 ms (well below 600 ms p95 budget).
   5. All 12 FW-GATE invariants hold unconditionally.
+
