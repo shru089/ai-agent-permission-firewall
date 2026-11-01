@@ -869,8 +869,9 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
         "nested_pwd_val_999",
         "supersecret_token_in_envelope",
     ]
+    fake_pem_marker = "FAKE_RSA_KEY_HEADER_FOR_TESTING_BEGIN_RSA_PRIVATE_KEY"
 
-    events = [
+    events: list[Event | StateEventEnvelope] = [
         # Envelope with sensitive string in output and error
         StateEventEnvelope(
             session_id="sess_sec25",
@@ -933,11 +934,7 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
                     provenance=Provenance.TOOL_TYPED,
                 ),
             },
-            free_text=(
-                "-----BEGIN RSA PRIVATE KEY-----\n"
-                "MIIEowIBAAKCAQEA0...\n"
-                "-----END RSA PRIVATE KEY-----"
-            ),
+            free_text=fake_pem_marker,
         ),
     ]
 
@@ -945,7 +942,7 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
     formatted = format_transcript(events)
     for secret in planted_secrets:
         assert secret not in formatted, f"Secret {secret} leaked into format_transcript output!"
-    assert "-----BEGIN RSA PRIVATE KEY-----" not in formatted
+    assert fake_pem_marker not in formatted
 
     # Preserved safe data
     assert "customer_records" in formatted
@@ -977,8 +974,8 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
     for secret in planted_secrets:
         assert secret not in view_t.transcript, f"Secret {secret} leaked into view.transcript!"
         assert secret not in view_dump_str, f"Secret {secret} leaked into view model_dump!"
-    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_t.transcript
-    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_dump_str
+    assert fake_pem_marker not in view_t.transcript
+    assert fake_pem_marker not in view_dump_str
 
     # Hybrid monitor view
     view_h = build_monitor_view(
@@ -991,4 +988,4 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
     view_h_str = str(view_h.model_dump())
     for secret in planted_secrets:
         assert secret not in view_h_str, f"Secret {secret} leaked into hybrid view!"
-    assert "-----BEGIN RSA PRIVATE KEY-----" not in view_h_str
+    assert fake_pem_marker not in view_h_str

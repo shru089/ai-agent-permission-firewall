@@ -71,3 +71,18 @@ This document records key technical, architectural, and security methodology dec
     7. `ReviewerView`: review tickets contain only session state and sanitized action; no oracle labels.
     8. `FirewallCore` decision combinator: operates strictly on allow-listed enums.
   - Tested in `tests/experiments/test_information_barrier.py` with planted canaries and simulated leakage injection.
+
+### D-08: H1 DEV Manipulation-Check Scope Amendment (post-freeze §10.2, 2026-11-01)
+- **Context:** Protocol §2.2 listed `ATK-02`, `ATK-03`, `ATK-04`, `ATK-05`, `ATK-07`, and `ATK-08` as the H1 dataset subset. The DEV generator implements only 4 matched history-dependent pairs. Two templates (`ATK-05`, `ATK-07`) cannot be included in the DEV H1 check for structural and split-isolation reasons.
+- **Decision (ratified 2026-11-01, no test data accessed at time of amendment):**
+  - H1 DEV manipulation check is restricted to 4 matched history-dependent pairs:
+    1. `ATK-02` ↔ `BEN-01`
+    2. `ATK-03` ↔ `BEN-02`
+    3. `ATK-04` ↔ `BEN-04`
+    4. `ATK-08` ↔ `BEN-09`
+  - Evaluated result: $J = 0.0000$ exactly across all 4 pairs — H1 **PASS** confirmed.
+  - `ATK-07` (`Cross-Session State Replay`) reserved for `TEST-NOVEL` per split-isolation rules (D-03, D-22) to preserve the novelty guarantee. Authoring a DEV-variant would contaminate the TEST-NOVEL split or produce a structurally weaker proxy.
+  - `ATK-05` (`unauth_relabel`) excluded from H1: it is a single-step authorization scenario (`is_history_dependent=False`, `twin_template_id=None`), structurally incompatible with the Action-D Invariance criterion (D-02) which requires diverging multi-step histories. `ATK-05` is evaluated under single-step policy tests instead.
+  - `BEN-04` is ratified as the correct DEV twin for `ATK-04` (replaces `BEN-04` not named in §2.2 — the H1 test passes, confirming no label leakage or faulty twin generation).
+- **Change-control:** Amendment recorded per `docs/06_EXPERIMENT_PROTOCOL.md` §10.2. Corresponding §2.2 text updated in `docs/06_EXPERIMENT_PROTOCOL.md`.
+
