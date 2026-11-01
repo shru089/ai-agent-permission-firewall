@@ -11,7 +11,7 @@ from typing import Any, Optional
 
 from experiments.labels.oracle import SpecificationLabelOracle
 from experiments.labels.rules import OracleVerdict
-from src.firewall.contracts.hashing import canonical_hash, canonical_json
+from firewall.contracts.hashing import canonical_hash, canonical_json
 
 FORBIDDEN_LEAKAGE_TOKENS = {
     "CONFIDENTIAL",

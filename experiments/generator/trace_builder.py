@@ -8,7 +8,7 @@ docs/06_EXPERIMENT_PROTOCOL.md §5.4 JSON schema.
 from typing import Any, Optional
 
 from experiments.generator.scenarios import ScenarioTemplate
-from src.firewall.contracts.hashing import canonical_hash
+from firewall.contracts.hashing import canonical_hash
 
 
 class TraceBuilder:

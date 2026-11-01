@@ -281,6 +281,8 @@ def test_h1_pass_on_canonical_dev_dataset() -> None:
     # B4 result
     assert report.b4_result.status == H1Status.PASS
     assert report.b4_result.computed_j == 0.0
+    assert report.b4_result.ci_lower is not None
+    assert report.b4_result.ci_upper is not None
     assert report.b4_result.ci_lower <= 0.0 <= report.b4_result.ci_upper
 
     # Check artifacts written

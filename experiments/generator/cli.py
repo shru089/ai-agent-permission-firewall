@@ -237,14 +237,14 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
         "Action D Identical | History Diverges | Labels Diverge | No Leakage | Status |\n"
         "|---|---|---|:---:|---|:---:|:---:|:---:|:---:|:---:|\n"
     )
-    for p in pair_matches:
-        d_id = "YES" if p.action_d_identical else "NO"
-        h_div = "YES" if p.prior_history_diverges else "NO"
-        l_div = "YES" if p.labels_diverge else "NO"
-        no_leak = "YES" if p.zero_leakage_tokens else "NO"
+    for pm in pair_matches:
+        d_id = "YES" if pm.action_d_identical else "NO"
+        h_div = "YES" if pm.prior_history_diverges else "NO"
+        l_div = "YES" if pm.labels_diverge else "NO"
+        no_leak = "YES" if pm.zero_leakage_tokens else "NO"
         report_t_exp_002_content += (
-            f"| `{p.pair_id}` | `{p.attack_trace_id}` | `{p.benign_trace_id}` | "
-            f"{p.critical_step_index} | `{p.attack_tool}` | {d_id} | "
+            f"| `{pm.pair_id}` | `{pm.attack_trace_id}` | `{pm.benign_trace_id}` | "
+            f"{pm.critical_step_index} | `{pm.attack_tool}` | {d_id} | "
             f"{h_div} | {l_div} | {no_leak} | **PASSED** |\n"
         )
 
@@ -253,8 +253,8 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
     # 9b. T-EXP-005 Label Audit Report
     report_t_exp_005 = reports_dir / "T-EXP-005_label_audit.md"
     verdict_counts: dict[str, int] = {}
-    for lbl in labels:
-        v = lbl["verdict"]
+    for label_item in labels:
+        v = str(label_item["verdict"])
         verdict_counts[v] = verdict_counts.get(v, 0) + 1
 
     report_t_exp_005_content = f"""# T-EXP-005 Independent Label Audit Report
