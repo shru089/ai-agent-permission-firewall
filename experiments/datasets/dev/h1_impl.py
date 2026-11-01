@@ -7,15 +7,16 @@ Authoritative Specifications:
 - docs/03_MATHEMATICAL_MODEL_AND_METRICS.md §7.2, §8.1, §8.2, §10.2, §12
 - docs/prereg/PREREG-001_DRAFT.md §3 (Lines 41–43)
 
-DEV Evaluation Scope & Reconciliation:
+Formal Protocol Amendment (Option 2): DEV Evaluation Scope & Reconciliation:
 The canonical DEV partition contains 32 traces across 16 templates.
 For H1 history-necessity evaluation, DEV evaluates exactly the 4 multi-step history-dependent
 families (ATK-02, ATK-03, ATK-04, ATK-08) matched 1-to-1 with benign baselines (BEN-01,
 BEN-02, BEN-04, BEN-09) across 2 variants (v00, v01), yielding 8 matched Action-D invariant pairs
-(16 traces total). ATK-07 (Cross-Session State Replay) is strictly reserved for TEST-NOVEL per
-Decision D-22 and protocol §5.1 to preserve split isolation (T-EXP-005), and ATK-05 (Privilege
-Escalation via Unchecked Delegation) is evaluated as a single-step administrative action
-(relabel_resource) without multi-step history pre-conditions.
+(16 traces total). ATK-05 is a single-step unauthorized-relabel scenario outside the history-necessity
+H1 domain, and ATK-07 is strictly reserved for TEST-NOVEL per Decision D-22 and protocol §5.1
+to preserve split isolation (T-EXP-005). The H1 result applies only to the amended four-pair
+DEV domain, and this amendment is a disclosed change from frozen §2.2 requiring acceptance
+before canonical evaluation.
 
 Enforces:
 1. Action-D invariance verification: a_{t*}(tau^+) == a_{t*}(tau^-) on every matched pair.
@@ -714,8 +715,9 @@ def run_h1_check(
     # Write output JSON artifact if path specified
     if output_json_path is not None:
         output_json_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_json_path, "w", encoding="utf-8") as f:
+        with open(output_json_path, "w", encoding="utf-8", newline="\n") as f:
             json.dump(report.to_dict(), f, indent=2)
+            f.write("\n")
 
     # Write output Markdown report if path specified
     if output_report_path is not None:
@@ -760,10 +762,12 @@ def run_h1_check(
 - **Dataset Partition:** Canonical DEV partition (`experiments/datasets/dev/`)
 - **Evaluation Domain:** Matched critical set $\\Omega_{{\\text{{crit}}}}$ of pairs
 - **Total Matched Pairs:** {report.pair_count} ({report.trace_count} traces across 8 matched pairs)
-- **Scope Reconciliation:** DEV evaluates the 4 multi-step history-dependent families
-  (ATK-02, ATK-03, ATK-04, ATK-08) matched with benign baselines (BEN-01, BEN-02,
-  BEN-04, BEN-09) across 2 variants (v00, v01). ATK-07 is strictly held out for
-  TEST-NOVEL per D-22 and protocol §5.1, and ATK-05 is single-step in DEV.
+- **Formal Protocol Amendment (Option 2):** DEV evaluates the 4 multi-step history-dependent
+  families (ATK-02/BEN-01, ATK-03/BEN-02, ATK-04/BEN-04, ATK-08/BEN-09) across 2 variants
+  (v00, v01). ATK-05 is a single-step unauthorized-relabel scenario outside the history-necessity
+  H1 domain; ATK-07 remains reserved for TEST-NOVEL to preserve split isolation; the H1
+  result applies exclusively to the amended 4-pair DEV domain; and this amendment is a
+  disclosed change from frozen protocol §2.2 requiring acceptance before canonical evaluation.
 
 ## Check 1: Action-D Invariance Precondition
 - **Requirement:** $a_{{t^*}}(\\tau^+) = a_{{t^*}}(\\tau^-)$ identical at critical step $t^*$.
@@ -802,7 +806,7 @@ def run_h1_check(
   on $\\tau^+$ and $\\tau^-$ are identical by construction, guaranteeing $Recall = FPR$ and
   $J = 0.0$, confirming the H1 history-necessity manipulation check.
 """
-        output_report_path.write_text(report_md, encoding="utf-8")
+        output_report_path.write_text(report_md, encoding="utf-8", newline="\n")
 
     return report
 

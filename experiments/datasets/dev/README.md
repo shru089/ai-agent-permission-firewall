@@ -28,11 +28,12 @@ All delivered files are cryptographically sealed in `manifest.sha256`:
 Integrity verification:
 - `manifest.sha256`: Cryptographic SHA-256 integrity checksums for all 10 delivered files.
 
-## Scope Reconciliation for H1 Check
-Protocol §2.2 lists global attack families across the broader research plan. In the DEV partition:
+## Formal Protocol Amendment: Scope Reconciliation for H1 Check
+Per Option 2 (Formal Protocol Amendment), the canonical DEV H1 manipulation-check scope is formally amended:
 - **4 History-Dependent Multi-Step Families:** ATK-02, ATK-03, ATK-04, and ATK-08 are paired 1-to-1 with matched benign baselines BEN-01, BEN-02, BEN-04, and BEN-09 across 2 variants (v00, v01) to form 8 matched Action-D invariant pairs (16 traces total).
-- **ATK-07 Held Out:** ATK-07 (Cross-Session State Replay) is strictly reserved for TEST-NOVEL per Decision D-22 and protocol §5.1; placing it in DEV would violate split isolation (T-EXP-005).
-- **ATK-05 Single-Step:** ATK-05 (Privilege Escalation via Unchecked Delegation) is evaluated as a single-step administrative action (`relabel_resource`) without multi-step history pre-conditions in DEV.
+- **ATK-05 Exclusion:** ATK-05 (Privilege Escalation via Unchecked Delegation) is a single-step unauthorized-relabel scenario (`relabel_resource`) and is outside the multi-step history-necessity H1 domain.
+- **ATK-07 Reservation:** ATK-07 (Cross-Session State Replay) remains strictly reserved as an unseen held-out family for TEST-NOVEL per Decision D-22 and protocol §5.1 to preserve benchmark split isolation (T-EXP-005).
+- **Domain Applicability & Disclosure:** The H1 result applies exclusively to the amended four-pair DEV domain. This amendment is a disclosed change from frozen protocol §2.2 and must be accepted before canonical evaluation.
 
 ## Family Breakdown
 - **ATK-01:** 2 traces

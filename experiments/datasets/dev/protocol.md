@@ -17,17 +17,25 @@ This protocol formalizes the H1 manipulation check for the canonical DEV dataset
 - `docs/prereg/PREREG-001_DRAFT.md`:
   - §3 (Lines 41–43): Approved threshold table for H1.
 
-### 1.1 Scope Reconciliation (DEV vs Protocol §2.2)
+### 1.1 Formal Protocol Amendment: DEV H1 Scope Reconciliation
 
-Protocol §2.2 lists six attack families across the broader experimental lifecycle:
-ATK-02, ATK-03, ATK-04, ATK-05, ATK-07, and ATK-08.
-Within the canonical DEV handoff package:
+Protocol §2.2 originally listed six attack families across the broader experimental lifecycle (`ATK-02`, `ATK-03`, `ATK-04`, `ATK-05`, `ATK-07`, `ATK-08`). Under Option 2 (Formal Protocol Amendment), the canonical DEV H1 manipulation-check scope is formally amended and defined as follows:
+
 1. **Four Multi-Step History-Dependent Families:**
-   ATK-02, ATK-03, ATK-04, and ATK-08 are instantiated across 2 variants each (v00, v01) and paired 1-to-1 with matched benign baselines BEN-01, BEN-02, BEN-04, and BEN-09. This yields exactly 8 matched Action-D invariant pairs (16 traces total) forming the critical history-dependent domain $\Omega_{\text{crit}}$.
-2. **ATK-07 Reservation for TEST-NOVEL:**
-   ATK-07 (Cross-Session State Replay) is strictly reserved as an unseen held-out family for the TEST-NOVEL split per Decision D-22 and protocol §5.1. Placing ATK-07 in the DEV partition would violate benchmark split isolation ($T\text{-EXP-005}$) and compromise held-out evaluation integrity.
-3. **ATK-05 Single-Step Scope in DEV:**
-   ATK-05 (Privilege Escalation via Unchecked Delegation) is implemented in DEV as a direct single-step administrative action (`relabel_resource`) rather than a multi-step history-dependent export sequence, so it does not participate in $\Omega_{\text{crit}}$ matched pairs.
+   The DEV H1 manipulation-check scope is defined exclusively as the four implemented multi-step matched pairs:
+   - `ATK-02` paired with `BEN-01`
+   - `ATK-03` paired with `BEN-02`
+   - `ATK-04` paired with `BEN-04`
+   - `ATK-08` paired with `BEN-09`
+   Instantiated across 2 variants each (v00, v01), yielding exactly 8 matched Action-D invariant pairs (16 traces total) forming the critical history-dependent domain $\Omega_{\text{crit}}$.
+2. **ATK-05 Exclusion from History-Necessity Domain:**
+   `ATK-05` (Privilege Escalation via Unchecked Delegation) is a single-step unauthorized-relabel scenario (`relabel_resource`) and is outside the history-necessity H1 domain ($\Omega_{\text{crit}}$ requires multi-step history-dependent Action-D invariance).
+3. **ATK-07 Reservation for TEST-NOVEL:**
+   `ATK-07` (Cross-Session State Replay) remains strictly reserved as an unseen held-out family for `TEST-NOVEL` per Decision D-22 and protocol §5.1 to preserve benchmark split isolation ($T\text{-EXP-005}$).
+4. **Domain Applicability:**
+   The H1 result applies only to the amended four-pair DEV domain.
+5. **Formal Disclosure:**
+   This amendment is a disclosed change from the prior frozen §2.2 scope and must be accepted before canonical evaluation.
 
 ---
 

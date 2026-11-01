@@ -13,10 +13,12 @@
 - **Dataset Partition:** Canonical DEV partition (`experiments/datasets/dev/`)
 - **Evaluation Domain:** Matched critical set $\Omega_{\text{crit}}$ of pairs
 - **Total Matched Pairs:** 8 (16 traces across 8 matched pairs)
-- **Scope Reconciliation:** DEV evaluates the 4 multi-step history-dependent families
-  (ATK-02, ATK-03, ATK-04, ATK-08) matched with benign baselines (BEN-01, BEN-02,
-  BEN-04, BEN-09) across 2 variants (v00, v01). ATK-07 is strictly held out for
-  TEST-NOVEL per D-22 and protocol §5.1, and ATK-05 is single-step in DEV.
+- **Formal Protocol Amendment (Option 2):** DEV evaluates the 4 multi-step history-dependent
+  families (ATK-02/BEN-01, ATK-03/BEN-02, ATK-04/BEN-04, ATK-08/BEN-09) across 2 variants
+  (v00, v01). ATK-05 is a single-step unauthorized-relabel scenario outside the history-necessity
+  H1 domain; ATK-07 remains reserved for TEST-NOVEL to preserve split isolation; the H1
+  result applies exclusively to the amended 4-pair DEV domain; and this amendment is a
+  disclosed change from frozen protocol §2.2 requiring acceptance before canonical evaluation.
 
 ## Check 1: Action-D Invariance Precondition
 - **Requirement:** $a_{t^*}(\tau^+) = a_{t^*}(\tau^-)$ identical at critical step $t^*$.

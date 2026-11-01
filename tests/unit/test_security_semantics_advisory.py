@@ -681,7 +681,7 @@ def test_case_21_sensitive_fields_not_exposed_through_monitor_view(
             "api_key": "secret_api_key_999",
             "password": "super_secret_password",
             "auth_token": "token_abc_xyz",
-            "private_key": "-----BEGIN RSA PRIVATE KEY-----",
+            "private_key": "synthetic_simulated_private_key_material_v1",
             "safe_param": "safe_value",
         },
         action_hash="hash_iso_21",
@@ -701,6 +701,7 @@ def test_case_21_sensitive_fields_not_exposed_through_monitor_view(
     assert view.action.arguments["safe_param"] == "safe_value"
     assert "secret_api_key_999" not in str(view.model_dump())
     assert "super_secret_password" not in str(view.model_dump())
+    assert "synthetic_simulated_private_key_material_v1" not in str(view.model_dump())
 
     # Also verify transcript serialization does not expose raw values
     view_transcript = build_monitor_view(
@@ -712,6 +713,7 @@ def test_case_21_sensitive_fields_not_exposed_through_monitor_view(
     if view_transcript.transcript:
         assert "secret_api_key_999" not in view_transcript.transcript
         assert "super_secret_password" not in view_transcript.transcript
+        assert "synthetic_simulated_private_key_material_v1" not in view_transcript.transcript
 
 
 # ==============================================================================

@@ -62,7 +62,3 @@ mypy_path = "src"
 [[tool.mypy.overrides]]
 module = "firewall.*"
 disallow_untyped_defs = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false

@@ -1,0 +1,2 @@
+# Ensure LF endings for dataset artifacts protected by cryptographic manifest
+experiments/datasets/dev/* text eol=lf
