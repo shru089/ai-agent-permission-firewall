@@ -565,8 +565,9 @@ def run_information_barrier_audit_on_dev(
 
     # 1. Write JSON artifact to experiments/datasets/dev/
     output_json_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_json_path, "w", encoding="utf-8") as f:
+    with open(output_json_path, "w", encoding="utf-8", newline="\n") as f:
         json.dump(result.to_dict(), f, indent=2)
+        f.write("\n")
 
     # 2. Write Markdown report to experiments/reports/
     output_report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -666,6 +667,6 @@ flowchart TD
 - **Overall Result:** **PASSED**
   (Total Boundaries Checked: {result.total_boundaries_checked}, Leakage Paths Found: 0).
 """
-    output_report_path.write_text(report_md, encoding="utf-8")
+    output_report_path.write_text(report_md, encoding="utf-8", newline="\n")
 
     return result

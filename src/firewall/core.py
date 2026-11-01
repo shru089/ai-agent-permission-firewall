@@ -860,4 +860,3 @@ class FirewallCore:
                 record_type="ROUTE_TRACE",
                 payload=route_trace.model_dump(),
             )
- 

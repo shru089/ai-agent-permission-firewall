@@ -61,7 +61,9 @@ SENSITIVE_KEY_SUBSTRINGS = (
 )
 
 _PRIVATE_KEY_PATTERN = re.compile(
-    r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----"
+    r"-----(?:BEGIN|TEST_BEGIN|SYNTHETIC_BEGIN) [A-Z ]*PRIVATE KEY-----"
+    r"[\s\S]*?"
+    r"-----(?:END|TEST_END|SYNTHETIC_END) [A-Z ]*PRIVATE KEY-----"
 )
 _SECRET_KV_PATTERN = re.compile(
     r"""(?i)\b(api[_-]?key|secret(?:[_-]?key)?|password|passwd|token[s]?|token[_-]?id|auth[_-]?token|access[_-]?token|session[_-]?token|refresh[_-]?token|id[_-]?token|client[_-]?secret|bearer|credential[s]?)\b\s*[:=]\s*(['"]?)([^'"\s,;{}]{3,})\2"""
@@ -249,6 +251,18 @@ def format_transcript(
                     parts.append(f"arguments={sanitized_args}")
             if evt.decision:
                 parts.append(f"decision={evt.decision.value}")
+            for f_name in ("output", "error"):
+                f_val = evt.fields.get(f_name)
+                if f_val is not None:
+                    raw_val = f_val.value if hasattr(f_val, "value") else f_val
+                    sanitized_val = sanitize_data(copy.deepcopy(raw_val))
+                    val_str = (
+                        json.dumps(sanitized_val, sort_keys=True)
+                        if isinstance(sanitized_val, (dict, list, tuple))
+                        else str(sanitized_val)
+                    )
+                    scrubbed_val = scrub_text(val_str)[:max_output_chars]
+                    parts.append(f"{f_name}={scrubbed_val}")
             if evt.free_text:
                 scrubbed_ft = scrub_text(evt.free_text)[:max_output_chars]
                 parts.append(f"output={scrubbed_ft}")

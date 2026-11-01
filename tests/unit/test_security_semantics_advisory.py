@@ -871,7 +871,11 @@ def test_case_25_synthetic_secrets_in_transcript_output_error_and_free_text_scru
         "nested_pwd_val_999",
         "supersecret_token_in_envelope",
     ]
-    fake_pem_marker = "FAKE_RSA_KEY_HEADER_FOR_TESTING_BEGIN_RSA_PRIVATE_KEY"
+    fake_pem_marker = (
+        "-----TEST_BEGIN RSA PRIVATE KEY-----\n"
+        "MIIEowIBAAKCAQEA0_synthetic_simulated_key_material_not_a_real_key\n"
+        "-----TEST_END RSA PRIVATE KEY-----"
+    )
 
     events: list[Event | StateEventEnvelope] = [
         # Envelope with sensitive string in output and error
