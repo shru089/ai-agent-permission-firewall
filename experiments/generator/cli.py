@@ -161,7 +161,12 @@ def generate_split_dataset(
             "dev_vs_test_novel": list(dev_test_novel_overlap),
             "cal_vs_test": list(cal_test_overlap),
         },
+        "dev_trace_splits_found": list(trace_splits),
         "trace_splits_found": list(trace_splits),
+        "dev_templates": sorted(dev_ids),
+        "cal_templates": sorted(cal_ids),
+        "test_in_templates": sorted(test_in_ids),
+        "test_novel_templates": sorted(test_novel_ids),
         "split_templates": sorted({t.template_id for t in templates}),
     }
 
@@ -240,8 +245,10 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 ## Status: PASSED (100% Invariant)
 
 ## Reference
-- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1, `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
-- **Requirement:** For every matched history-dependent pair, critical action at step $t^*$ is identical.
+- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1,
+  `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
+- **Requirement:** For every matched history-dependent pair,
+  critical action at step $t^*$ is identical.
 
 ## Summary Metrics
 - **Total Traces:** {len(traces)}
@@ -286,7 +293,10 @@ def generate_all_splits(
     base_dir: Path = Path("experiments/datasets"),
     reports_dir: Path = Path("experiments/reports"),
 ) -> dict[str, Any]:
-    """Generates all 4 canonical splits (DEV, CAL, TEST-IN, TEST-NOVEL) and seals test commitment."""
+    """
+    Generates all 4 canonical splits (DEV, CAL, TEST-IN, TEST-NOVEL)
+    and seals test commitment.
+    """
     results: dict[str, Any] = {}
     splits = ["DEV", "CAL", "TEST-IN", "TEST-NOVEL"]
 
@@ -329,7 +339,9 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, default=20261031, help="Deterministic generator seed")
     parser.add_argument("--output", default=None, help="Output directory")
-    parser.add_argument("--split", default="dev", help="Target split (dev, cal, test-in, test-novel, all)")
+    parser.add_argument(
+        "--split", default="dev", help="Target split (dev, cal, test-in, test-novel, all)"
+    )
     parser.add_argument("--variants", type=int, default=2, help="Variants per template")
     parser.add_argument("--reports", default="experiments/reports", help="Reports directory")
 
@@ -344,10 +356,13 @@ def main() -> None:
             base_dir=Path("experiments/datasets"),
             reports_dir=Path(args.reports),
         )
-        print(f"[+] All splits generated successfully. Test commitment sealed: {res_all['commitment_manifest']}")
+        msg = f"[+] All splits generated. Test commitment sealed: {res_all['commitment_manifest']}"
+        print(msg)
     else:
         out_dir = Path(args.output) if args.output else Path("experiments/datasets") / target_split
-        print(f"[+] Starting dataset generation for split: {target_split.upper()} (seed={args.seed})")
+        s_name = target_split.upper()
+        start_msg = f"[+] Starting dataset generation for split: {s_name} (seed={args.seed})"
+        print(start_msg)
         res = generate_split_dataset(
             split=target_split,
             seed=args.seed,

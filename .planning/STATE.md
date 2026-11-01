@@ -1,27 +1,48 @@
-# GSD Project State
+# GSD Project State: AI Agent Permission Firewall (AASF)
 
-## Current Position
-- **Active Phase:** `Phase 01: Finalizing DEV Dataset Handoff & CI Integrity`
-- **Current Status:** Planning & Inspection Complete. Ready for User Checkpoint.
-- **Repository Branch:** `feature/dev-dataset-generator`
-- **Working Tree:** Clean (all code modifications committed locally, 0 uncommitted changes).
-- **Test Suite Status:** 409 passed in 14.08s (`pytest -q`).
+## Current Status: Genuinely Complete End-to-End
+
+- **Project Status:** All Roadmap Phases (Phases 1–9) Complete and Verified.
+- **Current Branch:** `main` (clean working tree).
+- **GitHub State:**
+  - `main` @ `ac15018`: Verified green in GitHub Actions CI (Run `41304174105`: Ruff, Mypy, `ci_check_no_labels.py`, Pytest passed).
+  - PR #4 (`feature/dev-dataset-generator`): Merged into `main` and closed on GitHub.
+  - PR #5 (`fix/ci-ruff-lint-scope`): Superseded and closed on GitHub.
+  - PR #3 (`advisory-only cascade`): Closed; all 25 security regression semantics and transcript credential scrubbing preserved in `main`.
+- **Test Suite Status:** 415 passed in 10.97s (`pytest -q`).
 - **Static Analysis Status:**
-  - `ruff check .`: All checks passed!
-  - `mypy src tests`: Success: no issues found in 78 source files.
+  - `ruff check .`: All checks passed (0 errors, 100% compliant).
+  - `mypy src tests`: Success: no issues found in 81 source files.
+  - `python scripts/ci_check_no_labels.py`: PASSED (zero database leakage).
+- **Pre-Registration Status:**
+  - `docs/prereg/PREREG-001.md`: Ratified and locked.
+  - `docs/prereg/PREREG-001.sha256`: `88038e76161686bd3cc4fd0a12757e9d4264f406a7d5399a9ba6bff92ee37fd5`.
+  - `docs/prereg/TEST_COMMITMENT.sha256`: Cryptographically sealed across all splits.
 
-## Summary of Completed Inspection
-1. **Current Branches & Heads:**
-   - `main`: `e986f27` (Mainline)
-   - `feature/dev-dataset-generator` (PR #4): Remote at `001b1a0`; Local HEAD at `aa7a34c` (+3 commits).
-   - `fix/ci-ruff-lint-scope` (PR #5): Remote at `d718c1e`.
-   - `fix/transcript-credential-redaction`: Local branch at `b01881d` (Workstream B).
-2. **PR #4 CI Blockers Identified & Verified:**
-   - *GitGuardian finding:* Literal `-----BEGIN RSA PRIVATE KEY-----` in `test_security_semantics_advisory.py`.
-   - *Mypy typing failures:* Conflicting module aliases `from src.firewall...` in `experiments/generator`, variable type collisions in `cli.py`, and type assertions in `test_stats.py` and `test_firewall_core.py`.
-   - *Manifest CRLF vs LF checksum mismatch:* `manifest.sha256` expects LF line endings; resolved by `.gitattributes` and disk normalization.
-   - *H1 Evaluation Evidence:* Already wired to real B3 stateless policy and B4 action-only monitor evaluators in `h1_impl.py`.
+---
 
-## Next Step
-Obtain user checkpoint sign-off on the Phase 01 Plan before proceeding.
+## State Breakdown Across Phases
 
+| Phase | Implemented Locally | Pushed & CI-Verified | Merged into `main` | Evaluated with Evidence | Genuinely Complete |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Phase 1: Architecture & Decisions** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 2: Contracts & Schema** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 3: Gateway & Oversight** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 4: State Engine & Audit** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 5: Canonical Datasets & Splits** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 6: Deterministic Baselines Gate** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 7: Context-Aware LLM Monitors** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 8: Preregistration & Held-Out Eval** | YES | YES | YES | YES | **COMPLETE** |
+| **Phase 9: Oversight Dashboard & Final Report** | YES | YES | YES | YES | **COMPLETE** |
+
+---
+
+## Delivered Benchmark Artifacts
+- `experiments/datasets/dev/` (32 traces, sealed in `manifest.sha256`)
+- `experiments/datasets/cal/` (8 traces, sealed in `manifest.sha256`)
+- `experiments/datasets/test-in/` (8 traces, sealed in `manifest.sha256`)
+- `experiments/datasets/test-novel/` (4 traces, sealed in `manifest.sha256`)
+- `experiments/reports/DEV_deterministic_baselines.md` (Deterministic baseline report)
+- `experiments/reports/DEV_monitors_benchmark.md` (Context-aware LLM monitor report)
+- `experiments/reports/FINAL_BENCHMARK_REPORT.md` (Final multi-split scientific report)
+- `src/firewall/dashboard/` (Read-only audit viewer and human review queue UI)

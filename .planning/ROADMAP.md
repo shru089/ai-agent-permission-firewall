@@ -1,29 +1,41 @@
 # GSD Roadmap: AI Agent Permission Firewall
 
-Aligned with `docs/08_IMPLEMENTATION_ROADMAP.md` and project decisions.
+Aligned with `docs/08_IMPLEMENTATION_ROADMAP.md` and ratified project decisions.
 
-## Active Milestone: Canonical DEV Handoff & Security Hardening
+## Phase Execution Summary
 
-### Phase 01: Finalizing DEV Dataset Handoff & CI Integrity (CURRENT)
-- **Goal:** Establish a verified, cryptographically sealed DEV benchmark package (`experiments/datasets/dev/`) with formal H1 protocol amendment, green CI (Ruff, Mypy, Pytest), and unified credential scrubbing.
-- **Deliverables:**
-  - Unified transcript credential scrubbing in `src/firewall/state/views.py`.
-  - Formal protocol amendment in `docs/06_EXPERIMENT_PROTOCOL.md` §2.2 and `experiments/datasets/dev/protocol.md`.
-  - GitGuardian PEM secret remediation in unit test fixtures.
-  - Complete type-clean codebase across `src/` and `tests/` (`mypy src tests`).
-  - Cryptographic manifest verification (`manifest.sha256`) covering all 10 delivered artifacts.
-- **Exit Criteria:**
-  - 409/409 unit, property, and integration tests passing.
-  - Zero Ruff lint violations across maintained modules.
-  - Zero Mypy type violations across 78 source files.
-  - 10/10 files matching cryptographic checksums with LF line-ending normalization.
-  - User review checkpoint approved before code modifications.
+### Phase 1: Requirements, Ownership & Decision Baseline
+- **Status:** **COMPLETE**
+- **Artifacts:** `docs/00_RESEARCH_FOUNDATION.md` through `docs/09_DECISIONS_AND_OPEN_QUESTIONS.md`.
 
-### Phase 02: Upstream PR Reconciliation & Synchronization (UPCOMING)
-- **Goal:** Synchronize verified changes with GitHub PR branches (`feature/dev-dataset-generator`, `fix/ci-ruff-lint-scope`) without premature merge.
-- **Dependencies:** Phase 01 user acceptance.
+### Phase 2: Contracts, Schemas & Anomaly Handling
+- **Status:** **COMPLETE**
+- **Artifacts:** `src/firewall/contracts/`, `src/firewall/schemas/`.
 
-### Phase 03: Canonical Baseline Evaluation (FUTURE)
-- **Goal:** Execute canonical B0–B6 and P1 evaluation runs across DEV, CAL, and held-out splits.
-- **Dependencies:** Phase 02 completion and frozen preregistration.
+### Phase 3: Gateway, Review Tickets & Evidence Verification
+- **Status:** **COMPLETE**
+- **Artifacts:** `src/firewall/core.py`, `src/firewall/decision/`, `src/firewall/oversight/`.
 
+### Phase 4: State Engine, Fold $\Phi$ & Audit Log
+- **Status:** **COMPLETE**
+- **Artifacts:** `src/firewall/state/`, `src/firewall/audit/`.
+
+### Phase 5: Canonical Dataset Generation & Split Isolation
+- **Status:** **COMPLETE**
+- **Artifacts:** `experiments/datasets/{dev,cal,test-in,test-novel}/`, `manifest.sha256`, `docs/prereg/TEST_COMMITMENT.sha256`.
+
+### Phase 6: Deterministic Baselines & FW-GATE Invariant Audit
+- **Status:** **COMPLETE**
+- **Artifacts:** `experiments/reports/DEV_deterministic_baselines.md`, Decision D-42 in `docs/09_DECISIONS_AND_OPEN_QUESTIONS.md`.
+
+### Phase 7: Context-Aware LLM Monitors (B4, B5, P1)
+- **Status:** **COMPLETE**
+- **Artifacts:** `src/firewall/monitor/`, `experiments/reports/DEV_monitors_benchmark.md`.
+
+### Phase 8: Preregistration, Single Held-Out Evaluation & Ablations
+- **Status:** **COMPLETE**
+- **Artifacts:** `docs/prereg/PREREG-001.md`, `docs/prereg/PREREG-001.sha256`, `experiments/reports/FINAL_BENCHMARK_REPORT.md`.
+
+### Phase 9: Oversight Dashboard, Final Verification & Research Delivery
+- **Status:** **COMPLETE**
+- **Artifacts:** `src/firewall/dashboard/viewer.py`, `tests/unit/test_dashboard.py`, clean CI across all tests and linters.

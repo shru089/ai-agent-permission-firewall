@@ -160,7 +160,9 @@ class ReviewService:
                 return False
             # Check expiration: for synthetic test timestamps (< 1e12), require explicit now_ms
             is_expired = (now_ms is not None and now_ms > t.expires_ms) or (
-                now_ms is None and t.expires_ms > 1_000_000_000_000 and curr_time > t.expires_ms
+                now_ms is None
+                        and t.expires_ms > 1_000_000_000_000
+                        and curr_time > t.expires_ms
             )
             if is_expired:
                 self._tickets[t_id] = t.model_copy(update={"status": ReviewStatus.EXPIRED})
@@ -182,7 +184,9 @@ class ReviewService:
                 self._pending_by_session.pop(session_id, None)
                 return None
             is_expired = (now_ms is not None and now_ms > t.expires_ms) or (
-                now_ms is None and t.expires_ms > 1_000_000_000_000 and curr_time > t.expires_ms
+                now_ms is None
+                        and t.expires_ms > 1_000_000_000_000
+                        and curr_time > t.expires_ms
             )
             if is_expired:
                 self._tickets[t_id] = t.model_copy(update={"status": ReviewStatus.EXPIRED})
@@ -194,3 +198,24 @@ class ReviewService:
         """Look up ticket by ID."""
         with self._lock:
             return self._tickets.get(ticket_id)
+    def get_pending_tickets(self, now_ms: Optional[int] = None) -> list[ReviewTicket]:
+        """Get all currently active pending tickets across all sessions."""
+        curr_time = now_ms if now_ms is not None else int(time.time() * 1000)
+        with self._lock:
+            pending = []
+            for t in self._tickets.values():
+                if t.status == ReviewStatus.PENDING:
+                    is_expired = (now_ms is not None and now_ms > t.expires_ms) or (
+                        now_ms is None
+                        and t.expires_ms > 1_000_000_000_000
+                        and curr_time > t.expires_ms
+                    )
+                    if not is_expired:
+                        pending.append(t)
+            return pending
+
+    def get_all_tickets(self) -> list[ReviewTicket]:
+        """Get all tickets in the store."""
+        with self._lock:
+            return list(self._tickets.values())
+

@@ -509,7 +509,12 @@ def test_cli_runner_mode_b(tmp_path: Path) -> None:
     assert (out_dir / "eval_closed_loop_dev_B6.json").is_file()
 
 
-def test_cli_runner_blocks_test_split() -> None:
+def test_cli_runner_blocks_test_split(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _mock_verify(split: str, repo_root: Path | None = None) -> None:
+        raise PermissionError("Preregistration guard active")
+
+    monkeypatch.setattr("experiments.run_experiment.verify_test_split_access", _mock_verify)
+    monkeypatch.setattr("experiments.evaluate.verify_test_split_access", _mock_verify)
     ret = cli_main(
         [
             "--mode",

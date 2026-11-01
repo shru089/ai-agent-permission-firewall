@@ -2,7 +2,7 @@
   "dataset_version": "1.0.0",
   "protocol_version": "docs/06_EXPERIMENT_PROTOCOL.md v1.0 \u00a75.4",
   "generator_version": "1.0.0",
-  "generator_hash": "064999562339a283c02496efbaf69e472738b2742ef76007f10155dea78eed1b",
+  "generator_hash": "163668c5d1e0d7a3f83e1ff546e510193eb448e71f358b9097049de507e316f1",
   "generated_at_utc": "2026-10-31T12:00:00+00:00",
   "seed": 20261031,
   "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",

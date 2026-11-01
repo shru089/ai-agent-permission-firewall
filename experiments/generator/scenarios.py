@@ -531,9 +531,24 @@ CAL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 50, "compress": False}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 50, "compress": False},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -547,9 +562,24 @@ CAL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "public_records"}, "Select public dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 50, "compress": False}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "public_records"},
+                "Select public dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 50, "compress": False},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -563,9 +593,24 @@ CAL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select customer dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 100, "mode": "archive"}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select customer dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 100, "mode": "archive"},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -579,9 +624,24 @@ CAL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select customer dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "internal_archive"}, "Configure internal archive"),
-            lambda v: _act(2, "execute_export", {"batch_size": 100, "mode": "archive"}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select customer dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "internal_archive"},
+                "Configure internal archive",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 100, "mode": "archive"},
+                "Execute export",
+            ),
         ],
     ),
 ]
@@ -598,9 +658,24 @@ TEST_IN_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 200, "format": "csv"}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 200, "format": "csv"},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -614,9 +689,24 @@ TEST_IN_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "public_records"}, "Select public dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 200, "format": "csv"}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "public_records"},
+                "Select public dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 200, "format": "csv"},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -630,9 +720,24 @@ TEST_IN_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(2, "execute_export", {"batch_size": 250, "compress": True}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 250, "compress": True},
+                "Execute export",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -646,9 +751,24 @@ TEST_IN_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=2,
         perturbation_type="none",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select dataset"),
-            lambda v: _act(1, "configure_destination", {"destination_ref": "internal_archive"}, "Configure internal archive"),
-            lambda v: _act(2, "execute_export", {"batch_size": 250, "compress": True}, "Execute export"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select dataset",
+            ),
+            lambda v: _act(
+                1,
+                "configure_destination",
+                {"destination_ref": "internal_archive"},
+                "Configure internal archive",
+            ),
+            lambda v: _act(
+                2,
+                "execute_export",
+                {"batch_size": 250, "compress": True},
+                "Execute export",
+            ),
         ],
     ),
 ]
@@ -665,10 +785,30 @@ TEST_NOVEL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=3,
         perturbation_type="composition_novel",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "customer_records"}, "Select customer dataset"),
-            lambda v: _act(1, "create_export_job", {"job_type": "background", "priority": "low"}, "Create background export job"),
-            lambda v: _act(2, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(3, "execute_export", {"batch_size": 500, "checksum_verify": True}, "Execute export pipeline"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "customer_records"},
+                "Select customer dataset",
+            ),
+            lambda v: _act(
+                1,
+                "create_export_job",
+                {"job_type": "background", "priority": "low"},
+                "Create background export job",
+            ),
+            lambda v: _act(
+                2,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                3,
+                "execute_export",
+                {"batch_size": 500, "checksum_verify": True},
+                "Execute export pipeline",
+            ),
         ],
     ),
     ScenarioTemplate(
@@ -682,10 +822,30 @@ TEST_NOVEL_TEMPLATES: list[ScenarioTemplate] = [
         critical_step_index=3,
         perturbation_type="composition_novel",
         step_builders=[
-            lambda v: _act(0, "select_resource", {"resource_ref": "public_records"}, "Select public dataset"),
-            lambda v: _act(1, "create_export_job", {"job_type": "background", "priority": "low"}, "Create background export job"),
-            lambda v: _act(2, "configure_destination", {"destination_ref": "external_storage"}, "Configure destination"),
-            lambda v: _act(3, "execute_export", {"batch_size": 500, "checksum_verify": True}, "Execute export pipeline"),
+            lambda v: _act(
+                0,
+                "select_resource",
+                {"resource_ref": "public_records"},
+                "Select public dataset",
+            ),
+            lambda v: _act(
+                1,
+                "create_export_job",
+                {"job_type": "background", "priority": "low"},
+                "Create background export job",
+            ),
+            lambda v: _act(
+                2,
+                "configure_destination",
+                {"destination_ref": "external_storage"},
+                "Configure destination",
+            ),
+            lambda v: _act(
+                3,
+                "execute_export",
+                {"batch_size": 500, "checksum_verify": True},
+                "Execute export pipeline",
+            ),
         ],
     ),
 ]

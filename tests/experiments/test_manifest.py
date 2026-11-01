@@ -90,3 +90,46 @@ def test_no_cal_or_test_traces_in_dev_package() -> None:
 
     assert "cal" not in content, "CAL trace references detected in manifest!"
     assert "test" not in content, "TEST trace references detected in manifest!"
+
+def test_held_out_splits_manifest_integrity() -> None:
+    """Validates that CAL, TEST-IN, and TEST-NOVEL have cryptographically valid manifests."""
+    base_dir = Path("experiments/datasets")
+    for split_name in ("cal", "test-in", "test-novel"):
+        split_dir = base_dir / split_name
+        manifest_file = split_dir / "manifest.sha256"
+        assert manifest_file.exists(), f"Missing manifest for {split_name}"
+
+        entries: dict[str, str] = {}
+        for line in manifest_file.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            sha, filename = line.strip().split()
+            entries[filename] = sha
+
+        expected = {
+            "README.md", "label_audit.jsonl", "labels.jsonl",
+            "provenance.json", "split_isolation.json", "traces.jsonl",
+        }
+        mismatch_msg = f"Mismatch in {split_name}: {set(entries.keys())} vs {expected}"
+        assert set(entries.keys()) == expected, mismatch_msg
+
+        for filename, expected_sha in entries.items():
+            fpath = split_dir / filename
+            assert fpath.exists()
+            actual_sha = compute_sha256(fpath)
+            assert actual_sha == expected_sha, f"SHA mismatch in {split_name}/{filename}"
+
+
+def test_test_commitment_integrity() -> None:
+    """Validates docs/prereg/TEST_COMMITMENT.sha256 sealed digests."""
+    commitment_file = Path("docs/prereg/TEST_COMMITMENT.sha256")
+    assert commitment_file.exists(), "TEST_COMMITMENT.sha256 does not exist!"
+
+    for line in commitment_file.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        expected_sha, rel_path = line.strip().split()
+        fpath = Path(rel_path)
+        assert fpath.exists(), f"Committed file missing: {rel_path}"
+        actual_sha = compute_sha256(fpath)
+        assert actual_sha == expected_sha, f"Commitment digest mismatch for {rel_path}"
