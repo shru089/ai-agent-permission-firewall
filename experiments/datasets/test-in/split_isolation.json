@@ -1,0 +1,24 @@
+{
+  "isolation_verified": true,
+  "split": "TEST-IN",
+  "dev_templates_count": 16,
+  "cal_templates_count": 4,
+  "test_in_templates_count": 4,
+  "test_novel_templates_count": 2,
+  "total_templates_registered": 26,
+  "pairwise_overlaps": {
+    "dev_vs_cal": [],
+    "dev_vs_test_in": [],
+    "dev_vs_test_novel": [],
+    "cal_vs_test": []
+  },
+  "trace_splits_found": [
+    "TEST-IN"
+  ],
+  "split_templates": [
+    "tpl_test_in_atk01_eval",
+    "tpl_test_in_atk02_eval",
+    "tpl_test_in_ben01_eval",
+    "tpl_test_in_ben02_eval"
+  ]
+}

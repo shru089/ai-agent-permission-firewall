@@ -1,0 +1,22 @@
+{
+  "isolation_verified": true,
+  "split": "TEST-NOVEL",
+  "dev_templates_count": 16,
+  "cal_templates_count": 4,
+  "test_in_templates_count": 4,
+  "test_novel_templates_count": 2,
+  "total_templates_registered": 26,
+  "pairwise_overlaps": {
+    "dev_vs_cal": [],
+    "dev_vs_test_in": [],
+    "dev_vs_test_novel": [],
+    "cal_vs_test": []
+  },
+  "trace_splits_found": [
+    "TEST-NOVEL"
+  ],
+  "split_templates": [
+    "tpl_test_novel_atk09_adversarial_reordering",
+    "tpl_test_novel_ben10_safe_reordering"
+  ]
+}

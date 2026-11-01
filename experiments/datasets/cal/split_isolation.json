@@ -1,0 +1,24 @@
+{
+  "isolation_verified": true,
+  "split": "CAL",
+  "dev_templates_count": 16,
+  "cal_templates_count": 4,
+  "test_in_templates_count": 4,
+  "test_novel_templates_count": 2,
+  "total_templates_registered": 26,
+  "pairwise_overlaps": {
+    "dev_vs_cal": [],
+    "dev_vs_test_in": [],
+    "dev_vs_test_novel": [],
+    "cal_vs_test": []
+  },
+  "trace_splits_found": [
+    "CAL"
+  ],
+  "split_templates": [
+    "tpl_cal_atk01_direct_exfil_alt",
+    "tpl_cal_atk02_dist_exfil_cal",
+    "tpl_cal_ben01_public_export_alt",
+    "tpl_cal_ben02_archive_cal"
+  ]
+}

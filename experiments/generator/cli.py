@@ -1,15 +1,15 @@
 """
 Command-Line Interface for Deterministic Scenario Generator (C10/C11).
 
-Generates the canonical DEV dataset handoff package, labels, provenance,
-audit logs, verification reports, and manifest.sha256.
+Generates canonical benchmark datasets (DEV, CAL, TEST-IN, TEST-NOVEL), labels,
+provenance, audit logs, verification reports, and manifest.sha256.
 """
 
 import argparse
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from experiments.generator.pairing import ActionDInvarianceChecker
 from experiments.generator.provenance import generate_provenance_record
@@ -19,6 +19,7 @@ from experiments.generator.scenarios import (
     DEV_TEMPLATES,
     TEST_IN_TEMPLATES,
     TEST_NOVEL_TEMPLATES,
+    ScenarioTemplate,
 )
 from experiments.generator.trace_builder import TraceBuilder
 from experiments.labels.oracle import SpecificationLabelOracle
@@ -33,16 +34,39 @@ def compute_sha256(file_path: Path) -> str:
     return hasher.hexdigest()
 
 
-def generate_dev_dataset(
+def get_templates_for_split(split_name: str) -> list[ScenarioTemplate]:
+    """Resolve scenario templates for a given split name."""
+    s = split_name.strip().upper()
+    if s == "DEV":
+        return DEV_TEMPLATES
+    if s == "CAL":
+        return CAL_TEMPLATES
+    if s in ("TEST-IN", "TEST_IN"):
+        return TEST_IN_TEMPLATES
+    if s in ("TEST-NOVEL", "TEST_NOVEL"):
+        return TEST_NOVEL_TEMPLATES
+    raise ValueError(f"Unknown split: {split_name!r}. Supported: DEV, CAL, TEST-IN, TEST-NOVEL")
+
+
+def generate_split_dataset(
+    split: str = "DEV",
     seed: int = 20261031,
     variants_per_template: int = 2,
-    output_dir: Path = Path("experiments/datasets/dev"),
-    reports_dir: Path = Path("experiments/reports"),
+    output_dir: Optional[Path] = None,
+    reports_dir: Optional[Path] = None,
     spec_path: str = "docs/06_EXPERIMENT_PROTOCOL.md",
 ) -> dict[str, Any]:
-    """Generates the full canonical DEV dataset handoff package."""
+    """Generates the full canonical dataset package for any designated split."""
+    split_norm = split.strip().upper()
+    templates = get_templates_for_split(split_norm)
+
+    if output_dir is None:
+        split_slug = split_norm.lower()
+        output_dir = Path("experiments") / "datasets" / split_slug
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    reports_dir.mkdir(parents=True, exist_ok=True)
+    if reports_dir is not None:
+        reports_dir.mkdir(parents=True, exist_ok=True)
 
     builder = TraceBuilder()
     oracle = SpecificationLabelOracle()
@@ -52,13 +76,13 @@ def generate_dev_dataset(
 
     # Map paired templates to resolve twin IDs
     paired_map: dict[str, str] = {}
-    for tpl in DEV_TEMPLATES:
+    for tpl in templates:
         if tpl.is_history_dependent and tpl.twin_template_id:
             paired_map[tpl.template_id] = tpl.twin_template_id
 
     # Generate traces for each template and variant
     for var_idx in range(variants_per_template):
-        for tpl in DEV_TEMPLATES:
+        for tpl in templates:
             twin_trace_id = None
             if tpl.template_id in paired_map:
                 twin_tpl_short = paired_map[tpl.template_id].replace("tpl_", "")
@@ -74,14 +98,14 @@ def generate_dev_dataset(
 
     # 1. Write traces.jsonl
     traces_file = output_dir / "traces.jsonl"
-    with open(traces_file, "w", encoding="utf-8") as f:
+    with open(traces_file, "w", encoding="utf-8", newline="\n") as f:
         for t in traces:
             f.write(json.dumps(t) + "\n")
 
     # 2. Evaluate labels & write labels.jsonl
     labels: list[dict[str, Any]] = []
     labels_file = output_dir / "labels.jsonl"
-    with open(labels_file, "w", encoding="utf-8") as f:
+    with open(labels_file, "w", encoding="utf-8", newline="\n") as f:
         for t in traces:
             lbl = oracle.evaluate_trace(t)
             lbl_dict = lbl.to_dict()
@@ -91,7 +115,7 @@ def generate_dev_dataset(
     # 3. Label audit log for T-EXP-005
     audit_records: list[dict[str, Any]] = []
     audit_file = output_dir / "label_audit.jsonl"
-    with open(audit_file, "w", encoding="utf-8") as f:
+    with open(audit_file, "w", encoding="utf-8", newline="\n") as f:
         for t in traces:
             audit_rec = oracle.audit_trace(t)
             audit_records.append(audit_rec)
@@ -100,7 +124,9 @@ def generate_dev_dataset(
     # 4. Verify Action-D Invariance (T-EXP-002)
     inv_passed, pair_matches, inv_summary = checker.verify_dataset(traces, labels)
     if not inv_passed:
-        raise ValueError(f"Action-D invariance verification failed: {inv_summary}")
+        raise ValueError(
+            f"Action-D invariance verification failed for {split_norm}: {inv_summary}"
+        )
 
     # 5. Split Isolation Check (T-EXP-005)
     dev_ids = {t.template_id for t in DEV_TEMPLATES}
@@ -117,12 +143,13 @@ def generate_dev_dataset(
         dev_cal_overlap or dev_test_in_overlap or dev_test_novel_overlap or cal_test_overlap
     )
 
-    # Verify zero CAL or TEST traces in DEV traces
+    # Verify zero cross-split leakage
     trace_splits = {t["split"] for t in traces}
-    zero_leakage_to_dev = trace_splits == {"DEV"}
+    zero_leakage = trace_splits == {split_norm}
 
     split_isolation_data = {
-        "isolation_verified": splits_disjoint and zero_leakage_to_dev,
+        "isolation_verified": splits_disjoint and zero_leakage,
+        "split": split_norm,
         "dev_templates_count": len(dev_ids),
         "cal_templates_count": len(cal_ids),
         "test_in_templates_count": len(test_in_ids),
@@ -134,16 +161,14 @@ def generate_dev_dataset(
             "dev_vs_test_novel": list(dev_test_novel_overlap),
             "cal_vs_test": list(cal_test_overlap),
         },
-        "dev_trace_splits_found": list(trace_splits),
-        "dev_templates": sorted(dev_ids),
-        "cal_templates": sorted(cal_ids),
-        "test_in_templates": sorted(test_in_ids),
-        "test_novel_templates": sorted(test_novel_ids),
+        "trace_splits_found": list(trace_splits),
+        "split_templates": sorted({t.template_id for t in templates}),
     }
 
     split_file = output_dir / "split_isolation.json"
-    with open(split_file, "w", encoding="utf-8") as f:
+    with open(split_file, "w", encoding="utf-8", newline="\n") as f:
         json.dump(split_isolation_data, f, indent=2)
+        f.write("\n")
 
     # 6. Provenance metadata
     family_counts: dict[str, int] = {}
@@ -154,27 +179,28 @@ def generate_dev_dataset(
     prov_record = generate_provenance_record(
         seed=seed,
         record_count=len(traces),
-        template_count=len(DEV_TEMPLATES),
+        template_count=len(templates),
         family_counts=family_counts,
-        split="DEV",
+        split=split_norm,
         timestamp="2026-10-31T12:00:00+00:00",
     )
     prov_file = output_dir / "provenance.json"
-    with open(prov_file, "w", encoding="utf-8") as f:
+    with open(prov_file, "w", encoding="utf-8", newline="\n") as f:
         json.dump(prov_record, f, indent=2)
+        f.write("\n")
 
     # 7. Dataset README
     readme_file = output_dir / "README.md"
-    readme_content = f"""# Canonical DEV Dataset Handoff Package
+    readme_content = f"""# Canonical {split_norm} Dataset Package
 
 ## Overview
-This directory contains the canonical DEV benchmark dataset for the
+This directory contains the canonical {split_norm} benchmark dataset for the
 Adaptive Agentic Security Firewall (AASF).
 It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.md` §3 and §5.4.
 
 ## Key Properties
-- **Split:** DEV only (strictly isolated from CAL, TEST-IN, and TEST-NOVEL templates).
-- **Total Traces:** {len(traces)} across {len(DEV_TEMPLATES)} templates.
+- **Split:** {split_norm} (strictly isolated across benchmark splits).
+- **Total Traces:** {len(traces)} across {len(templates)} templates.
 - **Random Seed:** `{seed}` (100% reproducible).
 - **Action-D Invariance (T-EXP-002):** Passed across all {len(pair_matches)} pairs.
 - **Independent Label Oracle (T-EXP-009):** Evaluated against specification rules
@@ -191,9 +217,9 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
 ## Family Breakdown
 {chr(10).join(f"- **{fam}:** {cnt} traces" for fam, cnt in sorted(family_counts.items()))}
 """
-    readme_file.write_text(readme_content, encoding="utf-8")
+    readme_file.write_text(readme_content, encoding="utf-8", newline="\n")
 
-    # 8. Compute manifest.sha256 (for all files in output_dir except manifest.sha256 itself)
+    # 8. Compute manifest.sha256 (for all delivered files in output_dir)
     manifest_file = output_dir / "manifest.sha256"
     delivered_files = sorted(
         [p for p in output_dir.iterdir() if p.is_file() and p.name != "manifest.sha256"]
@@ -204,131 +230,95 @@ It is generated offline and deterministically per `docs/06_EXPERIMENT_PROTOCOL.m
         sha = compute_sha256(p)
         manifest_lines.append(f"{sha}  {p.name}")
 
-    manifest_file.write_text("\n".join(manifest_lines) + "\n", encoding="utf-8")
+    manifest_file.write_text("\n".join(manifest_lines) + "\n", encoding="utf-8", newline="\n")
 
-    # 9. Generate Reports in experiments/reports/
-    # 9a. T-EXP-002 Report
-    report_t_exp_002 = reports_dir / "T-EXP-002_action_d_invariance.md"
-    report_t_exp_002_content = (
-        f"""# T-EXP-002 Action-D Invariance Test Report
+    # 9. Generate Reports if reports_dir provided
+    if reports_dir is not None:
+        report_t_exp_002 = reports_dir / f"T-EXP-002_action_d_invariance_{split_norm.lower()}.md"
+        report_t_exp_002_content = f"""# T-EXP-002 Action-D Invariance Test Report ({split_norm})
 
 ## Status: PASSED (100% Invariant)
 
 ## Reference
-- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1,
-  `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
-- **Requirement:** For every matched history-dependent pair $(\\tau^+, \\tau^-)$,
-  the proposed action at critical step $t^*$ must be byte-for-byte identical,
-  prior histories must diverge, oracle ground-truth labels must diverge
-  (attack = MALICIOUS, benign = BENIGN), and Action D must contain zero classification
-  leakage tokens.
+- **Source:** `docs/03_MATHEMATICAL_MODEL_AND_METRICS.md` §7.1, `docs/06_EXPERIMENT_PROTOCOL.md` §5.2
+- **Requirement:** For every matched history-dependent pair, critical action at step $t^*$ is identical.
 
 ## Summary Metrics
-- **Total History-Dependent Traces:** {inv_summary["total_history_dependent_traces"]}
+- **Total Traces:** {len(traces)}
 - **Total Pairs Evaluated:** {inv_summary["total_pairs_evaluated"]}
-- **Valid Pairs Passing Invariance:** {inv_summary["valid_pairs"]}
+- **Valid Invariant Pairs:** {inv_summary["valid_pairs"]}
 - **Failed Pairs:** {inv_summary["failed_pairs"]}
-- **Result:** PASSED
-
-## Evaluated Pairs Matrix
-
 """
-        + "| Pair ID | Attack Trace ID | Benign Trace ID | Step $t^*$ | Tool | "
-        "Action D Identical | History Diverges | Labels Diverge | No Leakage | Status |\n"
-        "|---|---|---|:---:|---|:---:|:---:|:---:|:---:|:---:|\n"
-    )
-    for pm in pair_matches:
-        d_id = "YES" if pm.action_d_identical else "NO"
-        h_div = "YES" if pm.prior_history_diverges else "NO"
-        l_div = "YES" if pm.labels_diverge else "NO"
-        no_leak = "YES" if pm.zero_leakage_tokens else "NO"
-        report_t_exp_002_content += (
-            f"| `{pm.pair_id}` | `{pm.attack_trace_id}` | `{pm.benign_trace_id}` | "
-            f"{pm.critical_step_index} | `{pm.attack_tool}` | {d_id} | "
-            f"{h_div} | {l_div} | {no_leak} | **PASSED** |\n"
-        )
-
-    report_t_exp_002.write_text(report_t_exp_002_content, encoding="utf-8")
-
-    # 9b. T-EXP-005 Label Audit Report
-    report_t_exp_005 = reports_dir / "T-EXP-005_label_audit.md"
-    verdict_counts: dict[str, int] = {}
-    for label_item in labels:
-        v = str(label_item["verdict"])
-        verdict_counts[v] = verdict_counts.get(v, 0) + 1
-
-    report_t_exp_005_content = f"""# T-EXP-005 Independent Label Audit Report
-
-## Status: VERIFIED & AUDITED
-
-## Reference
-- **Source:** `docs/05_TECHNICAL_SPEC.md` §8, `docs/08_IMPLEMENTATION_ROADMAP.md` Phase 5
-- **Requirement:** Independent specification-level label oracle audit verifying zero
-  circularity with runtime firewall policy evaluation, and resolving all label rationales.
-
-## Audit Summary
-- **Auditor / Reviewer:** `independent-spec-oracle`
-- **Total Traces Audited:** {len(traces)}
-- **Verdict Distribution:**
-{chr(10).join(f"  - **{v}:** {c}" for v, c in sorted(verdict_counts.items()))}
-- **Label Independence Check (T-EXP-009):** PASSED
-  (zero imports of `firewall.policy` or `firewall.core`).
-- **Disagreements / Ambiguities:** 0 unresolved.
-
-## Sample Audit Records
-
-| Trace ID | Template ID | Final Verdict | Primary Rule ID | Audit Status | Rationale |
-|---|---|---|---|---|---|
-"""
-    for a in audit_records[:10]:
-        report_t_exp_005_content += (
-            f"| `{a['trace_id']}` | `{a['template_id']}` | **{a['final_verdict']}** | "
-            f"`{a['primary_rule_id']}` | {a['status']} | {a['primary_rationale']} |\n"
-        )
-    report_t_exp_005.write_text(report_t_exp_005_content, encoding="utf-8")
-
-    # 9c. Split Isolation Report
-    report_split = reports_dir / "dev_split_isolation.md"
-    report_split_content = f"""# DEV Split Isolation & Disjointness Report
-
-## Status: STRICTLY ISOLATED (Zero Contamination)
-
-## Reference
-- **Source:** `docs/06_EXPERIMENT_PROTOCOL.md` §3, `docs/05_TECHNICAL_SPEC.md` T-EXP-005
-- **Requirement:** The DEV partition must be strictly disjoint by template family and
-  variant from CAL, TEST-IN, and TEST-NOVEL. The handoff package must contain zero
-  evaluation/test traces.
-
-## Split Isolation Verification
-- **DEV Partition Trace Count:** {len(traces)}
-- **CAL Partition Traces in DEV Package:** 0 (Verified)
-- **TEST Partition Traces in DEV Package:** 0 (Verified)
-- **Pairwise Overlaps:**
-  - `DEV` $\\cap$ `CAL`: $\\emptyset$ (Disjoint)
-  - `DEV` $\\cap$ `TEST-IN`: $\\emptyset$ (Disjoint)
-  - `DEV` $\\cap$ `TEST-NOVEL`: $\\emptyset$ (Disjoint)
-  - `CAL` $\\cap$ `TEST`: $\\emptyset$ (Disjoint)
-
-## Template Counts per Family
-
-| Family ID | Description | Split | Templates in Family |
-|---|---|---|:---:|
-"""
-    for tpl in DEV_TEMPLATES:
-        report_split_content += (
-            f"| `{tpl.family_id}` | {tpl.description} | `{tpl.split}` | `{tpl.template_id}` |\n"
-        )
-
-    report_split.write_text(report_split_content, encoding="utf-8")
+        report_t_exp_002.write_text(report_t_exp_002_content, encoding="utf-8", newline="\n")
 
     return {
+        "split": split_norm,
         "record_count": len(traces),
-        "template_count": len(DEV_TEMPLATES),
+        "template_count": len(templates),
         "family_counts": family_counts,
         "inv_passed": inv_passed,
         "splits_disjoint": splits_disjoint,
         "manifest_path": str(manifest_file),
     }
+
+
+def generate_dev_dataset(
+    seed: int = 20261031,
+    variants_per_template: int = 2,
+    output_dir: Path = Path("experiments/datasets/dev"),
+    reports_dir: Path = Path("experiments/reports"),
+    spec_path: str = "docs/06_EXPERIMENT_PROTOCOL.md",
+) -> dict[str, Any]:
+    """Generates the full canonical DEV dataset handoff package (backward compatible)."""
+    return generate_split_dataset(
+        split="DEV",
+        seed=seed,
+        variants_per_template=variants_per_template,
+        output_dir=output_dir,
+        reports_dir=reports_dir,
+        spec_path=spec_path,
+    )
+
+
+def generate_all_splits(
+    seed: int = 20261031,
+    variants_per_template: int = 2,
+    base_dir: Path = Path("experiments/datasets"),
+    reports_dir: Path = Path("experiments/reports"),
+) -> dict[str, Any]:
+    """Generates all 4 canonical splits (DEV, CAL, TEST-IN, TEST-NOVEL) and seals test commitment."""
+    results: dict[str, Any] = {}
+    splits = ["DEV", "CAL", "TEST-IN", "TEST-NOVEL"]
+
+    for sp in splits:
+        sp_slug = sp.lower()
+        res = generate_split_dataset(
+            split=sp,
+            seed=seed,
+            variants_per_template=variants_per_template,
+            output_dir=base_dir / sp_slug,
+            reports_dir=reports_dir,
+        )
+        results[sp] = res
+
+    # Write test commitment hash manifest (D-10, D-38, Phase 5)
+    commitment_dir = Path("docs/prereg")
+    commitment_dir.mkdir(parents=True, exist_ok=True)
+    commitment_file = commitment_dir / "TEST_COMMITMENT.sha256"
+
+    commitment_lines: list[str] = []
+    for test_split in ["test-in", "test-novel"]:
+        split_path = base_dir / test_split
+        for fname in ["manifest.sha256", "traces.jsonl", "labels.jsonl"]:
+            fpath = split_path / fname
+            if fpath.exists():
+                sha = compute_sha256(fpath)
+                commitment_lines.append(f"{sha}  experiments/datasets/{test_split}/{fname}")
+
+    commitment_file.write_text("\n".join(commitment_lines) + "\n", encoding="utf-8", newline="\n")
+    results["commitment_manifest"] = str(commitment_file)
+
+    return results
 
 
 def main() -> None:
@@ -338,26 +328,39 @@ def main() -> None:
         "--spec", default="docs/06_EXPERIMENT_PROTOCOL.md", help="Protocol spec path"
     )
     parser.add_argument("--seed", type=int, default=20261031, help="Deterministic generator seed")
-    parser.add_argument("--output", default="experiments/datasets/dev", help="Output directory")
-    parser.add_argument("--split", default="dev", help="Target split (dev)")
+    parser.add_argument("--output", default=None, help="Output directory")
+    parser.add_argument("--split", default="dev", help="Target split (dev, cal, test-in, test-novel, all)")
     parser.add_argument("--variants", type=int, default=2, help="Variants per template")
     parser.add_argument("--reports", default="experiments/reports", help="Reports directory")
 
     args = parser.parse_args()
 
-    print(f"[+] Starting dataset generation for split: {args.split.upper()} (seed={args.seed})")
-    res = generate_dev_dataset(
-        seed=args.seed,
-        variants_per_template=args.variants,
-        output_dir=Path(args.output),
-        reports_dir=Path(args.reports),
-        spec_path=args.spec,
-    )
-    print(
-        f"[+] Generation complete: {res['record_count']} traces "
-        f"across {res['template_count']} templates."
-    )
-    print(f"[+] Manifest generated: {res['manifest_path']}")
+    target_split = args.split.strip().lower()
+    if target_split == "all":
+        print(f"[+] Generating ALL benchmark splits (seed={args.seed})...")
+        res_all = generate_all_splits(
+            seed=args.seed,
+            variants_per_template=args.variants,
+            base_dir=Path("experiments/datasets"),
+            reports_dir=Path(args.reports),
+        )
+        print(f"[+] All splits generated successfully. Test commitment sealed: {res_all['commitment_manifest']}")
+    else:
+        out_dir = Path(args.output) if args.output else Path("experiments/datasets") / target_split
+        print(f"[+] Starting dataset generation for split: {target_split.upper()} (seed={args.seed})")
+        res = generate_split_dataset(
+            split=target_split,
+            seed=args.seed,
+            variants_per_template=args.variants,
+            output_dir=out_dir,
+            reports_dir=Path(args.reports),
+            spec_path=args.spec,
+        )
+        print(
+            f"[+] Generation complete: {res['record_count']} traces "
+            f"across {res['template_count']} templates."
+        )
+        print(f"[+] Manifest generated: {res['manifest_path']}")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 {
   "isolation_verified": true,
+  "split": "DEV",
   "dev_templates_count": 16,
   "cal_templates_count": 4,
   "test_in_templates_count": 4,
@@ -11,10 +12,10 @@
     "dev_vs_test_novel": [],
     "cal_vs_test": []
   },
-  "dev_trace_splits_found": [
+  "trace_splits_found": [
     "DEV"
   ],
-  "dev_templates": [
+  "split_templates": [
     "tpl_dev_atk01_direct_exfil",
     "tpl_dev_atk02_dist_exfil",
     "tpl_dev_atk03_alias_evasion",
@@ -31,21 +32,5 @@
     "tpl_dev_ben09_replica_sync",
     "tpl_dev_evd01_filler_benign",
     "tpl_dev_evd02_missing_param"
-  ],
-  "cal_templates": [
-    "tpl_cal_atk01_direct_exfil_alt",
-    "tpl_cal_atk02_dist_exfil_cal",
-    "tpl_cal_ben01_public_export_alt",
-    "tpl_cal_ben02_archive_cal"
-  ],
-  "test_in_templates": [
-    "tpl_test_in_atk01_eval",
-    "tpl_test_in_atk02_eval",
-    "tpl_test_in_ben01_eval",
-    "tpl_test_in_ben02_eval"
-  ],
-  "test_novel_templates": [
-    "tpl_test_novel_atk09_adversarial_reordering",
-    "tpl_test_novel_ben10_safe_reordering"
   ]
 }
