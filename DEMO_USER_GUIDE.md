@@ -145,3 +145,4 @@ python -m pytest tests/integration/test_security_console.py -v
 ```
 
 All 9 integration tests execute in $< 10$ seconds, confirming 100% compliance with zero regressions.
+

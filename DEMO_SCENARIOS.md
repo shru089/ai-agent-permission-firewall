@@ -158,3 +158,4 @@ Every scenario runs against the physical, authoritative `FirewallCore` execution
   - Egress is immediately suspended. A human review ticket is generated.
 - **Stateless Contrast:** In stateless firewalls (B3/B4), Step 3 is evaluated in isolation without memory of Step 1, allowing exfiltration. In AASF, monotonic state folding halts the attack at the perimeter.
 - **Guarantee:** Invariant INV-01, INV-04, and INV-12 enforced.
+

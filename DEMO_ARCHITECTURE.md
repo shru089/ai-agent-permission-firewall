@@ -139,3 +139,4 @@ To guarantee safety when running demonstrations:
    Every audit record $\text{rec}_i$ is canonicalized via RFC 8785 JSON and chained:
    $$H_i = \text{SHA-256}(H_{i-1} \parallel \text{canonical\_json}(\text{rec}_i))$$
    The **Simulate Tampering** feature mutates a single byte in `records[0].payload`. When `verify_chain()` recomputes hashes, the mismatch is detected immediately, proving forensic auditability.
+

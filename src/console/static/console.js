@@ -503,3 +503,4 @@ function openModal(title, jsonObj) {
 function closeModal() {
   document.getElementById("inspect-modal").style.display = "none";
 }
+
