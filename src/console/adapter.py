@@ -261,7 +261,7 @@ class ConsoleRuntimeAdapter:
             state.bound_resource.classification.value if state.bound_resource else "NONE"
         )
         return {
-            "session_id": state.session_id,
+            "session_id": session_id,
             "seq": state.seq,
             "head_hash": state.head_hash,
             "classification": classification,
@@ -572,7 +572,10 @@ class ConsoleRuntimeAdapter:
 
             # Legitimate state advancement while review was pending (e.g. concurrent session event)
             old_head = self.core._ticket_state_heads[ticket_id]
-            act = self.core._actions_by_id[self.core.review_service.get_ticket(ticket_id).action_id]
+            tkt_obj = self.core.review_service.get_ticket(ticket_id)
+            if tkt_obj is None:
+                return sub_res
+            act = self.core._actions_by_id[tkt_obj.action_id]
             from firewall.contracts.enums import EventType
 
             self.core._apply_terminal_event(sid, act, EventType.ACTION_DENIED)
@@ -593,7 +596,10 @@ class ConsoleRuntimeAdapter:
                 "execution_value": res_resolve["execution_value"],
                 "recorded_head": old_head,
                 "drifted_head": new_head,
-                "message": "Stale ticket rejected: state head drifted between review issuance and resolution.",
+                "message": (
+                    "Stale ticket rejected: state head drifted between "
+                    "review issuance and resolution."
+                ),
             }
 
         elif scenario_id == "SCEN-09":
@@ -629,7 +635,10 @@ class ConsoleRuntimeAdapter:
                 "reused_error_caught": reused_error_caught,
                 "reason_codes": [f"TOKEN_REUSED:{error_msg}"],
                 "tool_executed": False,
-                "message": "Replayed token detected and rejected. TokenStore enforces single-use consumption.",
+                "message": (
+                    "Replayed token detected and rejected. "
+                    "TokenStore enforces single-use consumption."
+                ),
             }
 
         elif scenario_id == "SCEN-10":
@@ -676,7 +685,10 @@ class ConsoleRuntimeAdapter:
                 },
                 "final_decision": step3["decision"],
                 "tool_executed": step3["tool_executed"],
-                "message": "Multi-step egress blocked: State Fold Phi propagated confidential classification taint and halted egress at boundary.",
+                "message": (
+                    "Multi-step egress blocked: State Fold Phi propagated confidential "
+                    "classification taint and halted egress at boundary."
+                ),
             }
 
         else:
@@ -707,7 +719,9 @@ class ConsoleRuntimeAdapter:
                 "category": "ABAC Guardrails",
                 "tool": "relabel_resource",
                 "expected": "DENY -> BLOCKED",
-                "description": "Administrative privilege escalation blocked by static PROHIBIT rule R4.",
+                "description": (
+                    "Administrative privilege escalation blocked by static PROHIBIT rule R4."
+                ),
             },
             {
                 "id": "SCEN-04",
@@ -715,7 +729,10 @@ class ConsoleRuntimeAdapter:
                 "category": "Human Oversight",
                 "tool": "execute_export",
                 "expected": "REVIEW -> PENDING",
-                "description": "Export requested without required resource binding; escalates to review ticket.",
+                "description": (
+                    "Export requested without required resource binding; "
+                    "escalates to review ticket."
+                ),
             },
             {
                 "id": "SCEN-05",
@@ -723,7 +740,10 @@ class ConsoleRuntimeAdapter:
                 "category": "Fault Tolerance",
                 "tool": "execute_export",
                 "expected": "REVIEW -> PENDING",
-                "description": "Advisory LLM monitor experiences timeout; system fails closed to REVIEW.",
+                "description": (
+                    "Advisory LLM monitor experiences timeout; "
+                    "system fails closed to REVIEW."
+                ),
             },
             {
                 "id": "SCEN-06",
@@ -731,7 +751,10 @@ class ConsoleRuntimeAdapter:
                 "category": "HITL Oversight",
                 "tool": "execute_export",
                 "expected": "APPROVE -> EXECUTED",
-                "description": "Flagged ticket approved by human reviewer; mints token and executes tool.",
+                "description": (
+                    "Flagged ticket approved by human reviewer; "
+                    "mints token and executes tool."
+                ),
             },
             {
                 "id": "SCEN-07",
@@ -739,7 +762,10 @@ class ConsoleRuntimeAdapter:
                 "category": "HITL Oversight",
                 "tool": "execute_export",
                 "expected": "REJECT -> DENIED",
-                "description": "Reviewer identifies unauthorized action and rejects ticket; execution blocked.",
+                "description": (
+                    "Reviewer identifies unauthorized action and rejects ticket; "
+                    "execution blocked."
+                ),
             },
             {
                 "id": "SCEN-08",
@@ -747,7 +773,10 @@ class ConsoleRuntimeAdapter:
                 "category": "Race Condition Defense",
                 "tool": "execute_export",
                 "expected": "STATE_CHANGED -> DENIED",
-                "description": "State head drifted between review issuance and approval; execution blocked.",
+                "description": (
+                    "State head drifted between review issuance and approval; "
+                    "execution blocked."
+                ),
             },
             {
                 "id": "SCEN-09",
@@ -755,7 +784,9 @@ class ConsoleRuntimeAdapter:
                 "category": "Token Cryptography",
                 "tool": "execute_export",
                 "expected": "TOKEN_REUSED -> BLOCKED",
-                "description": "Adversary attempts to replay an already-consumed single-use token.",
+                "description": (
+                    "Adversary attempts to replay an already-consumed single-use token."
+                ),
             },
             {
                 "id": "SCEN-10",
@@ -763,6 +794,8 @@ class ConsoleRuntimeAdapter:
                 "category": "Advanced Persistent Threat",
                 "tool": "Multi-step Pipeline",
                 "expected": "REVIEW -> BLOCKED",
-                "description": "Monotonic state fold Phi correlates 3 steps and halts confidential egress.",
+                "description": (
+                    "Monotonic state fold Phi correlates 3 steps and halts confidential egress."
+                ),
             },
         ]
