@@ -86,9 +86,7 @@ def test_prohibit_plus_benign_results_in_deny():
         config=cfg,
         matched_rules=["R1-no-confidential-external-export"],
     )
-    assert decision == Decision.DENY, (
-        f"Expected DENY for PROHIBIT + BENIGN, got {decision}."
-    )
+    assert decision == Decision.DENY, f"Expected DENY for PROHIBIT + BENIGN, got {decision}."
     assert any("POLICY_PROHIBIT" in r for r in reasons), (
         f"Expected POLICY_PROHIBIT reason code, got {reasons}."
     )

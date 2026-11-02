@@ -63,8 +63,19 @@ Action-only monitors that receive neither prior history \(H_t\) nor typed state 
 
 **Dataset subset:**
 
-- `ATK-02`, `ATK-03`, `ATK-04`, `ATK-05`, `ATK-07`, `ATK-08`
-- Matched benign twins: `BEN-01`, `BEN-02`, `BEN-09`
+- Amended DEV manipulation-check scope: The four implemented multi-step matched pairs:
+  - `ATK-02` paired with `BEN-01`
+  - `ATK-03` paired with `BEN-02`
+  - `ATK-04` paired with `BEN-04`
+  - `ATK-08` paired with `BEN-09`
+
+> [!NOTE] Formal Protocol Amendment: DEV H1 Scope Reconciliation
+> This formal protocol amendment defines the canonical DEV H1 manipulation-check scope as the four implemented multi-step matched pairs above (instantiated across 2 variants each, yielding 8 matched Action-D invariant pairs / 16 traces forming \(\Omega_{\text{crit}}\)).
+>
+> 1. **ATK-05 Exclusion:** `ATK-05` (Privilege Escalation via Unchecked Delegation) is a single-step unauthorized-relabel scenario (`relabel_resource`) and is outside the multi-step history-necessity H1 domain.
+> 2. **ATK-07 Reservation:** `ATK-07` (Cross-Session State Replay) remains strictly reserved as an unseen held-out family for `TEST-NOVEL` per Decision D-22 and §5.1 to preserve benchmark split isolation (\(T\text{-EXP-005}\)).
+> 3. **Domain Applicability:** The H1 result applies only to the amended four-pair DEV domain.
+> 4. **Formal Disclosure:** This amendment is a disclosed change from the prior frozen §2.2 scope (`ATK-02`, `ATK-03`, `ATK-04`, `ATK-05`, `ATK-07`, `ATK-08` / `BEN-01`, `BEN-02`, `BEN-09`) and must be accepted before canonical evaluation.
 
 **Primary metric:**
 

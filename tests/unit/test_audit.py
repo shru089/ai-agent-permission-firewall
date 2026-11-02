@@ -7,7 +7,6 @@ Verifies:
 - Multi-session isolation
 """
 
-
 from firewall.audit.store import AuditStore
 
 

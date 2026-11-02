@@ -111,6 +111,9 @@ def main(args: list[str] | None = None) -> int:
     # Load traces
     try:
         traces = load_dataset(split=opts.split, dataset_path=opts.dataset_path)
+    except PermissionError as pe:
+        print(f"ERROR: {pe}", file=sys.stderr)
+        return 2
     except FileNotFoundError as fnf:
         print(f"ERROR: {fnf}", file=sys.stderr)
         return 1

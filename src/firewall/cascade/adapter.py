@@ -6,6 +6,7 @@ Source: 05_TECHNICAL_SPEC.md §9, 06_EXPERIMENT_PROTOCOL.md §2,
 
 from __future__ import annotations
 
+import copy
 import json
 import logging
 from dataclasses import dataclass, field
@@ -26,6 +27,7 @@ from firewall.contracts.models import (
     MonitorView,
     PolicyResult,
 )
+from firewall.state.views import sanitize_data
 
 logger = logging.getLogger(__name__)
 
@@ -41,53 +43,70 @@ class CascadeFailureReason(str, Enum):
     NO_MONITOR_CONFIGURED = "NO_MONITOR_CONFIGURED"
 
 
+class AdvisoryVerdict(str, Enum):
+    """Advisory verdicts emitted by the cascade adapter (advisory only)."""
+
+    LOW_RISK = "LOW_RISK"
+    ELEVATED_RISK = "ELEVATED_RISK"
+    UNCERTAIN = "UNCERTAIN"
+    UNAVAILABLE = "UNAVAILABLE"
+    NOT_CONSULTED = "NOT_CONSULTED"
+
+
 @dataclass(frozen=True)
-class CascadeDecision:
+class MonitorAdvisory:
     """
-    Typed result returned by CascadeAdapter.decide().
-    Encapsulates the final Decision, human-readable reason, structured reason codes,
-    underlying policy and monitor verdicts, and any error details.
-    Supports equality checks against Decision enums and tuple unpacking.
+    Advisory result returned by CascadeAdapter.
+    The semantic monitor / rejection cascade is ADVISORY ONLY:
+    It must never independently authorize, execute, allow, or deny an action.
+    The core firewall—not the adapter or monitor—must make the final decision.
     """
 
-    decision: Decision
+    verdict: str  # e.g., "LOW_RISK", "ELEVATED_RISK", "UNCERTAIN", "UNAVAILABLE", "NOT_CONSULTED"
     reason: str
+    confidence: Optional[float] = None
+    recommended_outcome: Optional[str] = None
     reason_codes: list[str] = field(default_factory=list)
     policy_verdict: PolicyVerdict = PolicyVerdict.UNDETERMINED
     monitor_verdict: MonitorVerdict = MonitorVerdict.NOT_CONSULTED
     error: Optional[str] = None
     raw_output: Optional[str] = None
+    # Always None; adapter does not make authorization decisions
+    decision: Optional[Decision] = None
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, Decision):
-            return self.decision == other
+            # Advisory assessment never equals a final firewall Decision enum
+            return False
         if isinstance(other, str):
-            return self.decision.value == other or self.decision == other
-        if isinstance(other, CascadeDecision):
+            return self.verdict == other or self.recommended_outcome == other
+        if isinstance(other, MonitorAdvisory):
             return (
-                self.decision == other.decision
+                self.verdict == other.verdict
                 and self.reason == other.reason
                 and self.reason_codes == other.reason_codes
             )
         return False
 
     def __iter__(self) -> Any:
-        """Enable tuple unpacking: decision, reason_codes = adapter.decide(...)"""
-        return iter((self.decision, self.reason_codes))
+        """Enable tuple unpacking: verdict, reason_codes = adapter.decide(...)"""
+        return iter((self.verdict, self.reason_codes))
+
+
+CascadeDecision = MonitorAdvisory
 
 
 class CascadeAdapter:
     """
     Adapter bridging a rejection-cascade monitor into the AASF firewall decision pipeline.
 
-    Enforces core firewall security invariants:
-    - Hard policy prohibitions always dominate (PROHIBIT -> DENY, INV-03).
-    - Unambiguous policy permits are respected (PERMIT -> ALLOW).
-    - Incomplete evidence triggers human review (EVIDENCE_MISSING -> REVIEW, INV-04).
-    - Cascade monitor is only consulted when policy is UNDETERMINED.
-    - All monitor failures, timeouts, exceptions, malformed outputs, and UNKNOWN verdicts
-      fail-closed to REVIEW with structured error attribution (INV-04, D-37).
-    - An ALLOW decision is NEVER returned after a monitor failure.
+    The semantic monitor / rejection cascade is ADVISORY ONLY:
+    - It must never independently authorize (ALLOW) or block (DENY) an action.
+    - BENIGN maps to advisory LOW_RISK, never ALLOW.
+    - SUSPICIOUS maps to advisory ELEVATED_RISK, never DENY.
+    - UNKNOWN maps to advisory UNCERTAIN.
+    - Malformed JSON, timeouts, and exceptions map to advisory UNAVAILABLE with structured reasons.
+    - The core firewall independently enforces final decisions after receiving the advisory result.
     """
 
     monitor_id: str = "cascade_adapter"
@@ -106,7 +125,7 @@ class CascadeAdapter:
 
     def decide(
         self,
-        policy_verdict: Union[PolicyVerdict, PolicyResult, str],
+        policy_verdict: Union[PolicyVerdict, PolicyResult, str] = PolicyVerdict.UNDETERMINED,
         action: Optional[
             Union[ActionRequest, CanonicalAction, MonitorView, dict[str, Any], str]
         ] = None,
@@ -118,71 +137,66 @@ class CascadeAdapter:
         timeout_ms: Optional[int] = None,
         matched_rules: Optional[list[str]] = None,
         missing_fields: Optional[list[str]] = None,
-    ) -> CascadeDecision:
+    ) -> MonitorAdvisory:
         """
         Evaluate a request given a policy verdict and optional action context.
-
-        Required behavior:
-        - If policy verdict is PROHIBIT, return DENY.
-        - If policy verdict is PERMIT, return ALLOW.
-        - If policy verdict is EVIDENCE_MISSING, return REVIEW.
-        - If policy verdict is UNDETERMINED, call the cascade monitor.
-        - If the cascade monitor returns a valid decision, return that decision.
-        - If the cascade monitor returns UNKNOWN, times out, raises an exception,
-          or returns malformed output, return REVIEW.
-        - Never return ALLOW after a monitor failure.
-        - Record a structured failure reason for REVIEW escalation.
+        Returns a MonitorAdvisory. The adapter is advisory-only and does not make
+        final firewall authorization decisions (ALLOW/DENY).
         """
         # 1. Normalize policy verdict input
         p_verdict, p_rules, p_missing = self._normalize_policy_verdict(
             policy_verdict, matched_rules, missing_fields
         )
 
-        # 2. PROHIBIT supremacy: hard policy block dominates unconditionally (INV-03)
+        # 2. Hard policy prohibitions: advisory reflects policy, monitor not consulted
         if p_verdict == PolicyVerdict.PROHIBIT:
             reasons = [f"POLICY_PROHIBIT:{r}" for r in p_rules] if p_rules else ["POLICY_PROHIBIT"]
-            return CascadeDecision(
-                decision=Decision.DENY,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.NOT_CONSULTED.value,
                 reason="POLICY_PROHIBIT",
                 reason_codes=reasons,
+                recommended_outcome="DENY",
                 policy_verdict=PolicyVerdict.PROHIBIT,
                 monitor_verdict=MonitorVerdict.NOT_CONSULTED,
             )
 
-        # 3. Policy permit: authorize execution
+        # 3. Policy permit: advisory reflects policy, monitor not consulted directly here
         if p_verdict == PolicyVerdict.PERMIT:
             reasons = [f"POLICY_PERMIT:{r}" for r in p_rules] if p_rules else ["POLICY_PERMIT"]
-            return CascadeDecision(
-                decision=Decision.ALLOW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.NOT_CONSULTED.value,
                 reason="POLICY_PERMIT",
                 reason_codes=reasons,
+                recommended_outcome="ALLOW",
                 policy_verdict=PolicyVerdict.PERMIT,
                 monitor_verdict=MonitorVerdict.NOT_CONSULTED,
             )
 
-        # 4. Incomplete evidence: fail-closed to REVIEW (INV-04)
+        # 4. Incomplete evidence: fail-closed escalation advisory
         if p_verdict == PolicyVerdict.EVIDENCE_MISSING:
             missing_str = ",".join(p_missing) if p_missing else ""
             reason = f"EVIDENCE_MISSING:{missing_str}" if missing_str else "EVIDENCE_MISSING"
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.NOT_CONSULTED.value,
                 reason="EVIDENCE_MISSING",
                 reason_codes=[reason],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.EVIDENCE_MISSING,
                 monitor_verdict=MonitorVerdict.NOT_CONSULTED,
             )
 
-        # 5. Policy UNDETERMINED: consult the cascade monitor
+        # 5. Policy UNDETERMINED: consult the cascade monitor for advisory assessment
         if p_verdict == PolicyVerdict.UNDETERMINED:
             active_monitor = monitor if monitor is not None else self.monitor
             if active_monitor is None:
-                return CascadeDecision(
-                    decision=Decision.REVIEW,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.UNAVAILABLE.value,
                     reason=CascadeFailureReason.NO_MONITOR_CONFIGURED.value,
                     reason_codes=[
                         CascadeFailureReason.NO_MONITOR_CONFIGURED.value,
                         CascadeFailureReason.MONITOR_UNKNOWN.value,
                     ],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.UNKNOWN,
                     error="No cascade monitor configured to resolve UNDETERMINED policy verdict",
@@ -198,11 +212,12 @@ class CascadeAdapter:
                 timeout_ms=effective_timeout,
             )
 
-        # Catch-all unexpected policy verdict -> fail-closed to DENY
-        return CascadeDecision(
-            decision=Decision.DENY,
+        # Catch-all unexpected policy verdict -> advisory unavailable
+        return MonitorAdvisory(
+            verdict=AdvisoryVerdict.UNAVAILABLE.value,
             reason="UNEXPECTED_POLICY_VERDICT",
             reason_codes=["UNEXPECTED_POLICY_VERDICT", str(p_verdict)],
+            recommended_outcome="DENY",
             policy_verdict=p_verdict,
             monitor_verdict=MonitorVerdict.NOT_CONSULTED,
             error=f"Unrecognized policy verdict: {p_verdict}",
@@ -220,20 +235,20 @@ class CascadeAdapter:
         Implements the Monitor protocol so CascadeAdapter can be plugged directly
         into FirewallCore as an advisory monitor.
         """
-        decision_result = self.decide(
+        advisory = self.decide(
             PolicyVerdict.UNDETERMINED,
             view=view,
             timeout_ms=timeout_ms,
         )
 
-        score = 0.0 if decision_result.decision == Decision.ALLOW else 1.0
+        score = 0.0 if advisory.verdict == AdvisoryVerdict.LOW_RISK.value else 1.0
         return MonitorAssessment(
-            verdict=decision_result.monitor_verdict,
+            verdict=advisory.monitor_verdict,
             score=score,
-            rationale=decision_result.reason,
-            raw_output=decision_result.raw_output,
+            rationale=advisory.reason,
+            raw_output=advisory.raw_output,
             monitor_version=self.version,
-            error=decision_result.error,
+            error=advisory.error,
         )
 
     def _normalize_policy_verdict(
@@ -274,7 +289,7 @@ class CascadeAdapter:
         tool: Optional[str],
         arguments: Optional[dict[str, Any]],
         timeout_ms: Optional[int],
-    ) -> CascadeDecision:
+    ) -> MonitorAdvisory:
         try:
             raw_response = self._invoke_monitor(
                 monitor,
@@ -285,10 +300,11 @@ class CascadeAdapter:
                 timeout_ms=timeout_ms,
             )
         except TimeoutError as te:
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNAVAILABLE.value,
                 reason=CascadeFailureReason.MONITOR_TIMEOUT.value,
                 reason_codes=[CascadeFailureReason.MONITOR_TIMEOUT.value, f"TIMEOUT:{te}"],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 error=f"TimeoutError: {te}",
@@ -300,10 +316,11 @@ class CascadeAdapter:
             else:
                 reason_code = CascadeFailureReason.MONITOR_EXCEPTION.value
 
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNAVAILABLE.value,
                 reason=reason_code,
                 reason_codes=[reason_code, f"{exc_name}:{exc}"],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 error=f"{exc_name}: {exc}",
@@ -390,78 +407,93 @@ class CascadeAdapter:
             "evaluate, or callable invocation"
         )
 
-    def _parse_monitor_response(self, raw: Any) -> CascadeDecision:
+    def _parse_monitor_response(self, raw: Any) -> MonitorAdvisory:
         # A. Response is MonitorAssessment
         if isinstance(raw, MonitorAssessment):
             if raw.verdict == MonitorVerdict.UNKNOWN:
                 error_upper = (raw.error or "").upper()
                 if "TIMEOUT" in error_upper:
                     reason_code = CascadeFailureReason.MONITOR_TIMEOUT.value
+                    verdict_val = AdvisoryVerdict.UNAVAILABLE.value
                 elif "EXCEPTION" in error_upper:
                     reason_code = CascadeFailureReason.MONITOR_EXCEPTION.value
+                    verdict_val = AdvisoryVerdict.UNAVAILABLE.value
                 elif "JSON" in error_upper or "PARSE" in error_upper:
                     reason_code = CascadeFailureReason.MALFORMED_OUTPUT.value
+                    verdict_val = AdvisoryVerdict.UNAVAILABLE.value
                 else:
                     reason_code = CascadeFailureReason.MONITOR_UNKNOWN.value
+                    verdict_val = AdvisoryVerdict.UNCERTAIN.value
 
-                return CascadeDecision(
-                    decision=Decision.REVIEW,
+                return MonitorAdvisory(
+                    verdict=verdict_val,
                     reason=reason_code,
                     reason_codes=[reason_code, raw.error or "MONITOR_UNKNOWN"],
+                    confidence=raw.score,
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.UNKNOWN,
                     error=raw.error,
                     raw_output=raw.raw_output,
                 )
             if raw.verdict == MonitorVerdict.BENIGN:
-                return CascadeDecision(
-                    decision=Decision.ALLOW,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.LOW_RISK.value,
                     reason="MONITOR_BENIGN",
                     reason_codes=["MONITOR_BENIGN"],
+                    confidence=raw.score,
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.BENIGN,
                     raw_output=raw.raw_output,
                 )
             if raw.verdict == MonitorVerdict.SUSPICIOUS:
-                return CascadeDecision(
-                    decision=self.suspicious_map,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.ELEVATED_RISK.value,
                     reason="MONITOR_SUSPICIOUS",
                     reason_codes=["MONITOR_SUSPICIOUS"],
+                    confidence=raw.score,
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.SUSPICIOUS,
                     raw_output=raw.raw_output,
                 )
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNCERTAIN.value,
                 reason=CascadeFailureReason.MONITOR_UNKNOWN.value,
                 reason_codes=[CascadeFailureReason.MONITOR_UNKNOWN.value],
+                confidence=raw.score,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 raw_output=raw.raw_output,
             )
 
-        # B. Response is Decision enum
+        # B. Response is Decision enum (advisory mapping: never returns ALLOW or DENY)
         if isinstance(raw, Decision):
             if raw == Decision.ALLOW:
-                return CascadeDecision(
-                    decision=Decision.ALLOW,
-                    reason="MONITOR_ALLOW",
-                    reason_codes=["MONITOR_ALLOW"],
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.LOW_RISK.value,
+                    reason="MONITOR_LOW_RISK",
+                    reason_codes=["MONITOR_LOW_RISK"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.BENIGN,
                 )
             if raw == Decision.DENY:
-                return CascadeDecision(
-                    decision=Decision.DENY,
-                    reason="MONITOR_DENY",
-                    reason_codes=["MONITOR_DENY"],
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.ELEVATED_RISK.value,
+                    reason="MONITOR_ELEVATED_RISK",
+                    reason_codes=["MONITOR_ELEVATED_RISK"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.SUSPICIOUS,
                 )
-            return CascadeDecision(
-                decision=Decision.REVIEW,
-                reason="MONITOR_REVIEW",
-                reason_codes=["MONITOR_REVIEW"],
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNCERTAIN.value,
+                reason="MONITOR_UNCERTAIN",
+                reason_codes=["MONITOR_UNCERTAIN"],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
             )
@@ -469,25 +501,28 @@ class CascadeAdapter:
         # C. Response is MonitorVerdict enum
         if isinstance(raw, MonitorVerdict):
             if raw == MonitorVerdict.BENIGN:
-                return CascadeDecision(
-                    decision=Decision.ALLOW,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.LOW_RISK.value,
                     reason="MONITOR_BENIGN",
                     reason_codes=["MONITOR_BENIGN"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.BENIGN,
                 )
             if raw == MonitorVerdict.SUSPICIOUS:
-                return CascadeDecision(
-                    decision=Decision.DENY,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.ELEVATED_RISK.value,
                     reason="MONITOR_SUSPICIOUS",
                     reason_codes=["MONITOR_SUSPICIOUS"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.SUSPICIOUS,
                 )
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNCERTAIN.value,
                 reason=CascadeFailureReason.MONITOR_UNKNOWN.value,
                 reason_codes=[CascadeFailureReason.MONITOR_UNKNOWN.value],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
             )
@@ -506,13 +541,14 @@ class CascadeAdapter:
                     parsed_json = json.loads(cleaned)
                     return self._parse_dict_response(parsed_json, original_raw=raw)
                 except (json.JSONDecodeError, ValueError) as jde:
-                    return CascadeDecision(
-                        decision=Decision.REVIEW,
+                    return MonitorAdvisory(
+                        verdict=AdvisoryVerdict.UNAVAILABLE.value,
                         reason=CascadeFailureReason.MALFORMED_JSON.value,
                         reason_codes=[
                             CascadeFailureReason.MALFORMED_JSON.value,
                             f"JSON_DECODE_ERROR:{jde}",
                         ],
+                        recommended_outcome="REVIEW",
                         policy_verdict=PolicyVerdict.UNDETERMINED,
                         monitor_verdict=MonitorVerdict.UNKNOWN,
                         error=f"Malformed JSON from monitor: {jde}",
@@ -529,50 +565,55 @@ class CascadeAdapter:
                 .strip()
             )
             if token in {"ALLOW", "PERMIT", "PASS", "BENIGN", "SAFE"}:
-                return CascadeDecision(
-                    decision=Decision.ALLOW,
-                    reason="MONITOR_ALLOW",
-                    reason_codes=["MONITOR_ALLOW"],
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.LOW_RISK.value,
+                    reason="MONITOR_LOW_RISK",
+                    reason_codes=["MONITOR_LOW_RISK"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.BENIGN,
                     raw_output=raw,
                 )
             if token in {"DENY", "BLOCK", "FAIL", "SUSPICIOUS", "UNSAFE"}:
-                return CascadeDecision(
-                    decision=Decision.DENY,
-                    reason="MONITOR_DENY",
-                    reason_codes=["MONITOR_DENY"],
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.ELEVATED_RISK.value,
+                    reason="MONITOR_ELEVATED_RISK",
+                    reason_codes=["MONITOR_ELEVATED_RISK"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.SUSPICIOUS,
                     raw_output=raw,
                 )
             if token in {"REVIEW", "UNSURE"}:
-                return CascadeDecision(
-                    decision=Decision.REVIEW,
-                    reason="MONITOR_REVIEW",
-                    reason_codes=["MONITOR_REVIEW"],
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.UNCERTAIN.value,
+                    reason="MONITOR_UNCERTAIN",
+                    reason_codes=["MONITOR_UNCERTAIN"],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.UNKNOWN,
                     raw_output=raw,
                 )
             if token in {"UNKNOWN"}:
-                return CascadeDecision(
-                    decision=Decision.REVIEW,
+                return MonitorAdvisory(
+                    verdict=AdvisoryVerdict.UNCERTAIN.value,
                     reason=CascadeFailureReason.MONITOR_UNKNOWN.value,
                     reason_codes=[CascadeFailureReason.MONITOR_UNKNOWN.value],
+                    recommended_outcome="REVIEW",
                     policy_verdict=PolicyVerdict.UNDETERMINED,
                     monitor_verdict=MonitorVerdict.UNKNOWN,
                     raw_output=raw,
                 )
 
             # Unrecognized string output is malformed
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNAVAILABLE.value,
                 reason=CascadeFailureReason.MALFORMED_OUTPUT.value,
                 reason_codes=[
                     CascadeFailureReason.MALFORMED_OUTPUT.value,
                     f"UNRECOGNIZED_TOKEN:{token[:50]}",
                 ],
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 error=f"Unrecognized monitor output string: {cleaned[:100]}",
@@ -584,13 +625,14 @@ class CascadeAdapter:
             return self._parse_dict_response(raw, original_raw=str(raw))
 
         # F. Unsupported type
-        return CascadeDecision(
-            decision=Decision.REVIEW,
+        return MonitorAdvisory(
+            verdict=AdvisoryVerdict.UNAVAILABLE.value,
             reason=CascadeFailureReason.MALFORMED_OUTPUT.value,
             reason_codes=[
                 CascadeFailureReason.MALFORMED_OUTPUT.value,
                 f"UNSUPPORTED_TYPE:{type(raw).__name__}",
             ],
+            recommended_outcome="REVIEW",
             policy_verdict=PolicyVerdict.UNDETERMINED,
             monitor_verdict=MonitorVerdict.UNKNOWN,
             error=f"Unsupported return type from cascade monitor: {type(raw).__name__}",
@@ -599,7 +641,7 @@ class CascadeAdapter:
 
     def _parse_dict_response(
         self, data: dict[str, Any], original_raw: Optional[str] = None
-    ) -> CascadeDecision:
+    ) -> MonitorAdvisory:
         val = (
             data.get("decision")
             or data.get("verdict")
@@ -608,14 +650,22 @@ class CascadeAdapter:
             or data.get("status")
         )
 
+        conf = data.get("confidence") or data.get("score")
+        try:
+            conf_float = float(conf) if conf is not None else None
+        except (ValueError, TypeError):
+            conf_float = None
+
         if val is None or not isinstance(val, (str, Decision, MonitorVerdict)):
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNAVAILABLE.value,
                 reason=CascadeFailureReason.MALFORMED_OUTPUT.value,
                 reason_codes=[
                     CascadeFailureReason.MALFORMED_OUTPUT.value,
                     "MISSING_DECISION_FIELD",
                 ],
+                confidence=conf_float,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 error="Parsed dictionary lacks a recognizable verdict or decision key",
@@ -623,55 +673,88 @@ class CascadeAdapter:
             )
 
         if isinstance(val, Decision):
-            return self._parse_monitor_response(val)
+            base = self._parse_monitor_response(val)
+            return MonitorAdvisory(
+                verdict=base.verdict,
+                reason=base.reason,
+                confidence=conf_float if conf_float is not None else base.confidence,
+                recommended_outcome=base.recommended_outcome,
+                reason_codes=base.reason_codes,
+                policy_verdict=base.policy_verdict,
+                monitor_verdict=base.monitor_verdict,
+                error=base.error,
+                raw_output=original_raw,
+            )
+
         if isinstance(val, MonitorVerdict):
-            return self._parse_monitor_response(val)
+            base = self._parse_monitor_response(val)
+            return MonitorAdvisory(
+                verdict=base.verdict,
+                reason=base.reason,
+                confidence=conf_float if conf_float is not None else base.confidence,
+                recommended_outcome=base.recommended_outcome,
+                reason_codes=base.reason_codes,
+                policy_verdict=base.policy_verdict,
+                monitor_verdict=base.monitor_verdict,
+                error=base.error,
+                raw_output=original_raw,
+            )
 
         val_token = val.strip().upper()
         if val_token in {"ALLOW", "PERMIT", "PASS", "BENIGN", "SAFE"}:
-            return CascadeDecision(
-                decision=Decision.ALLOW,
-                reason="MONITOR_ALLOW",
-                reason_codes=["MONITOR_ALLOW"],
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.LOW_RISK.value,
+                reason="MONITOR_LOW_RISK",
+                reason_codes=["MONITOR_LOW_RISK"],
+                confidence=conf_float,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.BENIGN,
                 raw_output=original_raw,
             )
         if val_token in {"DENY", "BLOCK", "FAIL", "SUSPICIOUS", "UNSAFE"}:
-            return CascadeDecision(
-                decision=Decision.DENY,
-                reason="MONITOR_DENY",
-                reason_codes=["MONITOR_DENY"],
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.ELEVATED_RISK.value,
+                reason="MONITOR_ELEVATED_RISK",
+                reason_codes=["MONITOR_ELEVATED_RISK"],
+                confidence=conf_float,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.SUSPICIOUS,
                 raw_output=original_raw,
             )
         if val_token in {"REVIEW", "UNSURE"}:
-            return CascadeDecision(
-                decision=Decision.REVIEW,
-                reason="MONITOR_REVIEW",
-                reason_codes=["MONITOR_REVIEW"],
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNCERTAIN.value,
+                reason="MONITOR_UNCERTAIN",
+                reason_codes=["MONITOR_UNCERTAIN"],
+                confidence=conf_float,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 raw_output=original_raw,
             )
         if val_token in {"UNKNOWN"}:
-            return CascadeDecision(
-                decision=Decision.REVIEW,
+            return MonitorAdvisory(
+                verdict=AdvisoryVerdict.UNCERTAIN.value,
                 reason=CascadeFailureReason.MONITOR_UNKNOWN.value,
                 reason_codes=[CascadeFailureReason.MONITOR_UNKNOWN.value],
+                confidence=conf_float,
+                recommended_outcome="REVIEW",
                 policy_verdict=PolicyVerdict.UNDETERMINED,
                 monitor_verdict=MonitorVerdict.UNKNOWN,
                 raw_output=original_raw,
             )
 
-        return CascadeDecision(
-            decision=Decision.REVIEW,
+        return MonitorAdvisory(
+            verdict=AdvisoryVerdict.UNAVAILABLE.value,
             reason=CascadeFailureReason.MALFORMED_OUTPUT.value,
             reason_codes=[
                 CascadeFailureReason.MALFORMED_OUTPUT.value,
                 f"UNRECOGNIZED_DICT_VALUE:{val_token}",
             ],
+            confidence=conf_float,
+            recommended_outcome="REVIEW",
             policy_verdict=PolicyVerdict.UNDETERMINED,
             monitor_verdict=MonitorVerdict.UNKNOWN,
             error=f"Unrecognized decision value in dict: {val_token}",
@@ -685,22 +768,47 @@ class CascadeAdapter:
         arguments: Optional[dict[str, Any]],
     ) -> MonitorView:
         if isinstance(action, MonitorView):
-            return action
+            sanitized_args = sanitize_data(copy.deepcopy(action.action.arguments))
+            c_action = CanonicalAction(
+                action_id=action.action.action_id,
+                session_id=action.action.session_id,
+                seq=action.action.seq,
+                tool=action.action.tool,
+                arguments=sanitized_args,
+                action_hash=action.action.action_hash,
+            )
+            return MonitorView(
+                monitor_id=action.monitor_id,
+                action=c_action,
+                registry_facts=sanitize_data(copy.deepcopy(action.registry_facts)),
+                goal=sanitize_data(copy.deepcopy(action.goal)),
+                policy_text=copy.deepcopy(action.policy_text),
+                transcript=copy.deepcopy(action.transcript),
+                state_summary=sanitize_data(copy.deepcopy(action.state_summary)),
+            )
 
         if isinstance(action, CanonicalAction):
-            c_action = action
+            c_action = CanonicalAction(
+                action_id=action.action_id,
+                session_id=action.session_id,
+                seq=action.seq,
+                tool=action.tool,
+                arguments=sanitize_data(copy.deepcopy(action.arguments)),
+                action_hash=action.action_hash,
+            )
         elif isinstance(action, ActionRequest):
+            sanitized_args = sanitize_data(copy.deepcopy(action.arguments))
             action_hash = compute_action_hash(action.session_id, 1, action.tool, action.arguments)
             c_action = CanonicalAction(
                 action_id="act_cascade_adapter",
                 session_id=action.session_id,
                 seq=1,
                 tool=action.tool,
-                arguments=action.arguments,
+                arguments=sanitized_args,
                 action_hash=action_hash,
             )
         elif tool is not None:
-            args = arguments or {}
+            args = sanitize_data(copy.deepcopy(arguments or {}))
             action_hash = compute_action_hash("session_cascade", 1, tool, args)
             c_action = CanonicalAction(
                 action_id="act_cascade_adapter",
@@ -712,7 +820,7 @@ class CascadeAdapter:
             )
         elif isinstance(action, dict):
             t = action.get("tool", "unknown_tool")
-            args = action.get("arguments", {})
+            args = sanitize_data(copy.deepcopy(action.get("arguments", {})))
             action_hash = compute_action_hash("session_cascade", 1, t, args)
             c_action = CanonicalAction(
                 action_id="act_cascade_adapter",

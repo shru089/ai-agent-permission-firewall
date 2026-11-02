@@ -391,7 +391,7 @@ def test_manifest_verification(tmp_path: Path) -> None:
     assert report.manifest_verified is True
 
     # Tamper manifest
-    manifest_file.write_text(f"{'a'*64}  traces.json\n", encoding="utf-8")
+    manifest_file.write_text(f"{'a' * 64}  traces.json\n", encoding="utf-8")
     report_bad = validate_dev_dataset(dataset_path=tmp_path)
     assert report_bad.manifest_verified is False
     assert any("hash mismatch" in e.message.lower() for e in report_bad.errors)

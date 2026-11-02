@@ -1,0 +1,50 @@
+{
+  "dataset_version": "1.0.0",
+  "protocol_version": "docs/06_EXPERIMENT_PROTOCOL.md v1.0 \u00a75.4",
+  "generator_version": "1.0.0",
+  "generator_hash": "163668c5d1e0d7a3f83e1ff546e510193eb448e71f358b9097049de507e316f1",
+  "generated_at_utc": "2026-10-31T12:00:00+00:00",
+  "seed": 20261031,
+  "python_version": "3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)]",
+  "schema_version": "5.4-canonical",
+  "label_oracle_version": "1.0.0",
+  "record_count": 32,
+  "template_count": 16,
+  "family_counts": {
+    "ATK-02": 2,
+    "BEN-01": 2,
+    "ATK-03": 2,
+    "BEN-02": 2,
+    "ATK-04": 2,
+    "BEN-04": 2,
+    "ATK-08": 2,
+    "BEN-09": 2,
+    "ATK-01": 2,
+    "ATK-05": 2,
+    "ATK-06": 2,
+    "BEN-03": 2,
+    "BEN-05": 2,
+    "BEN-06": 2,
+    "EVD-01": 2,
+    "EVD-02": 2
+  },
+  "split": "DEV",
+  "checksum_algorithm": "SHA-256",
+  "canonical_json_algorithm": "RFC-8785",
+  "inputs": [
+    "docs/06_EXPERIMENT_PROTOCOL.md \u00a73, \u00a75.4",
+    "docs/03_MATHEMATICAL_MODEL_AND_METRICS.md \u00a77",
+    "experiments/generator/scenarios.py",
+    "experiments/labels/rules.py"
+  ],
+  "transformations": [
+    "Deterministic scenario template instantiation",
+    "Matched history-dependent twin linking",
+    "RFC-8785 canonical digest computation per trace",
+    "Independent specification label oracle evaluation",
+    "Action-D invariance verification (T-EXP-002)",
+    "Template family split disjointness validation (T-EXP-005)",
+    "SHA-256 manifest generation"
+  ],
+  "notes": "Canonical DEV dataset handoff package for Shrishti. Isolated to DEV split templates only; zero CAL or TEST traces present. All history-dependent pairs strictly satisfy Action-D invariance."
+}

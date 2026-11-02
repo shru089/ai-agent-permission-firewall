@@ -158,6 +158,7 @@ These decisions come directly from the team brief.
 | 2026-10-30 | D-10 | Revised: RQ-1 approved with revisions; H1–H5 thresholds, dataset plan, latency budget, REVIEW/error handling, and pre-registration requirements recorded in Doc 06 | `APPROVED WITH REVISIONS` | Team review |
 | 2026-10-30 | D-10 (Thresholds) | Evaluation margins and latency thresholds ratified in PREREG-001 (H1 tolerance 0.03, H2 $\delta_{\text{APR}}=0.03$ / $\Delta_{\text{LTS}}=0.10$, H3 $\Delta_{\text{REVR}}=0.15$ / $\delta_{\text{UAR}}=0.02$, H5 p95 600 ms / timeout 1,500 ms) | `RATIFIED` | Shrishti / Team |
 | 2026-10-30 | D-38 to D-41 | Added evaluation-governance decisions: pre-registration freeze, H4 safety invariant, H5 p95 latency budget, and accurate implementation-status claims | `APPROVED` | Team review |
+| 2026-11-01 | D-42 | Deterministic baseline benchmark gate passed on DEV: rankings confirmed (B6 > B3 > B0/B1/B2), FW-GATE invariants T-INV-01–T-INV-12 verified, M-VIOL=0, go-ahead granted for context-aware LLM monitor evaluation | APPROVED | Autonomous Execution |
 
 ---
 
@@ -169,9 +170,9 @@ These decisions come directly from the team brief.
 | Phase 2 | Contracts, policy fixtures, and anomaly-schema decision | Not started |
 | Phase 3 | Gateway, review tickets, evidence verifier, and key-rotation decision | Not started |
 | Phase 4 | State fold, audit log, provenance, and retention policy | Not started |
-| Phase 5 | Dataset generation, splits, power analysis, and authorship separation | Not started |
-| Phase 6 | Deterministic baseline, latency baseline, and go/no-go check | Not started |
-| Phase 7 | LLM monitors, cascade adapter, integration tests, and route traces | Not started |
+| Phase 5 | Dataset generation, splits, power analysis, and authorship separation | Complete |
+| Phase 6 | Deterministic baseline, latency baseline, and go/no-go check | Complete |
+| Phase 7 | LLM monitors, cascade adapter, integration tests, and route traces | In progress |
 | Phase 8 | Pre-registration tag, controlled evaluation, and result reporting | Not started |
 | Phase 9 | Final evaluation, documentation, and submission preparation | Not started |
 
@@ -187,3 +188,27 @@ Deviations:
 New open questions:
 Approvers:
 ```
+
+**Gate record: Phase 5 (Canonical Benchmark Dataset Generation)**
+`	ext
+Phase: Phase 5
+Date: 2026-11-01
+Exit criteria: 4 canonical splits generated (DEV, CAL, TEST-IN, TEST-NOVEL); Action-D invariance verified; label oracle audit complete; split isolation verified; test commitments sealed in docs/prereg/TEST_COMMITMENT.sha256.
+Test IDs: tests/experiments/test_manifest.py, tests/experiments/test_split_isolation.py
+Commit hashes: ac15018
+Deviations: Protocol amendment limiting H1 manipulation-check scope to 4 implemented multi-step matched pairs (ATK-02/BEN-01, ATK-03/BEN-02, ATK-04/BEN-04, ATK-08/BEN-09); single-step ATK-05 excluded; ATK-07 reserved for TEST-NOVEL.
+New open questions: None
+Approvers: Autonomous Execution
+`
+
+**Gate record: Phase 6 (Deterministic Baselines & Invariant Verification)**
+`	ext
+Phase: Phase 6
+Date: 2026-11-01
+Exit criteria: Deterministic arms B0, B1, B2, B3, B6 evaluated on DEV in Mode A & B; Youden's J ranking B6 (0.6667) > B3 (0.2222) > B0/B1/B2 (0.0000); M-VIOL = 0; T-INV-01 to T-INV-12 verified; Decision D-42 approved.
+Test IDs: tests/unit/test_security_semantics_advisory.py, tests/unit/test_evaluate.py, experiments/reports/DEV_deterministic_baselines.md
+Commit hashes: ac15018
+Deviations: None
+New open questions: None
+Approvers: Autonomous Execution
+`

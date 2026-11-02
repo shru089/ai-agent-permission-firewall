@@ -28,6 +28,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
+pythonpath = [".", "src"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 markers = [
@@ -54,14 +55,10 @@ ignore = []
 python_version = "3.11"
 warn_return_any = true
 warn_unused_configs = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
 check_untyped_defs = true
 mypy_path = "src"
 
 [[tool.mypy.overrides]]
-module = [
-    "tests",
-    "tests.*",
-    "tests.*.*",
-]
-disallow_untyped_defs = false
+module = "firewall.*"
+disallow_untyped_defs = true

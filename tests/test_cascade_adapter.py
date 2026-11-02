@@ -16,6 +16,7 @@ Test coverage:
 - Record structured failure reason for REVIEW escalation
 """
 
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -43,9 +44,9 @@ from firewall.monitor.mock import DeterministicMockMonitor
 
 
 @pytest.mark.unit
-def test_prohibit_returns_deny_without_calling_monitor():
+def test_prohibit_returns_deny_without_calling_monitor() -> None:
     """
-    PROHIBIT -> DENY.
+    PROHIBIT advisory outcome is DENY.
     Hard policy prohibitions dominate unconditionally (INV-03).
     The cascade monitor must not be called.
     """
@@ -54,8 +55,8 @@ def test_prohibit_returns_deny_without_calling_monitor():
 
     result = adapter.decide(PolicyVerdict.PROHIBIT)
 
-    assert result.decision == Decision.DENY
-    assert result == Decision.DENY
+    assert result.recommended_outcome == "DENY"
+    assert result != Decision.DENY
     assert "POLICY_PROHIBIT" in result.reason
     assert result.policy_verdict == PolicyVerdict.PROHIBIT
     assert result.monitor_verdict == MonitorVerdict.NOT_CONSULTED
@@ -66,7 +67,7 @@ def test_prohibit_returns_deny_without_calling_monitor():
 
 
 @pytest.mark.unit
-def test_prohibit_with_matched_rules():
+def test_prohibit_with_matched_rules() -> None:
     """PROHIBIT records matched rules in reason_codes."""
     adapter = CascadeAdapter()
     result = adapter.decide(
@@ -74,24 +75,24 @@ def test_prohibit_with_matched_rules():
         matched_rules=["RULE_NO_EXFILTRATION", "RULE_NO_DROP_TABLE"],
     )
 
-    assert result == Decision.DENY
+    assert result.recommended_outcome == "DENY"
     assert "POLICY_PROHIBIT:RULE_NO_EXFILTRATION" in result.reason_codes
     assert "POLICY_PROHIBIT:RULE_NO_DROP_TABLE" in result.reason_codes
 
 
 @pytest.mark.unit
-def test_permit_returns_allow_without_calling_monitor():
+def test_permit_returns_allow_without_calling_monitor() -> None:
     """
-    Valid PERMIT -> ALLOW.
-    Unambiguous policy permits are respected and do not consult the monitor.
+    Valid PERMIT advisory outcome is ALLOW.
+    Unambiguous policy permits do not consult the monitor.
     """
     mock_monitor = MagicMock()
     adapter = CascadeAdapter(monitor=mock_monitor)
 
     result = adapter.decide(PolicyVerdict.PERMIT)
 
-    assert result.decision == Decision.ALLOW
-    assert result == Decision.ALLOW
+    assert result.recommended_outcome == "ALLOW"
+    assert result != Decision.ALLOW
     assert "POLICY_PERMIT" in result.reason
     assert result.policy_verdict == PolicyVerdict.PERMIT
     assert result.monitor_verdict == MonitorVerdict.NOT_CONSULTED
@@ -101,7 +102,7 @@ def test_permit_returns_allow_without_calling_monitor():
 
 
 @pytest.mark.unit
-def test_permit_from_policy_result_object():
+def test_permit_from_policy_result_object() -> None:
     """Accepts a PolicyResult object directly."""
     policy_res = PolicyResult(
         verdict=PolicyVerdict.PERMIT,
@@ -112,12 +113,12 @@ def test_permit_from_policy_result_object():
     adapter = CascadeAdapter()
     result = adapter.decide(policy_res)
 
-    assert result == Decision.ALLOW
+    assert result.recommended_outcome == "ALLOW"
     assert "POLICY_PERMIT:RULE_BENIGN_READ" in result.reason_codes
 
 
 @pytest.mark.unit
-def test_evidence_missing_returns_review_without_calling_monitor():
+def test_evidence_missing_returns_review_without_calling_monitor() -> None:
     """
     EVIDENCE_MISSING -> REVIEW.
     Incomplete authorization state triggers fail-closed human review (INV-04).
@@ -130,8 +131,7 @@ def test_evidence_missing_returns_review_without_calling_monitor():
         missing_fields=["resource.classification", "destination.zone"],
     )
 
-    assert result.decision == Decision.REVIEW
-    assert result == Decision.REVIEW
+    assert result.recommended_outcome == "REVIEW"
     assert "EVIDENCE_MISSING" in result.reason
     assert "EVIDENCE_MISSING:resource.classification,destination.zone" in result.reason_codes
     assert result.policy_verdict == PolicyVerdict.EVIDENCE_MISSING
@@ -141,65 +141,75 @@ def test_evidence_missing_returns_review_without_calling_monitor():
 
 
 # ==============================================================================
-# 2. UNDETERMINED Policy Verdict: Valid Monitor Decisions
+# 2. UNDETERMINED Policy Verdict: Advisory Monitor Verdicts
 # ==============================================================================
 
 
 @pytest.mark.unit
-def test_undetermined_calls_monitor_allow():
-    """UNDETERMINED policy + monitor BENIGN / ALLOW -> ALLOW."""
+def test_undetermined_calls_monitor_allow() -> None:
+    """UNDETERMINED policy + monitor BENIGN maps to advisory LOW_RISK, NOT ALLOW."""
     mock_monitor = DeterministicMockMonitor(verdict=MonitorVerdict.BENIGN)
     adapter = CascadeAdapter(monitor=mock_monitor)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.ALLOW
-    assert result == Decision.ALLOW
+    assert result.verdict == "LOW_RISK"
+    assert result != Decision.ALLOW
+    assert result.decision is None
     assert result.monitor_verdict == MonitorVerdict.BENIGN
 
 
 @pytest.mark.unit
-def test_undetermined_calls_monitor_deny():
-    """UNDETERMINED policy + monitor SUSPICIOUS / DENY -> DENY."""
+def test_undetermined_calls_monitor_deny() -> None:
+    """UNDETERMINED policy + monitor SUSPICIOUS maps to advisory ELEVATED_RISK, NOT DENY."""
     mock_monitor = DeterministicMockMonitor(verdict=MonitorVerdict.SUSPICIOUS)
     adapter = CascadeAdapter(monitor=mock_monitor)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.DENY
-    assert result == Decision.DENY
+    assert result.verdict == "ELEVATED_RISK"
+    assert result != Decision.DENY
+    assert result.decision is None
     assert result.monitor_verdict == MonitorVerdict.SUSPICIOUS
 
 
 @pytest.mark.unit
-def test_undetermined_with_string_decision_allow():
-    """Monitor returning valid string 'PASS' / 'ALLOW' maps to Decision.ALLOW."""
+def test_undetermined_with_string_decision_allow() -> None:
+    """Monitor returning valid string 'PASS' / 'ALLOW' maps to advisory
+    LOW_RISK, not Decision.ALLOW.
+    """
     fake_monitor = MagicMock(return_value="PASS")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
-    assert result == Decision.ALLOW
+    assert result.verdict == "LOW_RISK"
+    assert result != Decision.ALLOW
 
 
 @pytest.mark.unit
-def test_undetermined_with_string_decision_fail():
-    """Monitor returning valid string 'FAIL' / 'DENY' maps to Decision.DENY."""
+def test_undetermined_with_string_decision_fail() -> None:
+    """Monitor returning valid string 'FAIL' / 'DENY' maps to advisory
+    ELEVATED_RISK, not Decision.DENY.
+    """
     fake_monitor = MagicMock(return_value="FAIL")
     adapter = CascadeAdapter(monitor=fake_monitor)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
-    assert result == Decision.DENY
+    assert result.verdict == "ELEVATED_RISK"
+    assert result != Decision.DENY
 
 
 @pytest.mark.unit
-def test_undetermined_with_valid_json_dict():
-    """Monitor returning valid JSON dict maps accurately."""
+def test_undetermined_with_valid_json_dict() -> None:
+    """Monitor returning valid JSON dict maps accurately to LOW_RISK."""
     fake_monitor = MagicMock(return_value={"verdict": "BENIGN", "confidence": 0.99})
     adapter = CascadeAdapter(monitor=fake_monitor)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
-    assert result == Decision.ALLOW
+    assert result.verdict == "LOW_RISK"
+    assert result != Decision.ALLOW
     assert result.monitor_verdict == MonitorVerdict.BENIGN
+    assert result.confidence == 0.99
 
 
 # ==============================================================================
@@ -208,9 +218,9 @@ def test_undetermined_with_valid_json_dict():
 
 
 @pytest.mark.unit
-def test_unknown_returns_review():
+def test_unknown_returns_review() -> None:
     """
-    UNKNOWN -> REVIEW.
+    UNKNOWN -> UNCERTAIN advisory.
     Uncertain monitor assessment must fail-closed to REVIEW (INV-04).
     Must record MONITOR_UNKNOWN structured failure reason.
     """
@@ -219,32 +229,31 @@ def test_unknown_returns_review():
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNCERTAIN"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_UNKNOWN.value in result.reason
     assert result.monitor_verdict == MonitorVerdict.UNKNOWN
 
 
 @pytest.mark.unit
-def test_unknown_string_or_dict_returns_review():
-    """Monitor returning string 'UNKNOWN' or dict {'decision': 'UNKNOWN'} maps to REVIEW."""
+def test_unknown_string_or_dict_returns_review() -> None:
+    """Monitor returning string 'UNKNOWN' or dict {'decision': 'UNKNOWN'} maps to UNCERTAIN."""
     adapter = CascadeAdapter(monitor=lambda: "UNKNOWN")
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNCERTAIN"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_UNKNOWN.value in result.reason_codes
 
     adapter2 = CascadeAdapter(monitor=lambda: {"decision": "UNKNOWN"})
     result2 = adapter2.decide(PolicyVerdict.UNDETERMINED)
-    assert result2 == Decision.REVIEW
+    assert result2.verdict == "UNCERTAIN"
     assert result2.decision != Decision.ALLOW
 
 
 @pytest.mark.unit
-def test_timeout_returns_review():
+def test_timeout_returns_review() -> None:
     """
-    Timeout -> REVIEW.
+    Timeout -> UNAVAILABLE advisory.
     Monitor timeout must fail-closed to REVIEW (INV-04, D-37).
     Must record MONITOR_TIMEOUT structured failure reason.
     """
@@ -253,8 +262,7 @@ def test_timeout_returns_review():
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_TIMEOUT.value in result.reason
     assert any("TIMEOUT" in r for r in result.reason_codes)
@@ -262,24 +270,24 @@ def test_timeout_returns_review():
 
 
 @pytest.mark.unit
-def test_timeout_exception_direct_returns_review():
-    """TimeoutError raised by monitor callable returns REVIEW."""
+def test_timeout_exception_direct_returns_review() -> None:
+    """TimeoutError raised by monitor callable returns UNAVAILABLE."""
 
-    def timing_out_monitor(*args, **kwargs):
+    def timing_out_monitor(*args: Any, **kwargs: Any) -> Any:
         raise TimeoutError("Ollama HTTP connection timed out after 1500ms")
 
     adapter = CascadeAdapter(monitor=timing_out_monitor)
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_TIMEOUT.value in result.reason
 
 
 @pytest.mark.unit
-def test_exception_returns_review():
+def test_exception_returns_review() -> None:
     """
-    Exception -> REVIEW.
+    Exception -> UNAVAILABLE advisory.
     Unhandled monitor exceptions must fail-closed to REVIEW (INV-04, D-37).
     Must record MONITOR_EXCEPTION structured failure reason.
     """
@@ -290,8 +298,7 @@ def test_exception_returns_review():
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_EXCEPTION.value in result.reason
     assert any("RuntimeError" in r for r in result.reason_codes)
@@ -299,24 +306,24 @@ def test_exception_returns_review():
 
 
 @pytest.mark.unit
-def test_arbitrary_callable_exception_returns_review():
-    """Monitor callable raising ValueError or NetworkError maps to REVIEW."""
+def test_arbitrary_callable_exception_returns_review() -> None:
+    """Monitor callable raising ValueError or NetworkError maps to UNAVAILABLE."""
 
-    def broken_monitor():
+    def broken_monitor() -> None:
         raise ValueError("Corrupt weights tensor")
 
     adapter = CascadeAdapter(monitor=broken_monitor)
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MONITOR_EXCEPTION.value in result.reason
 
 
 @pytest.mark.unit
-def test_malformed_json_returns_review():
+def test_malformed_json_returns_review() -> None:
     """
-    Malformed JSON -> REVIEW.
+    Malformed JSON -> UNAVAILABLE advisory.
     Unparseable JSON emitted by model fails-closed to REVIEW.
     Must record MALFORMED_JSON structured failure reason.
     """
@@ -326,8 +333,7 @@ def test_malformed_json_returns_review():
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
-    assert result == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MALFORMED_JSON.value in result.reason
     assert any("JSON_DECODE_ERROR" in r for r in result.reason_codes)
@@ -335,26 +341,26 @@ def test_malformed_json_returns_review():
 
 
 @pytest.mark.unit
-def test_malformed_output_missing_fields_returns_review():
-    """Dictionary output lacking valid decision/verdict fields fails-closed to REVIEW."""
+def test_malformed_output_missing_fields_returns_review() -> None:
+    """Dictionary output lacking valid decision/verdict fields fails-closed to UNAVAILABLE."""
     adapter = CascadeAdapter(monitor=lambda: {"unrelated_field": 42})
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MALFORMED_OUTPUT.value in result.reason
     assert "MISSING_DECISION_FIELD" in result.reason_codes
 
 
 @pytest.mark.unit
-def test_malformed_output_unrecognized_string_returns_review():
-    """Unrecognized, non-JSON free text output fails-closed to REVIEW."""
+def test_malformed_output_unrecognized_string_returns_review() -> None:
+    """Unrecognized, non-JSON free text output fails-closed to UNAVAILABLE."""
     adapter = CascadeAdapter(monitor=lambda: "I am an AI and I think this might be okay")
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.MALFORMED_OUTPUT.value in result.reason
 
@@ -382,7 +388,7 @@ def test_malformed_output_unrecognized_string_returns_review():
     ],
 )
 @pytest.mark.unit
-def test_never_return_allow_after_monitor_failure(fault_output):
+def test_never_return_allow_after_monitor_failure(fault_output: Any) -> None:
     """
     Critical Invariant: Under NO failure condition (exception, timeout, malformed JSON,
     empty or corrupt output, or UNKNOWN verdict) can the adapter EVER return ALLOW.
@@ -399,7 +405,7 @@ def test_never_return_allow_after_monitor_failure(fault_output):
     assert result.decision != Decision.ALLOW, (
         f"Critical safety invariant violated: adapter returned ALLOW for fault {fault_output!r}"
     )
-    assert result.decision == Decision.REVIEW
+    assert result.verdict in ("UNCERTAIN", "UNAVAILABLE")
     assert result.reason != ""
     assert len(result.reason_codes) > 0
 
@@ -410,13 +416,13 @@ def test_never_return_allow_after_monitor_failure(fault_output):
 
 
 @pytest.mark.unit
-def test_no_monitor_configured_fails_closed_to_review():
-    """When policy is UNDETERMINED and no monitor is configured, return REVIEW."""
+def test_no_monitor_configured_fails_closed_to_review() -> None:
+    """When policy is UNDETERMINED and no monitor is configured, return UNAVAILABLE."""
     adapter = CascadeAdapter(monitor=None)
 
     result = adapter.decide(PolicyVerdict.UNDETERMINED)
 
-    assert result.decision == Decision.REVIEW
+    assert result.verdict == "UNAVAILABLE"
     assert result.decision != Decision.ALLOW
     assert CascadeFailureReason.NO_MONITOR_CONFIGURED.value in result.reason_codes
 
@@ -427,27 +433,26 @@ def test_no_monitor_configured_fails_closed_to_review():
 
 
 @pytest.mark.unit
-def test_tuple_unpacking_and_equality():
-    """Verify CascadeDecision supports both object attribute access and tuple unpacking."""
+def test_tuple_unpacking_and_equality() -> None:
+    """Verify MonitorAdvisory / CascadeDecision supports object access, unpacking, and equality."""
     adapter = CascadeAdapter()
     result = adapter.decide(PolicyVerdict.PROHIBIT)
 
     # Object access
-    assert result.decision == Decision.DENY
-    # Direct equality with Decision enum
-    assert result == Decision.DENY
+    assert result.recommended_outcome == "DENY"
+    # Never equals final Decision enum
+    assert result != Decision.DENY
     # Direct equality with string
     assert result == "DENY"
 
     # Tuple unpacking
-    dec, reasons = adapter.decide(PolicyVerdict.PROHIBIT)
-    assert dec == Decision.DENY
+    verdict, reasons = adapter.decide(PolicyVerdict.PROHIBIT)
     assert isinstance(reasons, list)
     assert "POLICY_PROHIBIT" in reasons[0]
 
 
 @pytest.mark.unit
-def test_assess_protocol_compatibility():
+def test_assess_protocol_compatibility() -> None:
     """Verify CascadeAdapter satisfies the Monitor protocol."""
     adapter = CascadeAdapter(monitor=lambda: "PASS")
 

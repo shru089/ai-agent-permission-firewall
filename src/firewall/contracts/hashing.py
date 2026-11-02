@@ -64,6 +64,15 @@ def canonical_hash(data: Any, reject_floats: bool = False) -> str:
     return hashlib.sha256(canonical_json(data, reject_floats=reject_floats)).hexdigest()
 
 
+def sha256_hex(data: bytes | str) -> str:
+    """Computes SHA-256 hex digest of raw bytes or UTF-8 string."""
+    raw = data.encode("utf-8") if isinstance(data, str) else data
+    return hashlib.sha256(raw).hexdigest()
+
+
+canonical_sha256 = canonical_hash
+
+
 def compute_action_hash(
     session_id: str,
     seq: int,

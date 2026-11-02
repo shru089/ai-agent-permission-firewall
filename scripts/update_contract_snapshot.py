@@ -51,8 +51,9 @@ def main() -> None:
         "VersionSet": VersionSet.model_json_schema(),
     }
 
-    repo_root = Path(__file__).resolve().parents[1]
-    snapshot_path = repo_root / "tests" / "golden" / "contracts_schema_snapshot.json"
+    snapshot_path = (
+        Path(__file__).resolve().parents[1] / "tests" / "golden" / "contracts_schema_snapshot.json"
+    )
     snapshot_path.write_text(
         json.dumps(current_schemas, indent=2, ensure_ascii=False) + "\n",
         encoding="utf-8",

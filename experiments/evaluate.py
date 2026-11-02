@@ -124,7 +124,7 @@ def load_trace_from_dict(data: dict[str, Any]) -> Trace:
     for a in data.get("actions", []):
         actions.append(
             TraceAction(
-                step_index=int(a.get("step_index", len(actions))),
+                step_index=int(a.get("step_index", a.get("step", len(actions)))),
                 tool=str(a.get("tool", "")),
                 arguments=dict(a.get("arguments", {})),
                 declared_intent=a.get("declared_intent"),
@@ -197,6 +197,81 @@ def load_traces_from_file(path: Union[str, Path]) -> list[Trace]:
     return traces
 
 
+def load_labels_map(labels_path: Union[str, Path]) -> dict[str, dict[str, Any]]:
+    """Load ground-truth labels from labels.jsonl for evaluation scoring."""
+    p = Path(labels_path)
+    if not p.is_file():
+        return {}
+    res: dict[str, dict[str, Any]] = {}
+    with open(p, "r", encoding="utf-8") as f:
+        for line in f:
+            line_str = line.strip()
+            if line_str:
+                data = json.loads(line_str)
+                if "trace_id" in data:
+                    res[str(data["trace_id"])] = data
+    return res
+
+
+def apply_labels_to_traces(
+    traces: list[Trace], labels_map: dict[str, dict[str, Any]]
+) -> list[Trace]:
+    """Attach oracle labels (y, is_critical) to Trace actions for metric scoring."""
+    if not labels_map:
+        return traces
+    updated_traces: list[Trace] = []
+    for t in traces:
+        lbl = labels_map.get(t.trace_id)
+        if not lbl:
+            updated_traces.append(t)
+            continue
+
+        is_mal = bool(
+            lbl.get("is_malicious", False)
+            or lbl.get("label") == 1
+            or lbl.get("verdict") == "MALICIOUS"
+        )
+        crit_idx = lbl.get("critical_step_index", t.critical_step_index)
+
+        new_actions: list[TraceAction] = []
+        for a in t.actions:
+            is_crit = (crit_idx is not None and a.step_index == crit_idx) or a.is_critical
+            y_val = 1 if (is_mal and is_crit) else a.y
+            verdict = "MALICIOUS" if y_val == 1 else "BENIGN"
+            new_actions.append(
+                TraceAction(
+                    step_index=a.step_index,
+                    tool=a.tool,
+                    arguments=a.arguments,
+                    declared_intent=a.declared_intent,
+                    y=y_val,
+                    is_critical=is_crit,
+                    oracle_verdict=verdict,
+                )
+            )
+        updated_traces.append(
+            Trace(
+                trace_id=t.trace_id,
+                template_id=t.template_id,
+                family_id=t.family_id,
+                scenario_type="attack" if is_mal else "benign",
+                actions=new_actions,
+                twin_trace_id=t.twin_trace_id,
+                is_history_dependent=bool(
+                    lbl.get("is_history_dependent", t.is_history_dependent)
+                ),
+                critical_step_index=crit_idx,
+                split=t.split,
+                used_in_development_or_calibration=t.used_in_development_or_calibration,
+                perturbation_type=t.perturbation_type,
+                context_length_tokens=t.context_length_tokens,
+                provenance=t.provenance,
+                content_digest=t.content_digest,
+            )
+        )
+    return updated_traces
+
+
 def load_dataset(split: str, dataset_path: Optional[Union[str, Path]] = None) -> list[Trace]:
     """
     Load scenario traces for a given split.
@@ -208,15 +283,26 @@ def load_dataset(split: str, dataset_path: Optional[Union[str, Path]] = None) ->
     if dataset_path is not None:
         p = Path(dataset_path)
         if p.is_file():
-            return load_traces_from_file(p)
+            traces = load_traces_from_file(p)
+            labels_file = p.parent / "labels.jsonl"
+            labels_map = load_labels_map(labels_file) if labels_file.is_file() else {}
+            return apply_labels_to_traces(traces, labels_map)
         if p.is_dir():
-            traces: list[Trace] = []
-            files = sorted(list(p.glob("*.json")) + list(p.glob("*.jsonl")))
+            traces_file = p / "traces.jsonl"
+            labels_file = p / "labels.jsonl"
+            labels_map = load_labels_map(labels_file) if labels_file.is_file() else {}
+            if traces_file.is_file():
+                traces = load_traces_from_file(traces_file)
+                return apply_labels_to_traces(traces, labels_map)
+            traces = []
+            files = sorted(list(p.glob("*traces*.json")) + list(p.glob("*traces*.jsonl")))
+            if not files:
+                files = sorted(list(p.glob("*.jsonl")))
             for f in files:
                 traces.extend(load_traces_from_file(f))
             if not traces:
                 raise FileNotFoundError(f"No JSON or JSONL trace files found in directory: {p}")
-            return traces
+            return apply_labels_to_traces(traces, labels_map)
         raise FileNotFoundError(f"Provided dataset_path does not exist: {p}")
 
     default_dir = Path("experiments") / "datasets" / split.lower()
@@ -226,7 +312,19 @@ def load_dataset(split: str, dataset_path: Optional[Union[str, Path]] = None) ->
             "Please specify --dataset-path or ensure dataset is generated."
         )
 
-    files = sorted(list(default_dir.glob("*.json")) + list(default_dir.glob("*.jsonl")))
+    labels_file = default_dir / "labels.jsonl"
+    labels_map = load_labels_map(labels_file) if labels_file.is_file() else {}
+
+    traces_file = default_dir / "traces.jsonl"
+    if traces_file.is_file():
+        traces = load_traces_from_file(traces_file)
+        return apply_labels_to_traces(traces, labels_map)
+
+    json_files = list(default_dir.glob("*traces*.json"))
+    jsonl_files = list(default_dir.glob("*traces*.jsonl"))
+    files = sorted(json_files + jsonl_files)
+    if not files:
+        files = sorted(list(default_dir.glob("*.jsonl")))
     if not files:
         raise FileNotFoundError(
             f"Dataset split '{split}' in '{default_dir}' contains no trace files. "
@@ -236,7 +334,7 @@ def load_dataset(split: str, dataset_path: Optional[Union[str, Path]] = None) ->
     traces = []
     for f in files:
         traces.extend(load_traces_from_file(f))
-    return traces
+    return apply_labels_to_traces(traces, labels_map)
 
 
 # ---------------------------------------------------------------------------
@@ -378,9 +476,7 @@ class BaselineArm:
     def submit(self, request: ActionRequest) -> FirewallResponse:
         raise NotImplementedError
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         raise NotImplementedError
 
 
@@ -396,9 +492,7 @@ class B0AlwaysAllow(BaselineArm):
             policy_verdict=PolicyVerdict.PERMIT,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         return FirewallResponse(
             action_id=ticket_id,
             status="EXECUTED",
@@ -419,9 +513,7 @@ class B1AlwaysDeny(BaselineArm):
             policy_verdict=PolicyVerdict.PROHIBIT,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         return FirewallResponse(
             action_id=ticket_id,
             status="DENIED",
@@ -448,9 +540,7 @@ class B2AlwaysReview(BaselineArm):
             ticket_id=ticket_id,
         )
 
-    def resolve_review(
-        self, ticket_id: str, outcome: str, reviewer_id: str
-    ) -> FirewallResponse:
+    def resolve_review(self, ticket_id: str, outcome: str, reviewer_id: str) -> FirewallResponse:
         norm = outcome.strip().upper()
         if norm in ("APPROVE", "APPROVED"):
             return FirewallResponse(
@@ -547,9 +637,7 @@ def build_arm_firewall(
     """
     arm_norm = arm.strip().upper()
     if arm_norm not in CANONICAL_ARMS:
-        raise ValueError(
-            f"Invalid arm: {arm!r}. Supported canonical arms: {CANONICAL_ARMS}"
-        )
+        raise ValueError(f"Invalid arm: {arm!r}. Supported canonical arms: {CANONICAL_ARMS}")
 
     reg = registry or create_default_eval_registry()
     cfg = decision_config or DecisionConfig()
@@ -703,12 +791,9 @@ def run_mode_a(
             )
             points_all.append(dp)
 
-            is_crit_step = (
-                action.is_critical
-                or (
-                    trace.critical_step_index is not None
-                    and action.step_index == trace.critical_step_index
-                )
+            is_crit_step = action.is_critical or (
+                trace.critical_step_index is not None
+                and action.step_index == trace.critical_step_index
             )
             if is_crit_step:
                 points_crit.append(dp)
@@ -729,6 +814,7 @@ def run_mode_a(
     j_ci = None
 
     if points_crit and bootstrap_reps > 0:
+
         def _rec_stat(dps: Sequence[DecisionPoint]) -> Optional[float]:
             cm = build_confusion_matrix(dps)
             return recall(cm)
@@ -969,6 +1055,7 @@ def run_mode_b(
     lts_ci = None
 
     if trace_outcomes and bootstrap_reps > 0:
+
         def _apr_stat(tos: Sequence[TraceOutcome]) -> Optional[float]:
             atk = [t for t in tos if t.is_attack]
             if not atk:
