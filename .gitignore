@@ -32,3 +32,4 @@ htmlcov/
 labels.sqlite
 .DS_Store
 
+scratch/
