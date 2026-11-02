@@ -50,3 +50,4 @@ All numbers cited in Chapter 8 correspond directly to reproducible evaluation fi
 - **TEST-NOVEL Split (N=4):** `docs/research/shrishti/results/test_novel_results.json`
 - **Pre-Registration Commitment:** `docs/prereg/PREREG-001.md` (Digest: `88038e76161686bd3cc4fd0a12757e9d4264f406a7d5399a9ba6bff92ee37fd5`)
 - **Sealed Test Commitment:** `docs/prereg/TEST_COMMITMENT.sha256`
+

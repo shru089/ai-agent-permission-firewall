@@ -143,3 +143,4 @@ def add_chapter6(doc: Document):
     add_figure(doc, dc_path, "Figure 6.9", "Decision Combinator Flowchart and Strict Security Invariant Evaluation", width_in=5.8)
 
     add_page_break(doc)
+

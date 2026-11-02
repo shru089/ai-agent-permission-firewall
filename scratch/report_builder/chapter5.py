@@ -161,3 +161,4 @@ def add_chapter5(doc: Document):
     add_bullet(doc, "Execution results are captured; StateEngine folds the event into the session state; AuditStore appends the hash-chained record.", "Stage 7 (State Fold & Audit):")
 
     add_page_break(doc)
+

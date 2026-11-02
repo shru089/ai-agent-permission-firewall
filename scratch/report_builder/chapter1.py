@@ -135,3 +135,4 @@ def add_chapter1(doc: Document):
     add_bullet(doc, "Provides full IEEE references, list of research publications (P1–P4), paper abstracts, plagiarism documentation, formal invariant proofs, and cryptographic manifests.", "Back Matter & Appendices:")
     
     add_page_break(doc)
+

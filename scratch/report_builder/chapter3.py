@@ -143,3 +143,4 @@ def add_chapter3(doc: Document):
     add_bullet(doc, "Cryptographic primitives (SHA-256, HMAC) are computationally secure against preimage and collision attacks.", "Assumption A-05 (Cryptographic Hardness):")
 
     add_page_break(doc)
+

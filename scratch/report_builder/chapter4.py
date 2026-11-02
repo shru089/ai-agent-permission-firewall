@@ -138,3 +138,4 @@ def add_chapter4(doc: Document):
     add_table(doc, headers_t43, data_t43, "Table 4.3", "Project Risk Assessment, Probability, Impact, and Mitigation Strategies", col_w_t43)
 
     add_page_break(doc)
+

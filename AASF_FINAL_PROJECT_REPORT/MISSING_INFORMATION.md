@@ -43,3 +43,4 @@ The following items are marked with signature rules and date lines for physical 
 4. Obtain signatures from the Internal and External Examiners following successful capstone oral examination.
 5. Affix the official department seal on Page iii.
 6. Submit the hardbound copies (prescribed black cover with embossed golden lettering) to the CSMU Central Library and CSE Department.
+

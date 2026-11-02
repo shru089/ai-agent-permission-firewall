@@ -376,3 +376,4 @@ def add_table(doc: Document, headers: list, data: list, table_num_str: str, capt
 
 def add_page_break(doc: Document):
     doc.add_page_break()
+

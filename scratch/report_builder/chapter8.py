@@ -211,3 +211,4 @@ def add_chapter8(doc: Document):
     add_bullet(doc, "Metrics were formalized mathematically in PREREG-001 prior to evaluation, preventing subjective interpretation of security outcomes.", "Construct Validity:")
 
     add_page_break(doc)
+
