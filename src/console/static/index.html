@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AASF Security Console | Adaptive Agentic Security Firewall</title>
+  <link rel="stylesheet" href="/static/console.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Header -->
+  <header class="console-header">
+    <div class="header-brand">
+      <div class="shield-logo">
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div>
+        <h1>Adaptive Agentic Security Firewall (AASF)</h1>
+        <p class="subtitle">Authoritative In-Process Runtime Reference Monitor & Invariant Enforcement Console</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="status-pill online">
+        <span class="status-dot"></span> FirewallCore: <strong>ONLINE</strong>
+      </div>
+      <div class="status-pill info">
+        <span>Invariants: <strong>INV-01 to INV-12</strong></span>
+      </div>
+      <div class="session-selector-container">
+        <label for="active-session-id">Active Session:</label>
+        <input type="text" id="active-session-id" value="demo_session_01" spellcheck="false">
+        <button id="btn-new-session" class="btn-sm" title="Generate New Session ID">New</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Preset Demonstration Scenarios Ribbon -->
+  <section class="scenarios-ribbon">
+    <div class="ribbon-label">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <span>PRESET DEMONSTRATION SCENARIOS:</span>
+    </div>
+    <div class="scenario-buttons-scroll" id="scenarios-container">
+      <!-- Populated dynamically via JS -->
+      <span class="loading-text">Loading verification scenarios...</span>
+    </div>
+  </section>
+
+  <!-- Navigation Tabs -->
+  <nav class="console-nav">
+    <button class="nav-tab active" data-tab="tab-simulator">
+      <span class="tab-icon">⚡</span> A. Agent Simulator
+    </button>
+    <button class="nav-tab" data-tab="tab-inspector">
+      <span class="tab-icon">🔍</span> B. Firewall Inspector
+      <span id="inspector-badge" class="tab-badge" style="display:none;">ALLOW</span>
+    </button>
+    <button class="nav-tab" data-tab="tab-review">
+      <span class="tab-icon">👤</span> C. Human Review Console
+      <span id="pending-reviews-count" class="tab-badge counter">0</span>
+    </button>
+    <button class="nav-tab" data-tab="tab-audit">
+      <span class="tab-icon">⛓️</span> D. Audit Explorer
+      <span id="audit-integrity-badge" class="tab-badge verified">VERIFIED</span>
+    </button>
+  </nav>
+
+  <!-- Main Content Areas -->
+  <main class="console-main">
+    
+    <!-- TAB A: AGENT SIMULATOR -->
+    <div id="tab-simulator" class="tab-content active">
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <h2>Agent Tool Action Request</h2>
+            <span class="tag">In-Process Interception Gateway</span>
+          </div>
+          <div class="card-body">
+            <p class="description">
+              Simulates an autonomous AI agent attempting to dispatch a tool call. All invocations are intercepted by <code>FirewallCore.submit()</code> before tool handles are reached.
+            </p>
+
+            <div class="form-group">
+              <label for="select-tool">Target Tool:</label>
+              <select id="select-tool">
+                <!-- Dynamically populated -->
+              </select>
+              <div id="tool-meta-badge" class="tool-meta">Tool Class: <span id="tool-class-pill" class="badge">READ_LOW</span></div>
+            </div>
+
+            <div class="form-group">
+              <label for="request-arguments">Tool Arguments (JSON):</label>
+              <textarea id="request-arguments" rows="5" spellcheck="false">{}</textarea>
+              <div class="quick-payload-buttons">
+                <span class="lbl-sm">Quick Templates:</span>
+                <button type="button" class="btn-xs" onclick="setPayload('validate_schema')">Validate</button>
+                <button type="button" class="btn-xs" onclick="setPayload('select_confidential')">Confidential Resource</button>
+                <button type="button" class="btn-xs" onclick="setPayload('export_external')">External Export</button>
+                <button type="button" class="btn-xs" onclick="setPayload('relabel_public')">Relabel (Admin)</button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="context-notes">Agent Declared Intent / Context:</label>
+              <input type="text" id="context-notes" value="User instructed agent to retrieve and process telemetry data.">
+            </div>
+
+            <button id="btn-submit-action" class="btn-primary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              Submit to Firewall Reference Monitor
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Active Session State S_t (State Fold Φ)</h2>
+            <button id="btn-refresh-state" class="btn-sm">Refresh State</button>
+          </div>
+          <div class="card-body">
+            <div class="state-metrics">
+              <div class="metric-box">
+                <span class="metric-lbl">Sequence (n)</span>
+                <span id="state-seq" class="metric-val">0</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-lbl">Classification Taint</span>
+                <span id="state-taint" class="metric-val badge-neutral">NONE</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-lbl">Pending Review</span>
+                <span id="state-has-review" class="metric-val">No</span>
+              </div>
+            </div>
+
+            <div class="hash-display">
+              <span class="hash-lbl">Cryptographic Head Hash H(S_t):</span>
+              <code id="state-head-hash" class="hash-code">genesis_uninitialized</code>
+            </div>
+
+            <div class="state-details">
+              <h4>Bound Resources & Targets</h4>
+              <pre id="state-json" class="code-block">Loading state...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB B: FIREWALL INSPECTOR -->
+    <div id="tab-inspector" class="tab-content">
+      <div class="card">
+        <div class="card-header verdict-banner" id="verdict-banner">
+          <div class="verdict-summary">
+            <span class="verdict-lbl">FINAL VERDICT:</span>
+            <span id="inspector-decision" class="decision-badge badge-pending">NO REQUEST YET</span>
+            <span id="inspector-status" class="status-tag">AWAITING SUBMISSION</span>
+          </div>
+          <div class="latency-summary">
+            <span class="latency-lbl">Core Decision Latency:</span>
+            <span id="inspector-latency" class="latency-val">0.00 ms</span>
+            <span class="sla-target">(SLA Ceiling: 600 ms)</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="reason-section" id="reason-section" style="display:none;">
+            <strong>Decision Rationale & Rule Codes:</strong>
+            <div id="inspector-reasons" class="reason-pills"></div>
+          </div>
+
+          <h3 class="section-title">9-Stage Architectural Execution Lifecycle</h3>
+          <p class="section-sub">Real-time component trace from request ingress to single-use token redemption and hash chaining.</p>
+
+          <div class="lifecycle-timeline" id="lifecycle-timeline">
+            <!-- 9 stages populated dynamically -->
+            <div class="timeline-empty">Submit an action or select a preset scenario above to view the live execution trace.</div>
+          </div>
+
+          <div class="execution-output-card" id="execution-output-card" style="display:none;">
+            <h3>Controlled Tool Execution Result (INV-05 / INV-06)</h3>
+            <div id="execution-output-content"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB C: HUMAN REVIEW CONSOLE -->
+    <div id="tab-review" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <h2>Pending Review Tickets (Human Oversight Queue)</h2>
+          <button id="btn-refresh-reviews" class="btn-sm">Refresh Queue</button>
+        </div>
+        <div class="card-body">
+          <p class="description">
+            Actions flagged as uncertain, missing prerequisite evidence, or requiring mandatory human authorization (INV-04) suspend the agent session and await explicit oversight approval.
+          </p>
+
+          <div id="review-tickets-container">
+            <div class="empty-state">No pending review tickets. Submit an ambiguous request or trigger Scenario 4 / Scenario 10.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB D: AUDIT EXPLORER -->
+    <div id="tab-audit" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <div class="header-title-row">
+            <h2>Cryptographic Audit Store (RFC 8785 SHA-256 Hash Chaining)</h2>
+            <div id="chain-integrity-pill" class="status-pill verified">
+              <span class="status-dot"></span> Hash Chain: <strong>VALID</strong>
+            </div>
+          </div>
+          <div class="header-actions">
+            <button id="btn-verify-chain" class="btn-sm btn-outline">Verify Chain Integrity</button>
+            <button id="btn-tamper-chain" class="btn-sm btn-danger" title="Deliberate bit-flip in record payload">Simulate Tampering (INV-09)</button>
+            <button id="btn-restore-chain" class="btn-sm btn-secondary" style="display:none;">Restore Chain</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="tamper-alert" class="alert-box alert-danger" style="display:none;">
+            <strong>Adversarial Tamper Simulation Active:</strong> A bit-level modification was injected into historical record payload. Recomputed SHA-256 fails to match the chain.
+          </div>
+
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Seq</th>
+                <th>Type</th>
+                <th>Timestamp</th>
+                <th>Previous Hash (256-bit)</th>
+                <th>Record Hash (256-bit)</th>
+                <th>Payload Summary</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+              <tr>
+                <td colspan="6" class="text-center">No audit records in active session. Submit an action to begin cryptographic logging.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Modal for Inspecting Detailed JSON Records -->
+  <div id="inspect-modal" class="modal" style="display:none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-title">Record Inspection</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <pre id="modal-json" class="code-block"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/console.js"></script>
+</body>
+</html>
