@@ -8,9 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from console.server import app, runtime_adapter
-from firewall.contracts.enums import ConfirmationLevel, Decision, OutcomeContract
 from firewall.contracts.models import AuthorizationToken, CanonicalAction
-from firewall.executor.tokens import TokenError
 
 
 @pytest.fixture
@@ -60,9 +58,13 @@ def test_02_all_10_preset_scenarios_execute(client: TestClient) -> None:
     for scen in scenarios:
         s_id = scen["id"]
         res = client.post(f"/api/scenarios/run/{s_id}")
-        assert res.status_code == 200, f"Scenario {s_id} failed with status {res.status_code}: {res.text}"
+        assert res.status_code == 200, (
+            f"Scenario {s_id} failed with status {res.status_code}: {res.text}"
+        )
         data = res.json()
-        assert data["status"] == expected_statuses[s_id], f"Scenario {s_id} expected {expected_statuses[s_id]}, got {data['status']}"
+        assert data["status"] == expected_statuses[s_id], (
+            f"Scenario {s_id} expected {expected_statuses[s_id]}, got {data['status']}"
+        )
 
 
 def test_03_custom_action_submission_allow_and_trace(client: TestClient) -> None:
@@ -230,7 +232,10 @@ def test_08_cryptographic_audit_and_tamper_detection(client: TestClient) -> None
 
 
 def test_09_no_direct_execution_bypass_in_controlled_executor() -> None:
-    """Verify ControlledExecutor rejects direct tool dispatch without valid single-use token (INV-05 / INV-06)."""
+    """
+    Verify ControlledExecutor rejects direct tool dispatch without valid
+    single-use token (INV-05 / INV-06).
+    """
     executor = runtime_adapter.core.executor
     fake_token = AuthorizationToken(
         token_id="tok_forged_999",

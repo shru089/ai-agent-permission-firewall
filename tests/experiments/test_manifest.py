@@ -91,6 +91,7 @@ def test_no_cal_or_test_traces_in_dev_package() -> None:
     assert "cal" not in content, "CAL trace references detected in manifest!"
     assert "test" not in content, "TEST trace references detected in manifest!"
 
+
 def test_held_out_splits_manifest_integrity() -> None:
     """Validates that CAL, TEST-IN, and TEST-NOVEL have cryptographically valid manifests."""
     base_dir = Path("experiments/datasets")
@@ -107,8 +108,12 @@ def test_held_out_splits_manifest_integrity() -> None:
             entries[filename] = sha
 
         expected = {
-            "README.md", "label_audit.jsonl", "labels.jsonl",
-            "provenance.json", "split_isolation.json", "traces.jsonl",
+            "README.md",
+            "label_audit.jsonl",
+            "labels.jsonl",
+            "provenance.json",
+            "split_isolation.json",
+            "traces.jsonl",
         }
         mismatch_msg = f"Mismatch in {split_name}: {set(entries.keys())} vs {expected}"
         assert set(entries.keys()) == expected, mismatch_msg

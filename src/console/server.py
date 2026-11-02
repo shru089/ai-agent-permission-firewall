@@ -17,7 +17,10 @@ from console.adapter import ConsoleRuntimeAdapter
 
 app = FastAPI(
     title="AASF Interactive Security Console",
-    description="Real-time mediation, inspection, and human oversight console for the Adaptive Agentic Security Firewall.",
+    description=(
+        "Real-time mediation, inspection, and human oversight console "
+        "for the Adaptive Agentic Security Firewall."
+    ),
     version="0.1.0",
 )
 
@@ -80,11 +83,13 @@ def list_tools() -> list[dict[str, Any]]:
     tools = runtime_adapter.registry._tools
     result = []
     for tool_name, tool_info in tools.items():
-        result.append({
-            "name": tool_name,
-            "tool_class": tool_info.tool_class.value,
-            "description": f"Tool class: {tool_info.tool_class.value}",
-        })
+        result.append(
+            {
+                "name": tool_name,
+                "tool_class": tool_info.tool_class.value,
+                "description": f"Tool class: {tool_info.tool_class.value}",
+            }
+        )
     return result
 
 

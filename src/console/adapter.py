@@ -10,27 +10,18 @@ import uuid
 from typing import Any, Optional
 
 from firewall.contracts.enums import (
-    ConfirmationLevel,
-    Decision,
     MonitorVerdict,
-    OutcomeContract,
     PolicyVerdict,
-    ToolClass,
 )
 from firewall.contracts.models import (
     ActionRequest,
     CanonicalAction,
-    ResultEnvelope,
 )
 from firewall.core import FirewallCore, FirewallResponse
 from firewall.decision.combinator import decide
 from firewall.executor.tokens import (
-    TokenBindingMismatchError,
-    TokenError,
-    TokenExpiredError,
     TokenReusedError,
 )
-from firewall.monitor.base import SafeMonitorWrapper
 from firewall.state.registry import Registry
 
 
@@ -74,7 +65,10 @@ class ConsoleRuntimeAdapter:
 
     def _register_safe_tool_handlers(self) -> None:
         """Register safe simulated handlers for console tools in ControlledExecutor."""
-        def system_diagnostics_handler(action: CanonicalAction) -> tuple[Any, Optional[dict[str, Any]]]:
+
+        def system_diagnostics_handler(
+            action: CanonicalAction,
+        ) -> tuple[Any, Optional[dict[str, Any]]]:
             return {
                 "status": "HEALTHY",
                 "cpu_utilization": "12.4%",
@@ -106,7 +100,7 @@ class ConsoleRuntimeAdapter:
 
         # Execute submission against live FirewallCore
         req = ActionRequest(session_id=session_id, tool=tool, arguments=arguments)
-        
+
         t_start = time.perf_counter_ns()
         resp: FirewallResponse = self.core.submit(req)
         t_firewall_ns = time.perf_counter_ns() - t_start
@@ -139,7 +133,9 @@ class ConsoleRuntimeAdapter:
                 "details": {
                     "tool_registered": tool_registered,
                     "tool_class": tool_class_name,
-                    "validation_error": None if tool_registered else f"Tool '{tool}' not found in environment registry",
+                    "validation_error": None
+                    if tool_registered
+                    else f"Tool '{tool}' not found in environment registry",
                 },
             },
             {
@@ -150,9 +146,15 @@ class ConsoleRuntimeAdapter:
                     "session_locked": True,
                     "session_state_head": state_before.head_hash,
                     "session_sequence": state_before.seq,
-                    "bound_resource": state_before.bound_resource.model_dump() if state_before.bound_resource else None,
-                    "classification": state_before.bound_resource.classification.value if state_before.bound_resource else "NONE",
-                    "destination": state_before.destination.model_dump() if state_before.destination else None,
+                    "bound_resource": state_before.bound_resource.model_dump()
+                    if state_before.bound_resource
+                    else None,
+                    "classification": state_before.bound_resource.classification.value
+                    if state_before.bound_resource
+                    else "NONE",
+                    "destination": state_before.destination.model_dump()
+                    if state_before.destination
+                    else None,
                     "job_created": state_before.job_created,
                 },
             },
@@ -161,19 +163,28 @@ class ConsoleRuntimeAdapter:
                 "name": "Deterministic Policy Evaluation",
                 "status": "EVALUATED",
                 "details": {
-                    "policy_verdict": resp.policy_verdict.value if resp.policy_verdict else "PROHIBIT_OR_UNCHECKED",
-                    "matched_rules": [r for r in resp.reason_codes if r.startswith("POLICY_")] or ["None"],
+                    "policy_verdict": resp.policy_verdict.value
+                    if resp.policy_verdict
+                    else "PROHIBIT_OR_UNCHECKED",
+                    "matched_rules": [r for r in resp.reason_codes if r.startswith("POLICY_")]
+                    or ["None"],
                     "reason_codes": resp.reason_codes,
                 },
             },
             {
                 "step": 5,
                 "name": "Advisory Cascade & Semantic Monitor",
-                "status": "CONSULTED" if resp.route_trace and resp.route_trace.monitor_invoked else "BYPASSED (Fast Path)",
+                "status": "CONSULTED"
+                if resp.route_trace and resp.route_trace.monitor_invoked
+                else "BYPASSED (Fast Path)",
                 "details": {
                     "route_path": resp.route_trace.path if resp.route_trace else "fast_path",
-                    "monitor_invoked": resp.route_trace.monitor_invoked if resp.route_trace else False,
-                    "monitor_verdict": resp.monitor_verdict.value if resp.monitor_verdict else "NOT_CONSULTED",
+                    "monitor_invoked": resp.route_trace.monitor_invoked
+                    if resp.route_trace
+                    else False,
+                    "monitor_verdict": resp.monitor_verdict.value
+                    if resp.monitor_verdict
+                    else "NOT_CONSULTED",
                     "information_barrier": "MonitorView (INV-10 Redacted)",
                 },
             },
@@ -231,7 +242,9 @@ class ConsoleRuntimeAdapter:
             "status": resp.status,
             "reason_codes": resp.reason_codes,
             "policy_verdict": resp.policy_verdict.value if resp.policy_verdict else "NONE",
-            "monitor_verdict": resp.monitor_verdict.value if resp.monitor_verdict else "NOT_CONSULTED",
+            "monitor_verdict": resp.monitor_verdict.value
+            if resp.monitor_verdict
+            else "NOT_CONSULTED",
             "ticket_id": resp.ticket_id,
             "firewall_latency_ms": round(firewall_latency_ms, 4),
             "tool_executed": resp.result is not None and resp.result.has_value,
@@ -244,7 +257,9 @@ class ConsoleRuntimeAdapter:
     def get_session_state(self, session_id: str) -> dict[str, Any]:
         """Returns the current state vector, classification, and hash of a session."""
         state = self.core._get_state(session_id)
-        classification = state.bound_resource.classification.value if state.bound_resource else "NONE"
+        classification = (
+            state.bound_resource.classification.value if state.bound_resource else "NONE"
+        )
         return {
             "session_id": state.session_id,
             "seq": state.seq,
@@ -263,17 +278,19 @@ class ConsoleRuntimeAdapter:
         for t in tickets:
             action = self.core._actions_by_id.get(t.action_id)
             session_id = action.session_id if action else "unknown"
-            result.append({
-                "ticket_id": t.ticket_id,
-                "action_id": t.action_id,
-                "session_id": session_id,
-                "tool": t.summary.tool,
-                "arguments": t.summary.typed_arguments,
-                "policy_verdict": t.summary.policy_verdict.value,
-                "reason_codes": t.summary.reason_codes,
-                "created_at_ms": t.created_ms,
-                "status": t.status.value,
-            })
+            result.append(
+                {
+                    "ticket_id": t.ticket_id,
+                    "action_id": t.action_id,
+                    "session_id": session_id,
+                    "tool": t.summary.tool,
+                    "arguments": t.summary.typed_arguments,
+                    "policy_verdict": t.summary.policy_verdict.value,
+                    "reason_codes": t.summary.reason_codes,
+                    "created_at_ms": t.created_ms,
+                    "status": t.status.value,
+                }
+            )
         return result
 
     def resolve_review(
@@ -313,14 +330,16 @@ class ConsoleRuntimeAdapter:
 
         clean_records = []
         for r in records:
-            clean_records.append({
-                "seq": r.seq,
-                "type": r.type,
-                "timestamp_ms": int(time.time() * 1000),
-                "prev_hash": r.prev_hash,
-                "hash": r.hash,
-                "payload": r.payload,
-            })
+            clean_records.append(
+                {
+                    "seq": r.seq,
+                    "type": r.type,
+                    "timestamp_ms": int(time.time() * 1000),
+                    "prev_hash": r.prev_hash,
+                    "hash": r.hash,
+                    "payload": r.payload,
+                }
+            )
 
         return {
             "session_id": session_id,
@@ -347,19 +366,26 @@ class ConsoleRuntimeAdapter:
             self._tamper_backups[session_id] = {}
         target_idx = 0
         if target_idx not in self._tamper_backups[session_id]:
-            self._tamper_backups[session_id][target_idx] = copy.deepcopy(records[target_idx].payload)
+            self._tamper_backups[session_id][target_idx] = copy.deepcopy(
+                records[target_idx].payload
+            )
 
         # Deliberate payload tampering
         records[target_idx].payload["_adversarial_tamper_marker"] = "FORGED_RECORD_PAYLOAD_TAMPERED"
 
         # Check chain validity
         is_valid = self.core.audit_store.verify_chain(session_id)
+        msg = (
+            "Cryptographic tamper detected! Recomputed hash fails to match chained prev_hash."
+            if not is_valid
+            else "Tamper undetected (unexpected)."
+        )
         return {
             "success": True,
             "tampered_seq": records[target_idx].seq,
             "tampered_type": records[target_idx].type,
             "is_chain_valid": is_valid,
-            "message": "Cryptographic tamper detected! Recomputed hash fails to match chained prev_hash." if not is_valid else "Tamper undetected (unexpected).",
+            "message": msg,
         }
 
     def restore_audit_tamper(self, session_id: str) -> dict[str, Any]:
@@ -380,7 +406,9 @@ class ConsoleRuntimeAdapter:
             "message": "Audit trail restored. Cryptographic hash chain verified 100% sound.",
         }
 
-    def run_preset_scenario(self, scenario_id: str, custom_session: Optional[str] = None) -> dict[str, Any]:
+    def run_preset_scenario(
+        self, scenario_id: str, custom_session: Optional[str] = None
+    ) -> dict[str, Any]:
         """
         Executes one of the 10 required demonstration scenarios against the real AASF runtime.
         """
@@ -454,13 +482,21 @@ class ConsoleRuntimeAdapter:
                         "step": 5,
                         "name": "Advisory Cascade & Semantic Monitor",
                         "status": "TIMEOUT / EXCEPTION",
-                        "details": {"error": "MonitorTimeoutError: Advisory LLM client timed out after 600ms", "verdict": "UNKNOWN"},
+                        "details": {
+                            "error": (
+                                "MonitorTimeoutError: Advisory LLM client timed out after 600ms"
+                            ),
+                            "verdict": "UNKNOWN",
+                        },
                     },
                     {
                         "step": 6,
                         "name": "Decision Combinator",
                         "status": "FAIL_CLOSED_REVIEW",
-                        "details": {"combinator_rule": "Delta(UNDETERMINED, UNKNOWN) -> REVIEW", "reason": reasons[0]},
+                        "details": {
+                            "combinator_rule": "Delta(UNDETERMINED, UNKNOWN) -> REVIEW",
+                            "reason": reasons[0],
+                        },
                     },
                     {
                         "step": 7,
@@ -485,7 +521,9 @@ class ConsoleRuntimeAdapter:
                 return sub_res
 
             # Resolve ticket as APPROVE
-            res_resolve = self.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="sec_officer_carol")
+            res_resolve = self.resolve_review(
+                ticket_id=ticket_id, outcome="APPROVE", reviewer_id="sec_officer_carol"
+            )
             return {
                 **sub_res,
                 "resolution": res_resolve,
@@ -507,7 +545,9 @@ class ConsoleRuntimeAdapter:
             if not ticket_id:
                 return sub_res
 
-            res_resolve = self.resolve_review(ticket_id=ticket_id, outcome="REJECT", reviewer_id="sec_officer_dave")
+            res_resolve = self.resolve_review(
+                ticket_id=ticket_id, outcome="REJECT", reviewer_id="sec_officer_dave"
+            )
             return {
                 **sub_res,
                 "resolution": res_resolve,
@@ -534,11 +574,14 @@ class ConsoleRuntimeAdapter:
             old_head = self.core._ticket_state_heads[ticket_id]
             act = self.core._actions_by_id[self.core.review_service.get_ticket(ticket_id).action_id]
             from firewall.contracts.enums import EventType
+
             self.core._apply_terminal_event(sid, act, EventType.ACTION_DENIED)
             new_head = self.core._get_state(sid).head_hash
 
             # Reviewer attempts to approve ticket based on stale state
-            res_resolve = self.resolve_review(ticket_id=ticket_id, outcome="APPROVE", reviewer_id="sec_officer_bob")
+            res_resolve = self.resolve_review(
+                ticket_id=ticket_id, outcome="APPROVE", reviewer_id="sec_officer_bob"
+            )
             return {
                 "session_id": sid,
                 "ticket_id": ticket_id,
@@ -614,8 +657,16 @@ class ConsoleRuntimeAdapter:
                 "workflow": "Multi-Step Exfiltration Attack (INV-01, INV-04, INV-12)",
                 "status": step3["status"],
                 "decision": step3["decision"],
-                "step1": {"tool": "select_resource", "decision": step1["decision"], "status": step1["status"]},
-                "step2": {"tool": "create_export_job", "decision": step2["decision"], "status": step2["status"]},
+                "step1": {
+                    "tool": "select_resource",
+                    "decision": step1["decision"],
+                    "status": step1["status"],
+                },
+                "step2": {
+                    "tool": "create_export_job",
+                    "decision": step2["decision"],
+                    "status": step2["status"],
+                },
                 "step3": {
                     "tool": "execute_export",
                     "decision": step3["decision"],

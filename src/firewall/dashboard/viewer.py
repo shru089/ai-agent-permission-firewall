@@ -135,17 +135,23 @@ class DashboardManager:
         pending = self.queue.get_pending_tickets()
         records = self.viewer.get_records()
 
-        pending_rows = "".join(
-            f"<tr><td>{html.escape(t.ticket_id)}</td><td>{html.escape(t.action_id)}</td>"
-            f"<td>{html.escape(t.summary.tool)}</td><td>{html.escape(t.status.value)}</td></tr>"
-            for t in pending
-        ) or "<tr><td colspan='4'>No pending review tickets</td></tr>"
+        pending_rows = (
+            "".join(
+                f"<tr><td>{html.escape(t.ticket_id)}</td><td>{html.escape(t.action_id)}</td>"
+                f"<td>{html.escape(t.summary.tool)}</td><td>{html.escape(t.status.value)}</td></tr>"
+                for t in pending
+            )
+            or "<tr><td colspan='4'>No pending review tickets</td></tr>"
+        )
 
-        audit_rows = "".join(
-            f"<tr><td>{r.rec_id}</td><td>{r.seq}</td><td>{html.escape(r.session_id)}</td>"
-            f"<td>{html.escape(r.type)}</td><td><code>{html.escape(r.hash[:16])}...</code></td></tr>"
-            for r in records[-50:]  # Latest 50 records
-        ) or "<tr><td colspan='5'>No audit records</td></tr>"
+        audit_rows = (
+            "".join(
+                f"<tr><td>{r.rec_id}</td><td>{r.seq}</td><td>{html.escape(r.session_id)}</td>"
+                f"<td>{html.escape(r.type)}</td><td><code>{html.escape(r.hash[:16])}...</code></td></tr>"
+                for r in records[-50:]  # Latest 50 records
+            )
+            or "<tr><td colspan='5'>No audit records</td></tr>"
+        )
 
         return f"""<!DOCTYPE html>
 <html>
