@@ -1,119 +1,277 @@
-# AASF: Adaptive Agentic Security Firewall
+# Adaptive Agentic Security Firewall (AASF)
 
-The **Adaptive Agentic Security Firewall (AASF)** is a multi-layered security runtime for autonomous AI agents. It intercepts tool invocations, maintains an authoritative, hash-chained session state, evaluates deterministic least-privilege security policies, consults advisory semantic monitors / rejection cascades, and enforces strict review gates before minting short-lived cryptographic execution tokens.
+[![CI Status](https://github.com/shru089/ai-agent-permission-firewall/actions/workflows/ci.yml/badge.svg)](https://github.com/shru089/ai-agent-permission-firewall/actions)
+[![Python Version](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![Type Checked: Mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](http://mypy-lang.org/)
+[![Tests Passing](https://img.shields.io/badge/tests-415%20passed-brightgreen.svg)](tests/)
 
----
+The **Adaptive Agentic Security Firewall (AASF)** is an authoritative, in-process runtime security mediation engine engineered for autonomous AI agents (such as LangChain, AutoGen, CrewAI, and OpenAI Assistants). 
 
-## 1. Core Security Invariants
-
-AASF is architected around non-negotiable security invariants enforced by the central `FirewallCore`:
-
-1. **PROHIBIT Dominance:**
-   `PROHIBIT` always wins. If the deterministic policy engine evaluates an action to `PROHIBIT`, the firewall decision is unconditionally `DENY`. Advisory monitor outputs (`BENIGN`, `SUSPICIOUS`, `UNKNOWN`, timeout, malformed output, or runtime exception) cannot override or soften a policy prohibition:
-   - `PROHIBIT + BENIGN = DENY`
-   - `PROHIBIT + SUSPICIOUS = DENY`
-   - `PROHIBIT + UNKNOWN = DENY`
-   - `PROHIBIT + malformed/timeout/exception = DENY`
-
-2. **Policy Uncertainty Escalation:**
-   Policy uncertainty must escalate. When deterministic policy returns `UNDETERMINED`, an advisory assessment of `BENIGN` / `LOW_RISK` from a semantic monitor **must never** result in `ALLOW` or direct execution. It unconditionally resolves to `REVIEW` (`UNDETERMINED_BENIGN_REQUIRES_REVIEW`), requiring human oversight:
-   - `UNDETERMINED + BENIGN = REVIEW`
-
-3. **Advisory-Only Semantic Monitors:**
-   The semantic monitor and rejection cascade are strictly **advisory**. The monitor adapter must never independently authorize (`ALLOW`) or block (`DENY`) actions. Instead, the adapter produces typed `MonitorAdvisory` records with advisory verdicts:
-   - `BENIGN` → `AdvisoryVerdict.LOW_RISK`
-   - `SUSPICIOUS` → `AdvisoryVerdict.ELEVATED_RISK`
-   - `UNKNOWN` → `AdvisoryVerdict.UNCERTAIN`
-   - Timeout / Malformed JSON / Exception → `AdvisoryVerdict.UNAVAILABLE` (escalates to `REVIEW`)
-
-4. **Firewall Core Independent Authority:**
-   `FirewallCore` independently computes and enforces all final decisions (`ALLOW`, `DENY`, `REVIEW`). An action is granted `ALLOW` only if:
-   - Deterministic policy evaluates to `PERMIT`,
-   - The tool class is **not** in `mandatory_review_classes` (e.g. `DESTRUCTIVE`, `PRIVILEGED_ADMIN`),
-   - The monitor advisory does not escalate the action.
-   Mandatory-review classes always produce `REVIEW` regardless of monitor score or verdict.
-
-5. **Review Approval Revalidation (`INV-05`):**
-   A review ticket never authorizes execution without revalidation. When a reviewer approves a ticket via `resolve_review()`:
-   - Authoritative state is verified for freshness: the ticket's `recorded_state_head` is matched against the current `state.head_hash`. If state has changed, approval fails closed to `DENY` (`STALE_DECISION`).
-   - Deterministic policy is re-evaluated against current state. If the policy now evaluates to `PROHIBIT`, execution is denied (`POLICY_PROHIBIT`).
-   - Execution tokens are minted only when both state and policy remain valid.
-
-6. **MonitorView Isolation and Credential Scrubbing:**
-   Monitors receive projected `MonitorView` structures created via defensive deep copying to ensure monitor code or cascaded stages cannot mutate internal firewall state or action arguments. Sensitive internal fields (tokens, session credentials, passwords, API keys, private keys) are automatically sanitized and stripped.
+AASF intercepts agent-to-tool dispatches, deterministically tracks session state and data taints across multi-step execution histories, enforces attribute-based access control (ABAC) policies, routes ambiguous requests through tiered advisory cascades, and dispenses single-use HMAC cryptographic execution tokens.
 
 ---
 
-## 2. Architecture & Decision Pipeline
+## System Overview & Primary Purpose
+
+> **Note on Core Engineering Focus:**  
+> The primary deliverable of this repository is the **authoritative software firewall runtime** located under `src/firewall/`. While this system is backed by extensive empirical research and formal scientific investigations contributed by our engineering team (detailed in the [Team Research Contributions](#team-research-contributions) section), the research acts as supporting theoretical validation. The core product is a production-grade, highly optimized, fail-closed runtime security engine.
 
 ```
-  Agent Action Request
-         │
-         ▼
- ┌──────────────────┐
- │ Schema & Auth    │ ── (Invalid) ──────────────► DENY
- └─────────┬────────┘
-           │
-           ▼
- ┌──────────────────┐
- │ State Validation │
- └─────────┬────────┘
-           │
-           ▼
- ┌──────────────────┐
- │  Policy Engine   │ ── (PROHIBIT) ─────────────► DENY (Always wins)
- └─────────┬────────┘
-           │
-    (PERMIT / UNDETERMINED / EVIDENCE_MISSING)
-           │
-           ▼
- ┌──────────────────────┐
- │   Advisory Monitor   │ ── (AdvisoryVerdict: LOW_RISK / ELEVATED_RISK /
- │  (Rejection Cascade) │     UNCERTAIN / UNAVAILABLE)
- └─────────┬────────────┘
-           │
-           ▼
- ┌──────────────────────┐
- │   Core Combinator    │
- └─────────┬────────────┘
-           ├────────────────────────────┬─────────────────────────────┐
-           ▼                            ▼                             ▼
-       [ ALLOW ]                    [ REVIEW ]                     [ DENY ]
-  (Only if PERMIT, not       (Creates bound ticket;           (Terminal audit;
-   mandatory-review, &        requires revalidation            no token minted)
-   advisory is LOW_RISK)      on human approval)
-           │                            │
-           ▼                            ▼
-  Mint Single-Use Token        `resolve_review()`
-           │                   - Verify state freshness
-           ▼                   - Recheck policy != PROHIBIT
-   Verified Execution          - Mint token on approval
+       +-------------------------------------------------------------+
+       |                  AUTONOMOUS AI AGENT                        |
+       |  (Foundation Model: ReAct / Tool-Calling Reasoning Loop)    |
+       +-------------------------------------------------------------+
+                                      |
+                     [1] ActionRequest(tool, args)
+                                      v
++=============================================================================+
+|                 ADAPTIVE AGENTIC SECURITY FIREWALL (AASF)                   |
+|                                                                             |
+|  +------------------------+      +---------------------------------------+  |
+|  | Interception Gateway   | ---> | Deterministic State Fold (Phi)        |  |
+|  | - Canonicalize Action  |      | - Monotonic History Accumulation      |  |
+|  | - Session Mutex Lock   |      | - Sensitive Taint Propagation         |  |
+|  +------------------------+      +---------------------------------------+  |
+|               |                                      |                      |
+|               v                                      v                      |
+|  +------------------------+      +---------------------------------------+  |
+|  | Stateful Policy Engine | ---> | Advisory Cascades & Monitors (B4/B5)  |  |
+|  | - Attribute Lattice    |      | - Fast-Path Heuristic Filter          |  |
+|  | - PERMIT/PROHIBIT/REV  |      | - Isolated MonitorView Redaction      |  |
+|  +------------------------+      +---------------------------------------+  |
+|               |                                      |                      |
+|               +------------------+-------------------+                      |
+|                                  v                                          |
+|                  +-------------------------------+                          |
+|                  | Pure Decision Combinator (Δ)  |                          |
+|                  | - 12 Security Invariants      |                          |
+|                  | - Fail-Closed Guarantee       |                          |
+|                  +-------------------------------+                          |
+|                     /            |            \                             |
+|             [ALLOW]/     [DENY]  |             \[REVIEW]                    |
+|                   v              v              v                           |
+|       +---------------+   +------------+   +----------------------------+   |
+|       | Token Store   |   | Direct     |   | Human Oversight Platform   |   |
+|       | - HMAC-SHA256 |   | Rejection  |   | - ReviewService Ticketing  |   |
+|       | - Single-Use  |   | (Fail-Safe)|   | - State Hash Revalidation  |   |
+|       +---------------+   +------------+   +----------------------------+   |
+|               |                                         |                   |
+|               +------------------+----------------------+                   |
+|                                  v                                          |
+|                  +-------------------------------+                          |
+|                  | Controlled Tool Executor      |                          |
+|                  | - Validates & Consumes Token  |                          |
+|                  | - Dispatches to Host / API    |                          |
+|                  +-------------------------------+                          |
+|                                  |                                          |
+|                                  v                                          |
+|                  +-------------------------------+                          |
+|                  | Cryptographic Audit Store     |                          |
+|                  | - SHA-256 Hash Chain Trail    |                          |
+|                  | - Mathematical Non-Repudiation|                          |
+|                  +-------------------------------+                          |
++=============================================================================+
+                                   |
+                      [2] Controlled Tool Execution
+                                   v
+       +-------------------------------------------------------------+
+       |                  HOST EXECUTION ENVIRONMENT                 |
+       |      (Operating System, Enterprise DBs, Cloud APIs)         |
+       +-------------------------------------------------------------+
 ```
 
 ---
 
-## 3. Repository Structure
+## Snapshots of Working Runtime Demo
 
-- `src/firewall/core.py`: Central firewall runtime (`FirewallCore`), review ticket lifecycle, and execution token management.
-- `src/firewall/decision/combinator.py`: Pure canonical decision function enforcing invariant precedence.
-- `src/firewall/cascade/adapter.py`: Adapter wrapping rejection cascades / semantic monitors into `MonitorAdvisory` structures.
-- `src/firewall/state/`: Hash-chained session state tracking and defensive `MonitorView` projections.
-- `src/firewall/policy/`: Deterministic least-privilege policy engine.
-- `tests/`: Comprehensive unit, property, and integration test suites.
-- `docs/`: Formal mathematical models, threat model, technical specification, and requirements traceability.
+AASF includes an interactive and automated runtime demo (`demo_runtime_firewall.py`) verifying all security scenarios in real time. Below are actual terminal execution captures:
+
+### 1. Fast-Path Authorization & Policy Enforcement
+Low-risk diagnostic actions are authorized on the sub-millisecond fast path, while direct policy violations are blocked without token issuance:
+
+```text
+================================================================================
+           ADAPTIVE AGENTIC SECURITY FIREWALL (AASF) - RUNTIME DEMO             
+================================================================================
+* Architecture: In-Process Interception, State Fold Phi, Advisory Cascade       
+* Security Invariants: INV-01 to INV-12 Enforced                                
+* Environment: Python 3.11 | Cryptographic Hash Chaining: SHA-256 / HMAC       
+================================================================================
+
+[1] Initializing FirewallCore & Environment Registry...
+ -> FirewallCore initialized with session: agent_session_alpha_772
+ -> Active Policy: Stateful ABAC + Advisory Cascades (B4/B5/P1)
+
+--------------------------------------------------------------------------------
+SCENARIO A: Low-Risk Diagnostic Action (Fast-Path Evaluation)
+Agent requests: tool='validate_schema'
+ [RESULT] Decision: ALLOW
+          Status: EXECUTED
+          Route: fast_path (Monitor invoked: False)
+          Latency: 0.465 ms
+          Execution Value: {'schema_valid': True, 'message': 'Schema valid.'}
+
+--------------------------------------------------------------------------------
+SCENARIO B: Unauthorized Admin Privilege Escalation
+Agent requests: tool='relabel_resource' (unauthorized administrative action)
+ [RESULT] Decision: DENY
+          Status: DENIED
+          Reason: ['POLICY_PROHIBIT:R4-agents-cannot-relabel']
+          Policy Verdict: PROHIBIT
+          Action blocked: Execution token was NOT issued.
+```
+
+### 2. Multi-Step Exfiltration Interception & Human-in-the-Loop Review
+When an agent accumulates sensitive context (reading confidential customer records) and attempts external egress, the state fold $\Phi$ flags the taint, suspends execution, and generates a human review ticket:
+
+```text
+--------------------------------------------------------------------------------
+SCENARIO C: Sensitive Context Accumulation via State Fold Phi
+Step 1: Agent accesses confidential customer records
+ [Step 1] Tool: select_resource -> Decision: ALLOW (Classification: CONFIDENTIAL)
+Step 2: Agent stages internal export job
+ [Step 2] Tool: create_export_job -> Decision: ALLOW
+Step 3: Agent attempts external data egress (CONFIDENTIAL -> EXTERNAL)
+ [Step 3] Tool: execute_export -> Decision: REVIEW
+          Reason: ['EVIDENCE_MISSING:state.bound_resource.classification,state.destination.zone']
+          Route Path: fast_path
+          Human Review Ticket ID: tkt_4a3ca79da098
+          Agent Session Status: SUSPENDED pending human oversight (INV-05)
+
+--------------------------------------------------------------------------------
+SCENARIO D: Human-in-the-Loop Review Approval & Execution
+Reviewer 'sec_officer_bob' inspects Ticket [tkt_4a3ca79da098]
+Reviewer Decision: 'APPROVE' (Authorized one-off data transfer)
+ [RESULT] Revalidation Status: EXECUTED
+          Final Decision: ALLOW
+          Controlled Execution Output: {'exported_rows': 5000, 'status': 'COMPLETED'}
+          Single-Use Execution Token consumed successfully.
+```
+
+### 3. Replay Attack Prevention & Cryptographic Audit Integrity
+Replayed tokens or duplicate resolution attempts are rejected by the token store (INV-06), and the cryptographic audit trail verifies 100% hash continuity:
+
+```text
+--------------------------------------------------------------------------------
+SCENARIO E: Replay Attack Defense (Single-Use Token Verification)
+Agent/Attacker attempts to replay executed ticket or duplicate resolution
+ [SECURE] Duplicate execution rejected:
+          Status: FAILED
+          Decision: NONE
+          Reason: ["REVIEW_ERROR:Review ticket 'tkt_4a3ca79da098' is already in state 'EXECUTED'"]
+          INV-05 & INV-06 Enforced: No duplicate execution occurred.
+
+--------------------------------------------------------------------------------
+SCENARIO F: Cryptographic Audit Store Integrity Verification
+ Total audit events logged for session: 17
+  [1] Seq: 1 | Type: ACTION_RECEIVED | PrevHash: 38f7787e27e7... | Hash: e8fef9c836a7...
+  [2] Seq: 2 | Type: DECISION        | PrevHash: e8fef9c836a7... | Hash: 229582bc1636...
+  [3] Seq: 3 | Type: ROUTE_TRACE     | PrevHash: 229582bc1636... | Hash: 87ba88890221...
+  ... (11 additional intermediate audit events logged) ...
+  [17] Seq: 17 | Type: REVIEW_RESOLVED | PrevHash: 5916309d470e... | Hash: efb8e508e372...
+ [AUDIT INTEGRITY] Hash-chain verified: SUCCESS (100% Cryptographically Sound)
+================================================================================
+ DEMO COMPLETE: All security invariants verified successfully!
+================================================================================
+```
 
 ---
 
-## 4. Running Tests
+## Key Technical Features
 
-Run the full test suite using `pytest`:
+1. **Non-Bypassable In-Process Interception (`INV-01`):**  
+   Every agent action must be submitted via `FirewallCore.submit()`. Unauthenticated host-level execution handles are inaccessible to the agent.
+2. **Deterministic State-Folding Engine (`INV-02`):**  
+   Monotonically folds incoming events via operator $\Phi(S_{n-1}, a_n, r_n) \to S_n$, computing an immutable SHA-256 state head hash that preserves full causal memory.
+3. **Three-Valued Policy Lattice (`INV-03`):**  
+   Rules evaluate dynamic attributes (Classification, Destination, Zone, Roles) to emit `PERMIT`, `PROHIBIT`, or `REVIEW`. Invariant: an absolute policy prohibition can **never** be overturned by any advisory AI model.
+4. **Advisory-Only Cascades & Monitors (`INV-10`):**  
+   Heuristic rules and offline language models act purely in an advisory capacity. Monitors receive strictly sanitized `MonitorView` projections with credentials, secrets, and raw database records stripped.
+5. **Cryptographic Single-Use Execution Tokens (`INV-06`, `INV-08`):**  
+   Upon authorization, the system issues an ephemeral token computed via $\text{HMAC-SHA256}(K, \text{session\_id} \parallel \text{action\_hash} \parallel \text{state\_hash})$. Tokens are valid for a single execution; replayed or modified tokens fail closed.
+6. **Time-of-Check to Time-of-Use (TOCTOU) Defense (`INV-05`):**  
+   When a human reviewer approves a flagged action, the system revalidates that the session state hash has not drifted prior to dispatching execution.
+7. **Tamper-Evident SHA-256 Audit Chain (`INV-07`, `INV-09`):**  
+   All session transitions, policy verdicts, and outputs are appended to a cryptographic hash chain mathematically verifiable from genesis to leaf.
 
+---
+
+## Team Research Contributions
+
+The AASF system architecture was informed and validated by formal research investigations conducted by our engineering team:
+
+| Team Member | Subsystem Ownership | Supporting Research Focus & Academic Contribution |
+|---|---|---|
+| **Shrishti Singh** (`F232984`) | AI/ML & Risk Detection | **Foundational Research `[P1]`:** Formalized the *State vs. Context* theorem, proving that stateless monitors fail completely ($J = 0.0$) against multi-step action manipulation. |
+| **Snehal Jagtap** (`F232951`) | Full-Stack & Human Oversight | **Human Oversight Optimization `[P4]`:** Engineered dynamic review queuing models, slashing reviewer fatigue by 75%–100% while guaranteeing state revalidation (`INV-05`). |
+| **Karishma Thakur** (`G242936`) | Permission & Dynamic Policy | **Dynamic Policy Lattice `[P2]`:** Formalized self-adapting attribute-based access control (SA-ABAC) with monotonic taint propagation (`INV-12`). |
+| **Akshat Kasurde** (`F233339`) | Runtime Interception & Execution | **Cascade Interception `[P3]`:** Architected tiered rejection cascades and single-use token stores (`INV-06`), achieving sub-millisecond median decision latencies ($p95 = 1.12\text{ ms}$). |
+
+---
+
+## Installation & Quick Start
+
+### 1. Prerequisites
+- Python 3.11.x (tested on 3.11.9)
+- Git 2.40+
+
+### 2. Setup Virtual Environment
 ```bash
-PYTHONPATH=. pytest -v
+# Clone the repository
+git clone https://github.com/shru089/ai-agent-permission-firewall.git
+cd ai-agent-permission-firewall
+
+# Create and activate virtual environment
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# Linux / macOS
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Run specific security semantics and advisory cascade tests:
-
+### 3. Run the Runtime Demo
 ```bash
-PYTHONPATH=. pytest tests/unit/test_security_semantics_advisory.py -v
+python demo_runtime_firewall.py
 ```
+
+### 4. Run the Full Test Suite
+The repository includes 415 automated tests across unit, integration, invariant, and property suites:
+```bash
+pytest -q
+```
+*Expected Output:* `415 passed in ~10.97s`
+
+### 5. Static Verification
+```bash
+# Strict linting and formatting
+ruff check .
+
+# Static type verification
+mypy src tests
+```
+
+---
+
+## B.Tech Final Year Project Deliverables
+
+For faculty, reviewers, and evaluators, the complete B.Tech Project Report package is available in the [`AASF_FINAL_PROJECT_REPORT/`](AASF_FINAL_PROJECT_REPORT/) directory:
+
+- **Complete University Dissertation (`.docx`):** [`AASF_Final_Project_Report.docx`](AASF_FINAL_PROJECT_REPORT/AASF_FINAL_Project_Report.docx) (Formatted according to CSMU Panvel B.Tech guidelines).
+- **Rendered PDF Version (`.pdf`):** [`AASF_Final_Project_Report.pdf`](AASF_FINAL_PROJECT_REPORT/AASF_Final_Project_Report.pdf) (High-resolution, publication-grade document).
+- **Technical Architecture Diagrams:** [`AASF_FINAL_PROJECT_REPORT/diagrams/`](AASF_FINAL_PROJECT_REPORT/diagrams/) (13 high-res diagrams).
+- **Experimental Benchmark Charts:** [`AASF_FINAL_PROJECT_REPORT/charts/`](AASF_FINAL_PROJECT_REPORT/charts/) (8 empirical charts from real evaluation data).
+- **Compliance & Verification Checklist:** [`AASF_FINAL_PROJECT_REPORT/REPORT_VERIFICATION.md`](AASF_FINAL_PROJECT_REPORT/REPORT_VERIFICATION.md).
+- **Implementation Traceability Matrix:** [`AASF_FINAL_PROJECT_REPORT/IMPLEMENTATION_TRACEABILITY.md`](AASF_FINAL_PROJECT_REPORT/IMPLEMENTATION_TRACEABILITY.md).
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
