@@ -158,15 +158,15 @@ class TestSecurityFixes:
         assert len(fw.token_store._tokens) == 0  # No token issued!
 
     # --------------------------------------------------------------------------
-    # CONDITION 3: Missing-evidence action can NEVER receive execution token
+    # CONDITION 1 & 3: Human review resolves missing-evidence action upon approval
     # --------------------------------------------------------------------------
-    def test_condition3_resolve_review_fails_closed_on_missing_evidence(self, test_registry: Registry):
-        """Condition 3 / SEC-01: resolve_review() fails closed to DENY if policy verdict remains EVIDENCE_MISSING."""
+    def test_condition1_human_approval_resolves_missing_evidence_ticket(self, test_registry: Registry):
+        """Condition 1: Human oversight resolves an action escalated due to missing evidence upon approval."""
         fw = FirewallCore(registry=test_registry)
         sess_id = "sess_sec01_evidence"
 
         # Configure destination to external_storage without selecting a resource (bound_resource is None)
-        # In this state, Rule R1 evaluates to MAYBE -> PolicyVerdict.EVIDENCE_MISSING
+        # In this state, Rule R1 evaluates to MAYBE -> PolicyVerdict.EVIDENCE_MISSING -> Decision.REVIEW
         fw.submit(ActionRequest(session_id=sess_id, tool="configure_destination", arguments={"destination_ref": "external_storage"}))
 
         action = CanonicalAction(
@@ -194,12 +194,12 @@ class TestSecurityFixes:
 
         tokens_before = len(fw.token_store._tokens)
 
+        # Human approves the ticket
         resp = fw.resolve_review(ticket_id, "APPROVE", "admin")
-        assert resp.status == "DENIED"
-        assert resp.decision == Decision.DENY
-        assert "EVIDENCE_STILL_MISSING" in resp.reason_codes
-        assert resp.result is None
-        assert len(fw.token_store._tokens) == tokens_before  # No new token issued!
+        assert resp.status == "EXECUTED"
+        assert resp.decision == Decision.ALLOW
+        assert resp.result is not None
+        assert len(fw.token_store._tokens) == tokens_before + 1  # Execution token issued!
 
     # --------------------------------------------------------------------------
     # CONDITION 1 & 3: Policy re-evaluation catches PROHIBIT on approval
