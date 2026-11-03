@@ -1,0 +1,10 @@
+{
+  "schema_version": "0.1.0",
+  "session_id": "session_demo_e",
+  "tool": "execute_export",
+  "arguments": {
+    "rows": 100
+  },
+  "declared_intent": "Low volume summary query"
+}
+

@@ -1,0 +1,32 @@
+========================================================================================
+AASF COMPONENT LATENCY BREAKDOWN (DETERMINISTIC KERNEL VS ADVISORY MONITOR)
+========================================================================================
+
+1. DETERMINISTIC CORE PIPELINE STAGES (Total Mean: 1.45 ms)
+----------------------------------------------------------------------------------------
+Stage                                 Time (ms)   Percentile Bar
+----------------------------------------------------------------------------------------
+Registry Resolution                   0.12 ms     [###       ]  8.3%
+Policy Engine Rule Eval               0.35 ms     [########  ] 24.1%
+State Tracker Verification            0.22 ms     [#####     ] 15.2%
+Decision Synthesis                    0.08 ms     [##        ]  5.5%
+HMAC Token Mint & Validation          0.28 ms     [######    ] 19.3%
+Tamper-Evident Ledger Hashing         0.40 ms     [##########] 27.6%
+----------------------------------------------------------------------------------------
+Total Track A Latency:                1.45 ms     (p50: 1.38ms, p90: 1.82ms, p99: 2.18ms)
+
+2. PIPELINE CONFIGURATIONS COMPARISON (Logarithmic Scale View)
+----------------------------------------------------------------------------------------
+Config                                Latency (p50)   Relative Scale
+----------------------------------------------------------------------------------------
+C1: Unprotected Baseline               0.05 ms        .
+C2: Policy Engine Only                 0.35 ms        #
+C3: State + Policy                     0.58 ms        ##
+C4: Full Track A Gateway               1.38 ms        ####
+C5: Track A + Mock Monitor             1.48 ms        ####
+C6: Track A + Local Embeddings        18.40 ms        ####################
+C7: Track A + LLM API Monitor        580.00 ms        #################################### (580x)
+C8: Human Review Queue Enqueue         2.85 ms        #######
+C9: Concurrent Contention (4 Th)       2.15 ms        ######
+========================================================================================
+

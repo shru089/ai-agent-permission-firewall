@@ -1,0 +1,13 @@
+{
+  "action_id": "act_demo_e001",
+  "status": "PENDING_REVIEW",
+  "decision": "REVIEW",
+  "reason_codes": [
+    "MONITOR_UNAVAILABLE"
+  ],
+  "policy_verdict": "UNDETERMINED",
+  "monitor_verdict": "UNKNOWN",
+  "ticket_id": "tkt_demo_e001",
+  "result": null
+}
+

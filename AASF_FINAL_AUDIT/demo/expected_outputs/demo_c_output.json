@@ -1,0 +1,35 @@
+{
+  "initial_response": {
+    "action_id": "act_demo_c001",
+    "status": "PENDING_REVIEW",
+    "decision": "REVIEW",
+    "reason_codes": [
+      "CLASS_REQUIRES_REVIEW:DESTRUCTIVE"
+    ],
+    "policy_verdict": "UNDETERMINED",
+    "monitor_verdict": "NOT_CONSULTED",
+    "ticket_id": "tkt_demo_c001",
+    "result": null
+  },
+  "resolved_response": {
+    "action_id": "act_demo_c001",
+    "status": "EXECUTED",
+    "decision": "ALLOW",
+    "reason_codes": [
+      "REVIEW_APPROVED"
+    ],
+    "policy_verdict": null,
+    "monitor_verdict": null,
+    "ticket_id": "tkt_demo_c001",
+    "result": {
+      "has_value": true,
+      "value": {
+        "deleted": true
+      },
+      "error": null,
+      "outcome_contract": "SYNCHRONOUS_CONFIRMED",
+      "confirmation_level": "CONFIRMED_COMPLETED"
+    }
+  }
+}
+

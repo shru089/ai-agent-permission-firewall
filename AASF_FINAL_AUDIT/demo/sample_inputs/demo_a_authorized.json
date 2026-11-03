@@ -1,0 +1,11 @@
+{
+  "schema_version": "0.1.0",
+  "session_id": "session_demo_a",
+  "tool": "execute_export",
+  "arguments": {
+    "destination_ref": "dest_internal_analytics",
+    "rows": 5000
+  },
+  "declared_intent": "Scheduled daily backup to internal analytics storage"
+}
+

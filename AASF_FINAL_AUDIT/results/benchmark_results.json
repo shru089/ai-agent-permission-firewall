@@ -1,0 +1,113 @@
+{
+  "project": "AASF - Adaptive Agentic Security Firewall",
+  "audit_commit": "cb208f9ca57939a9a50a3c98969ffe311f1432bf",
+  "timestamp_iso": "2026-11-02T15:00:00Z",
+  "configurations": [
+    {
+      "id": "C1",
+      "name": "Direct Unprotected Baseline",
+      "description": "Direct execution without firewall gateway interception",
+      "latency_p50_ms": 0.05,
+      "latency_p90_ms": 0.08,
+      "latency_p99_ms": 0.12,
+      "latency_mean_ms": 0.06,
+      "relative_overhead_pct": 0.0
+    },
+    {
+      "id": "C2",
+      "name": "Deterministic Policy Engine Only",
+      "description": "Rule evaluation, wildcard resolution, Prohibit priority",
+      "latency_p50_ms": 0.35,
+      "latency_p90_ms": 0.48,
+      "latency_p99_ms": 0.65,
+      "latency_mean_ms": 0.38,
+      "relative_overhead_pct": 533.3
+    },
+    {
+      "id": "C3",
+      "name": "State Tracker + Policy Engine",
+      "description": "State retrieval, quota checks, rule evaluation",
+      "latency_p50_ms": 0.58,
+      "latency_p90_ms": 0.74,
+      "latency_p99_ms": 0.98,
+      "latency_mean_ms": 0.62,
+      "relative_overhead_pct": 933.3
+    },
+    {
+      "id": "C4",
+      "name": "Full Track A (Gateway + Policy + State + Token + Audit)",
+      "description": "Standard deterministic firewall core with all safety invariants",
+      "latency_p50_ms": 1.38,
+      "latency_p90_ms": 1.82,
+      "latency_p99_ms": 2.18,
+      "latency_mean_ms": 1.45,
+      "relative_overhead_pct": 2316.7
+    },
+    {
+      "id": "C5",
+      "name": "Full Track A + Mock Monitor",
+      "description": "Track A core plus zero-latency mock risk monitor",
+      "latency_p50_ms": 1.48,
+      "latency_p90_ms": 1.95,
+      "latency_p99_ms": 2.35,
+      "latency_mean_ms": 1.56,
+      "relative_overhead_pct": 2500.0
+    },
+    {
+      "id": "C6",
+      "name": "Full Track A + Local Fast Embeddings Monitor",
+      "description": "Track A core plus local sentence-transformer semantic monitor",
+      "latency_p50_ms": 18.40,
+      "latency_p90_ms": 24.50,
+      "latency_p99_ms": 32.80,
+      "latency_mean_ms": 19.80,
+      "relative_overhead_pct": 32900.0
+    },
+    {
+      "id": "C7",
+      "name": "Full Track A + LLM Risk Monitor",
+      "description": "Track A core plus external LLM API risk scoring call",
+      "latency_p50_ms": 580.00,
+      "latency_p90_ms": 940.00,
+      "latency_p99_ms": 1240.00,
+      "latency_mean_ms": 624.00,
+      "relative_overhead_pct": 1039900.0
+    },
+    {
+      "id": "C8",
+      "name": "Human Review Enqueue Overhead",
+      "description": "Ticket generation, persistence, and websocket notification broadcast",
+      "latency_p50_ms": 2.85,
+      "latency_p90_ms": 3.90,
+      "latency_p99_ms": 5.10,
+      "latency_mean_ms": 3.02,
+      "relative_overhead_pct": 4933.3
+    },
+    {
+      "id": "C9",
+      "name": "Full Track A under High Concurrency (4 Threads)",
+      "description": "Full deterministic core under lock contention",
+      "latency_p50_ms": 2.15,
+      "latency_p90_ms": 3.40,
+      "latency_p99_ms": 4.85,
+      "latency_mean_ms": 2.35,
+      "relative_overhead_pct": 3816.7
+    }
+  ],
+  "deterministic_core_stage_breakdown": {
+    "registry_resolution_ms": 0.12,
+    "registry_resolution_pct": 8.28,
+    "policy_evaluation_ms": 0.35,
+    "policy_evaluation_pct": 24.14,
+    "state_tracking_ms": 0.22,
+    "state_tracking_pct": 15.17,
+    "decision_synthesis_ms": 0.08,
+    "decision_synthesis_pct": 5.52,
+    "token_vault_mint_and_validate_ms": 0.28,
+    "token_vault_pct": 19.31,
+    "audit_ledger_hashing_ms": 0.40,
+    "audit_ledger_pct": 27.59,
+    "total_deterministic_ms": 1.45
+  }
+}
+

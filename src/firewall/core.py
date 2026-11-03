@@ -691,7 +691,35 @@ class FirewallCore:
                             recorded_state_head = r.payload.get("state_head_hash")
                             break
 
-                # d. If current policy verdict is PROHIBIT, return DENY and do not execute
+                # d1. Verify tool exists in registry
+                tool_info = self.registry.get_tool(action.tool)
+                if tool_info is None:
+                    self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
+                    return FirewallResponse(
+                        action_id=action.action_id,
+                        status="DENIED",
+                        decision=Decision.DENY,
+                        reason_codes=["UNKNOWN_TOOL"],
+                        ticket_id=ticket_id,
+                    )
+
+                # d2. If evidence is missing/unresolved, fail-closed to DENY (INV-04)
+                if policy_result.verdict == PolicyVerdict.EVIDENCE_MISSING:
+                    missing_str = ",".join(policy_result.missing_fields or [])
+                    reasons = ["EVIDENCE_STILL_MISSING"]
+                    if missing_str:
+                        reasons.append(f"MISSING:{missing_str}")
+                    self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
+                    return FirewallResponse(
+                        action_id=action.action_id,
+                        status="DENIED",
+                        decision=Decision.DENY,
+                        reason_codes=reasons,
+                        policy_verdict=PolicyVerdict.EVIDENCE_MISSING,
+                        ticket_id=ticket_id,
+                    )
+
+                # d3. If current policy verdict is PROHIBIT, return DENY and do not execute
                 if policy_result.verdict == PolicyVerdict.PROHIBIT:
                     reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or [
                         "POLICY_PROHIBIT"

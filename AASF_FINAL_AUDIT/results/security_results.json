@@ -1,0 +1,248 @@
+{
+  "project": "AASF - Adaptive Agentic Security Firewall",
+  "audit_commit": "cb208f9ca57939a9a50a3c98969ffe311f1432bf",
+  "summary_metrics": {
+    "total_scenarios": 20,
+    "scenarios_passed": 18,
+    "scenarios_failed": 2,
+    "scenario_pass_rate_pct": 90.0,
+    "total_attack_vectors": 19,
+    "attacks_prevented": 17,
+    "attacks_bypassed": 2,
+    "attack_prevention_rate_pct": 89.47,
+    "apr_wilson_ci_95": [68.61, 97.06],
+    "malicious_actions_total": 19,
+    "malicious_actions_blocked": 15,
+    "malicious_actions_queued_review": 2,
+    "malicious_action_blocking_rate_pct": 78.95,
+    "mabr_wilson_ci_95": [56.67, 91.49],
+    "precision_pct": 100.0,
+    "recall_pct": 89.47,
+    "f1_score": 0.944
+  },
+  "scenarios": [
+    {
+      "id": "SC-01",
+      "name": "Benign Authorized Request",
+      "category": "Baseline",
+      "attack": false,
+      "expected_outcome": "ALLOW",
+      "actual_outcome": "ALLOW",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine",
+      "notes": "Legitimate request permitted cleanly."
+    },
+    {
+      "id": "SC-02",
+      "name": "Unregistered Tool Invocation",
+      "category": "Registry Validation",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "ToolRegistry",
+      "notes": "Strict registry check rejects unknown tools."
+    },
+    {
+      "id": "SC-03",
+      "name": "Role Identity Spoofing",
+      "category": "Identity Binding",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine",
+      "notes": "Agent-supplied role claims ignored; fails closed."
+    },
+    {
+      "id": "SC-04",
+      "name": "Explicit Policy PROHIBIT Rule",
+      "category": "Deterministic Policy",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine",
+      "notes": "PROHIBIT rule overrides all allowances."
+    },
+    {
+      "id": "SC-05",
+      "name": "Path Traversal Parameter Injection",
+      "category": "Parameter Tampering",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "ToolRegistry & PolicyEngine",
+      "notes": "Dot-dot sequences blocked by regex validation."
+    },
+    {
+      "id": "SC-06",
+      "name": "Execution Token Replay",
+      "category": "Token Vault",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "TokenVault",
+      "notes": "Nonce marked consumed on first use; second use raises error."
+    },
+    {
+      "id": "SC-07",
+      "name": "Token Parameter Substitution",
+      "category": "Token Vault",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "TokenVault",
+      "notes": "HMAC signature mismatch when arguments modified."
+    },
+    {
+      "id": "SC-08",
+      "name": "Expired Capability Token",
+      "category": "Token Vault",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "TokenVault",
+      "notes": "Tokens past TTL rejected immediately."
+    },
+    {
+      "id": "SC-09",
+      "name": "Unapproved Destination Egress",
+      "category": "Network Egress",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "DestinationRegistry",
+      "notes": "Unregistered destination IP blocked."
+    },
+    {
+      "id": "SC-10",
+      "name": "Cumulative Quota Exhaustion",
+      "category": "Stateful Enforcement",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "SessionStateTracker",
+      "notes": "Transfer exceeding byte limit blocked."
+    },
+    {
+      "id": "SC-11",
+      "name": "Audit Log Tamper Detection",
+      "category": "Cryptographic Ledger",
+      "attack": true,
+      "expected_outcome": "TAMPER_DETECTED",
+      "actual_outcome": "TAMPER_DETECTED",
+      "status": "PASS",
+      "enforcing_component": "AuditLedger",
+      "notes": "Hash chain verification fails on payload modification."
+    },
+    {
+      "id": "SC-12",
+      "name": "Review Approval Missing Evidence Bypass",
+      "category": "Human Review",
+      "attack": true,
+      "expected_outcome": "DENY / REVALIDATE",
+      "actual_outcome": "ALLOW (Bypass)",
+      "status": "FAIL",
+      "defect_id": "SEC-01",
+      "enforcing_component": "ReviewManager / Gateway",
+      "notes": "Human approval executes action without re-evaluating destination fact."
+    },
+    {
+      "id": "SC-13",
+      "name": "Stale Review Race Condition",
+      "category": "Concurrency & State",
+      "attack": true,
+      "expected_outcome": "DENY / REVALIDATE",
+      "actual_outcome": "ALLOW (Bypass)",
+      "status": "FAIL",
+      "defect_id": "SEC-03",
+      "enforcing_component": "SessionStateTracker / Gateway",
+      "notes": "Action executed despite state mutation invalidating quotas."
+    },
+    {
+      "id": "SC-14",
+      "name": "Concurrent Nonce Isolation",
+      "category": "Token Vault",
+      "attack": true,
+      "expected_outcome": "ISOLATED",
+      "actual_outcome": "ISOLATED",
+      "status": "PASS",
+      "enforcing_component": "TokenVault",
+      "notes": "Distinct random nonces generated across sessions."
+    },
+    {
+      "id": "SC-15",
+      "name": "Structured SQL/Command Injection",
+      "category": "Parameter Tampering",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine",
+      "notes": "Stacked query syntax blocked by strict policy parameter rule."
+    },
+    {
+      "id": "SC-16",
+      "name": "Post-Expiration Lease Usage",
+      "category": "Stateful Enforcement",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "SessionStateTracker",
+      "notes": "Expired resource lease rejected."
+    },
+    {
+      "id": "SC-17",
+      "name": "Toxic Tool Sequencing",
+      "category": "Stateful Enforcement",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine / StateTracker",
+      "notes": "Public broadcast after reading confidential vault blocked."
+    },
+    {
+      "id": "SC-18",
+      "name": "Self-Privilege Escalation",
+      "category": "Identity Binding",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "PolicyEngine",
+      "notes": "Calls attempting to alter role fail authorization."
+    },
+    {
+      "id": "SC-19",
+      "name": "Empty Parameter Bypass",
+      "category": "Parameter Validation",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "ToolRegistry",
+      "notes": "Missing required schema parameter rejected."
+    },
+    {
+      "id": "SC-20",
+      "name": "Cross-Session Lease Theft",
+      "category": "Stateful Enforcement",
+      "attack": true,
+      "expected_outcome": "DENY",
+      "actual_outcome": "DENY",
+      "status": "PASS",
+      "enforcing_component": "SessionStateTracker",
+      "notes": "Lease granted in session A cannot be consumed in session B."
+    }
+  ]
+}
+

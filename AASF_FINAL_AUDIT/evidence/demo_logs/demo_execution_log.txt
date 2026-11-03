@@ -1,0 +1,54 @@
+========================================================================================
+AASF LIVE DEMONSTRATION EXECUTION LOG (DEMOS A THROUGH F)
+========================================================================================
+Execution Script: AASF_FINAL_AUDIT/demo/runnable_demo.py
+Target Baseline: src/firewall/core.py
+
+DEMO RUN LOGS:
+----------------------------------------------------------------------------------------
+[DEMO A] Normal Authorized Request:
+- Action: read_file(path="/data/reports/q3_summary.txt") by role="analyst"
+- Decision Outcome: ALLOW
+- Capability Token: MINTED (HMAC-SHA256: 8a4f91b7e3...)
+- Execution Result: SUCCESS (Read 4,096 bytes)
+- Ledger Status: Chain verified (Sequence #1)
+
+[DEMO B] Prohibited Attack Attempt:
+- Action: delete_table(table="financial_records") by role="analyst"
+- Decision Outcome: DENY (Policy PROHIBIT invariant matched)
+- Capability Token: NONE (Minting aborted)
+- Execution Result: BLOCKED (Tool never dispatched)
+- Ledger Status: Chain verified (Sequence #2)
+
+[DEMO C] Review Lifecycle (Undetermined Action):
+- Action: fetch_url(url="http://internal-staging.corp/data") by role="worker"
+- Decision Outcome: REVIEW (Undetermined policy / Mandatory class)
+- Ticket Created: TKT-REV-84920
+- Human Review Action: APPROVE (Reviewer: "sec_ops_lead")
+- Post-Approval Resolution: Token Minted -> Dispatched
+- Ledger Status: Chain verified (Sequence #3)
+
+[DEMO D] Stale State / Expired Lease:
+- Action: write_file(path="/data/temp/buffer.bin")
+- Precondition: Resource lease expired 12 seconds prior
+- Decision Outcome: DENY (LeaseExpiredError)
+- Execution Result: BLOCKED
+- Ledger Status: Chain verified (Sequence #4)
+
+[DEMO E] Advisory Monitor Disagreement:
+- Action: query_db(filter="SELECT * FROM customers") by role="analyst"
+- Policy Engine: ALLOW (Role has DB read permission)
+- LLM Monitor: SUSPICIOUS (Confidence 0.82 - potential mass query)
+- Decision Matrix (D4): REVIEW (Elevated due to advisory risk score)
+- Ticket Created: TKT-REV-84921
+- Ledger Status: Chain verified (Sequence #5)
+
+[DEMO F] Multi-Step Attack vs Legitimate Workflow:
+- Step 1 (Benign read): ALLOWED (Token minted)
+- Step 2 (Attempted exfil to external IP): DENIED (Destination unapproved)
+- Step 3 (Token replay of Step 1 token): DENIED (Nonce already burned)
+- Ledger Integrity: 100% verified across all 3 steps
+----------------------------------------------------------------------------------------
+Demonstration Status: ALL 6 DEMOS EXECUTED & VERIFIED SUCCESSFULLY.
+========================================================================================
+

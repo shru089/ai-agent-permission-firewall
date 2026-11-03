@@ -1,0 +1,13 @@
+{
+  "action_id": "act_demo_b001",
+  "status": "DENIED",
+  "decision": "DENY",
+  "reason_codes": [
+    "POLICY_PROHIBIT:R1-no-confidential-external-export"
+  ],
+  "policy_verdict": "PROHIBIT",
+  "monitor_verdict": "NOT_CONSULTED",
+  "ticket_id": null,
+  "result": null
+}
+

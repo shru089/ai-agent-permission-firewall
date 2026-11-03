@@ -1,0 +1,11 @@
+{
+  "schema_version": "0.1.0",
+  "session_id": "session_demo_b",
+  "tool": "execute_export",
+  "arguments": {
+    "destination_ref": "dest_external_rogue_s3",
+    "rows": 12000
+  },
+  "declared_intent": "Public data synchronization"
+}
+

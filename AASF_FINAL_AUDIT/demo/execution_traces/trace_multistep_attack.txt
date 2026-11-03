@@ -1,0 +1,36 @@
+=== RUNTIME INTERCEPTION TRACE: MULTI-STEP EXFILTRATION ATTACK ===
+Session ID: session_demo_f
+Attack Scenario: TS-02 Distributed Exfiltration across 4 Steps
+
+[STEP 1 / 4] Action: select_resource(resource_ref='res_confidential_vault')
+- Classification from Registry: CONFIDENTIAL
+- Policy Rule: P-setup-select-resource matches -> PERMIT
+- Decision: ALLOW -> Executed.
+- State Update: S_1.bound_resource = CONFIDENTIAL (seq=1, head=9a1b2c...)
+
+[STEP 2 / 4] Action: create_export_job(job_id='job_stealth_01')
+- Policy Rule: P-setup-create-export-job matches -> PERMIT
+- Decision: ALLOW -> Executed.
+- State Update: S_2.job_created = True (seq=2, head=4d5e6f...)
+
+[STEP 3 / 4] Action: configure_destination(destination_ref='dest_external_rogue_s3')
+- Destination Zone from Registry: EXTERNAL
+- Policy Rule: P-setup-configure-destination matches -> PERMIT
+- Decision: ALLOW -> Executed.
+- State Update: S_3.destination.zone = EXTERNAL (seq=3, head=7a8b9c...)
+
+[STEP 4 / 4] Action: execute_export(destination_ref='dest_external_rogue_s3')
+- Evaluating S_3 context:
+  • bound_resource.classification = CONFIDENTIAL
+  • destination.zone = EXTERNAL
+  • job_created = True
+- Policy Rule R1 evaluated:
+  • Condition 1: state.bound_resource.classification == CONFIDENTIAL -> TRUE
+  • Condition 2: state.destination.zone == EXTERNAL -> TRUE
+- Rule R1 STATUS: MATCH -> PolicyVerdict.PROHIBIT
+- Combinator Rule D2: Dominates unconditionally -> Decision.DENY
+- Outcome: Token issuance BLOCKED. Tool handler NEVER CALLED.
+- AuditStore: ACTION_DENIED appended (seq=4, head=0f1e2d...)
+
+=== ATTACK TERMINATION: EXFILTRATION PREVENTED AT STEP 4 (0 BYTES LEAKED) ===
+

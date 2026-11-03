@@ -1,0 +1,29 @@
+=== RUNTIME INTERCEPTION TRACE: AUTHORIZED ACTION ===
+Session ID: session_demo_a
+Timestamp: 2026-11-02T14:53:00.124500Z
+
+[T+0.00ms] Gateway.submit() received ActionRequest(tool='execute_export')
+[T+0.05ms] Session lock acquired for 'session_demo_a'
+[T+0.12ms] Action canonicalized: id=act_demo_a001, hash=7f4c9a...
+[T+0.18ms] AuditStore: append ACTION_RECEIVED (seq=1)
+[T+0.25ms] Registry: Tool 'execute_export' verified. Class: EGRESS_EXTERNAL
+[T+0.32ms] State Engine: S_t retrieved (head_hash=a3b2c1...)
+[T+0.41ms] PolicyEngine: Evaluating rules...
+           Rule R1: Condition false (resource is PUBLIC) -> NO_MATCH
+           Rule R2: Condition false (destination is INTERNAL) -> NO_MATCH
+           Rule R3: Condition true (destination is INTERNAL) -> MATCH
+           Verdict: PolicyVerdict.PERMIT (Rule: R3-permit-internal-export)
+[T+0.52ms] Monitor Gate: monitor_authority='decide_undetermined'.
+           Policy is PERMIT; monitor consultation skipped.
+[T+0.58ms] Combinator.decide(): Rule D4a triggered -> Decision.ALLOW
+[T+0.65ms] AuditStore: append DECISION (ALLOW)
+[T+0.72ms] TokenStore.issue_token() -> tok_a001 (bound to act_demo_a001, head_hash)
+[T+0.80ms] ControlledExecutor.execute() called with tok_a001
+[T+0.88ms] TokenStore.consume_token() -> Token validated and atomically consumed
+[T+1.10ms] Tool handler 'execute_export' dispatched -> 5000 rows exported
+[T+1.22ms] HmacEvidenceVerifier: Receipt verified (HMAC-SHA256 signature authentic)
+[T+1.35ms] State Engine: apply_event(EXECUTED) -> S_{t+1} folded (new_head=c8d9e0...)
+[T+1.45ms] AuditStore: append EXECUTED (seq=2)
+[T+1.50ms] Session lock released. Returning FirewallResponse(status='EXECUTED')
+=== TRACE COMPLETE: SUCCESS (Total Latency: 1.50ms) ===
+

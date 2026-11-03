@@ -1,0 +1,76 @@
+========================================================================================
+AASF ARCHITECTURAL TOPOLOGY & SUBSYSTEM DATA FLOW DIAGRAM
+========================================================================================
+
++--------------------------------------------------------------------------------------+
+|                                 UNTRUSTED AI AGENT                                   |
+|                          (Prompt Injection & Jailbreak Vector)                       |
++------------------------------------------+-------------------------------------------+
+                                           |
+                                           | ToolAction(session_id, actor, tool, params)
+                                           v
++--------------------------------------------------------------------------------------+
+|                               FIREWALL CORE GATEWAY                                  |
+|                              (src/firewall/core.py)                                  |
+|                                                                                      |
+|  +------------------------+  +------------------------+  +------------------------+  |
+|  |     ToolRegistry       |  |  DestinationRegistry   |  |   ResourceRegistry     |  |
+|  |  (Authoritative Facts) |  |   (Network Whitelist)  |  |  (Sensitivity Bindings)|  |
+|  +-----------+------------+  +-----------+------------+  +-----------+------------+  |
+|              |                           |                           |               |
+|              +---------------------------+---------------------------+               |
+|                                          | Authoritative Facts                       |
+|                                          v                                           |
+|  +--------------------------------------------------------------------------------+  |
+|  |                      DETERMINISTIC POLICY ENGINE                               |  |
+|  |                       (src/firewall/policy/engine.py)                          |  |
+|  |  - Invariant INV-01: Agent claims cannot override role / clearances            |  |
+|  |  - Invariant INV-02: Registry facts cannot be bypassed                         |  |
+|  |  - Invariant INV-03: Prohibit rules are absolute and final                     |  |
+|  |  - Evaluates: ALLOW / PROHIBIT / DENY / UNDETERMINED                           |  |
+|  +---------------------------------------+----------------------------------------+  |
+|                                          |                                           |
+|                                          | Policy Verdict                            |
+|                                          v                                           |
+|  +-----------------------+               +----------------------------------------+  |
+|  |    SESSION TRACKER    |               |         DECISION MATRIX (D1-D5)        |  |
+|  | (src/firewall/state/) |               |     (src/firewall/decision/engine.py)  |  |
+|  |  - Lease expiration   |-------------->|  Synthesizes Policy + Monitor:         |  |
+|  |  - Quota accounting   |               |  - D1/D2: Prohibit/Deny -> DENY        |  |
+|  |  - State hash chains  |               |  - D3: Allow + Low Risk -> ALLOW       |  |
+|  +-----------------------+               |  - D4: Allow + High Risk -> REVIEW     |  |
+|                                          |  - D5: Undetermined -> REVIEW          |  |
+|  +-----------------------+               +-------------------+--------------------+  |
+|  |  LLM RISK MONITOR     |                                   |                       |
+|  | (src/firewall/monitor)|-----------------------------------+                       |
+|  |  - Advisory scoring   | Contextual Risk Score                                     |
+|  +-----------------------+                                                           |
+|                                                                                      |
+|         +---------------------------+---------------------------+                    |
+|         |                           |                           |                    |
+|      [ALLOW]                    [REVIEW]                     [DENY]                  |
+|         |                           |                           |                    |
+|         v                           v                           v                    |
+|  +---------------+          +---------------+           +---------------+            |
+|  |  TOKEN VAULT  |          | REVIEW MANAGER|           | AUDIT LEDGER  |            |
+|  | Mint HMAC-    |          | Enqueue Human |           | Record Tamper-|            |
+|  | SHA256 Token  |          | Review Ticket |           | Evident Block |            |
+|  +-------+-------+          +-------+-------+           +-------+-------+            |
+|          |                          |                           |                    |
+|          v                          | (Upon Human               |                    |
+|  +---------------+                  |  Approval)                |                    |
+|  |  CONTROLLED   |                  |                           |                    |
+|  |   EXECUTOR    |<-----------------+                           |                    |
+|  | Consume Token |                                              v                    |
+|  | Dispatch Tool |                                     Immediate Rejection &         |
+|  +-------+-------+                                     Termination of Call           |
+|          |                                                                           |
++----------|---------------------------------------------------------------------------+
+           |
+           v
++--------------------------------------------------------------------------------------+
+|                         TARGET SYSTEM / REPOSITORY TOOLS                             |
+|                    (Operating System, Files, Databases, Network)                     |
++--------------------------------------------------------------------------------------+
+========================================================================================
+

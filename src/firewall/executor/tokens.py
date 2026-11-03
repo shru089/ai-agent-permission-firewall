@@ -71,6 +71,14 @@ class TokenStore:
         )
 
         with self._lock:
+            # Periodically prune expired tokens if store exceeds 500 entries (FUNC-02)
+            if len(self._tokens) > 500:
+                expired_ids = [
+                    tid for tid, tok in self._tokens.items() if curr_time > tok.expires_at_ms
+                ]
+                for tid in expired_ids:
+                    del self._tokens[tid]
+                    self._consumed.discard(tid)
             self._tokens[token_id] = token
 
         return token
@@ -131,6 +139,24 @@ class TokenStore:
             # Atomically mark consumed
             self._consumed.add(token_id)
             return token
+
+    def prune_expired(self, now_ms: Optional[int] = None) -> int:
+        """
+        Prunes expired tokens and consumed nonces to prevent unbounded memory growth (FUNC-02).
+        Single-use semantics (INV-06) are preserved: once a token has expired past its TTL,
+        any presentation of that token will fail-closed due to expiration or absence from store.
+        """
+        curr_time = now_ms if now_ms is not None else int(time.time() * 1000)
+        pruned_count = 0
+        with self._lock:
+            expired_ids = [
+                tid for tid, tok in self._tokens.items() if curr_time > tok.expires_at_ms
+            ]
+            for tid in expired_ids:
+                del self._tokens[tid]
+                self._consumed.discard(tid)
+                pruned_count += 1
+        return pruned_count
 
     def is_consumed(self, token_id: str) -> bool:
         """Check whether a token has been consumed."""

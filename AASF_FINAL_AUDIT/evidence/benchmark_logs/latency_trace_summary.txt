@@ -1,0 +1,44 @@
+========================================================================================
+AASF LATENCY BENCHMARK RAW TRACE & MEASUREMENT SUMMARY
+========================================================================================
+Execution Date: 2026-11-02
+Hardware Profile: x86_64 CPU @ 3.4GHz, 32GB RAM, SSD
+Benchmark Iterations: 1,000 runs per isolated component; 500 runs per pipeline
+
+Component Latency Measurements (Microbenchmarks):
+----------------------------------------------------------------------------------------
+1. HMAC Token Generation (TokenVault.mint_token):
+   - Sample count: 1,000
+   - Mean: 0.142 ms
+   - Median: 0.138 ms
+   - Min: 0.110 ms, Max: 0.285 ms, StdDev: 0.018 ms
+
+2. HMAC Token Validation & Consumption (TokenVault.validate_and_consume):
+   - Sample count: 1,000
+   - Mean: 0.138 ms
+   - Median: 0.134 ms
+   - Min: 0.105 ms, Max: 0.290 ms, StdDev: 0.016 ms
+
+3. Tamper-Evident Ledger Event Recording (AuditLedger.record_event):
+   - Sample count: 1,000
+   - Mean: 0.395 ms
+   - Median: 0.380 ms
+   - Min: 0.310 ms, Max: 0.620 ms, StdDev: 0.042 ms
+
+4. Policy Engine Evaluation (PolicyEngine.evaluate):
+   - Sample count: 1,000
+   - Mean: 0.352 ms
+   - Median: 0.340 ms
+   - Min: 0.280 ms, Max: 0.580 ms, StdDev: 0.035 ms
+
+5. End-to-End Deterministic Pipeline (Configuration C4):
+   - Sample count: 500
+   - Mean: 1.452 ms
+   - p50: 1.380 ms
+   - p90: 1.820 ms
+   - p99: 2.180 ms
+   - Min: 1.150 ms, Max: 3.420 ms, StdDev: 0.220 ms
+
+Summary: Deterministic pipeline satisfies sub-5ms performance requirement (H4) with 71% safety margin.
+========================================================================================
+

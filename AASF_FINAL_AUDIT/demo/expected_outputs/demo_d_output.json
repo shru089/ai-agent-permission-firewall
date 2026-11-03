@@ -1,0 +1,7 @@
+{
+  "ticket_id": "tkt_demo_d001",
+  "status": "ReviewStatus.PENDING",
+  "stale_rejection_detected": true,
+  "vulnerability_note": "Unpatched core allows state drift token issuance; patched core rejects with TicketStaleError"
+}
+

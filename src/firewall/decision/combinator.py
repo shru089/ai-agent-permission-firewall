@@ -18,9 +18,7 @@ class DecisionConfig:
     Source: 03_MATHEMATICAL_MODEL_AND_METRICS.md §4, 05_TECHNICAL_SPEC.md §7.3
     """
 
-    monitor_authority: str = (
-        "decide_undetermined"  # "none" | "decide_undetermined" | "escalate_only"
-    )
+    monitor_authority: str = "none"  # "none" | "decide_undetermined" | "escalate_only"
     mandatory_review_classes: tuple[ToolClass, ...] = (
         ToolClass.DESTRUCTIVE,
         ToolClass.PRIVILEGED_ADMIN,

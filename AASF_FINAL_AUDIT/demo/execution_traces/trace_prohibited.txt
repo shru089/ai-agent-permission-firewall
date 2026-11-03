@@ -1,0 +1,26 @@
+=== RUNTIME INTERCEPTION TRACE: PROHIBITED ACTION ===
+Session ID: session_demo_b
+Timestamp: 2026-11-02T14:53:05.210400Z
+
+[T+0.00ms] Gateway.submit() received ActionRequest(tool='execute_export')
+[T+0.04ms] Session lock acquired for 'session_demo_b'
+[T+0.10ms] Action canonicalized: id=act_demo_b001, hash=4e8a2f...
+[T+0.16ms] AuditStore: append ACTION_RECEIVED (seq=1)
+[T+0.22ms] Registry: Tool 'execute_export' verified. Class: EGRESS_EXTERNAL
+[T+0.28ms] State Engine: S_t retrieved
+           state.bound_resource.classification = CONFIDENTIAL
+           state.destination.zone = EXTERNAL
+[T+0.38ms] PolicyEngine: Evaluating rules...
+           Rule R1: state.bound_resource.classification == CONFIDENTIAL [TRUE]
+                    state.destination.zone == EXTERNAL [TRUE]
+           Rule R1 matched -> PolicyVerdict.PROHIBIT
+[T+0.45ms] Combinator.decide(): Rule D2 Dominance triggered
+           Verdict is PROHIBIT -> Decision.DENY
+           Reason: POLICY_PROHIBIT:R1-no-confidential-external-export
+[T+0.52ms] AuditStore: append DECISION (DENY)
+[T+0.60ms] Token issuance SKIPPED. ControlledExecutor NEVER CALLED.
+[T+0.68ms] State Engine: apply_event(ACTION_DENIED) -> S_{t+1} folded
+[T+0.75ms] AuditStore: append ACTION_DENIED (seq=2)
+[T+0.80ms] Session lock released. Returning FirewallResponse(status='DENIED')
+=== TRACE COMPLETE: BLOCKED (Total Latency: 0.80ms) ===
+

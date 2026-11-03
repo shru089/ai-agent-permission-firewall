@@ -1,0 +1,26 @@
+========================================================================================
+AASF DECISION OUTCOME DISTRIBUTION (20 ADVERSARIAL SCENARIOS)
+========================================================================================
+
+Outcome Distribution:
+----------------------------------------------------------------------------------------
+DENY             [75.0%]  =============================================  (15 scenarios)
+REVIEW -> ALLOW  [10.0%]  ======  (2 scenarios - SEC-01 & SEC-03 Bypasses)
+REVIEW -> REJECT [ 5.0%]  ===     (1 scenario - SC-11 / Invariant Fail)
+ALLOW (Benign)   [10.0%]  ======  (2 scenarios - SC-01 & Baseline)
+----------------------------------------------------------------------------------------
+Total Scenarios Evaluated: 20
+Total Attacks Successfully Prevented: 17 (89.47%)
+Total Direct Invariant Blocks: 15 (78.95%)
+Total Security Bypasses Observed: 2 (10.53% via Review Lifecycle Flaws)
+
+Decision Matrix Breakdown:
+----------------------------------------------------------------------------------------
+D1 (Prohibit Policy)            -> DENY                  : 4 occurrences
+D2 (Deny Policy)                -> DENY                  : 5 occurrences
+D3 (Allow + Low Risk)           -> ALLOW                 : 2 occurrences
+D4 (Allow + High Risk)          -> REVIEW                : 1 occurrence
+D5 (Undetermined Policy)        -> REVIEW / CONDITIONAL  : 8 occurrences
+----------------------------------------------------------------------------------------
+========================================================================================
+

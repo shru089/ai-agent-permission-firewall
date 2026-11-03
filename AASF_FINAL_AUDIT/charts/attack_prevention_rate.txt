@@ -1,0 +1,35 @@
+========================================================================================
+AASF ATTACK PREVENTION RATE (APR) & SECURITY METRICS
+========================================================================================
+
+Attack Vector Classification & Outcomes:
+----------------------------------------------------------------------------------------
+Attack Vector Category           Total   Blocked   Bypassed   APR (%)
+----------------------------------------------------------------------------------------
+Registry Fact Spoofing             2        2         0       100.0%  [====================]
+Role Identity Spoofing             2        2         0       100.0%  [====================]
+Explicit Policy Prohibit           2        2         0       100.0%  [====================]
+Parameter / Path Injection         3        3         0       100.0%  [====================]
+Execution Token Replay / Sub       3        3         0       100.0%  [====================]
+Unapproved Egress Exfiltration     1        1         0       100.0%  [====================]
+State Quota / Lease Exhaustion     3        3         0       100.0%  [====================]
+Audit Log Tampering                1        1         0       100.0%  [====================]
+Review Approval Lifecycle          2        0         2         0.0%  [                    ]
+----------------------------------------------------------------------------------------
+Total Attack Scenarios:           19       17         2        89.47% [==================  ]
+
+Quantitative Statistical Summary:
+----------------------------------------------------------------------------------------
+Attack Prevention Rate (APR) : 89.47% (17 / 19)
+95% Wilson Confidence Interval: [68.61%, 97.06%]
+
+Malicious Action Blocking Rate: 78.95% (15 / 19 blocked directly at gateway)
+95% Wilson Confidence Interval: [56.67%, 91.49%]
+
+Precision                     : 100.00% (17 / 17 blocked requests were true attacks)
+Recall                        : 89.47%  (17 / 19 true attacks were prevented)
+F1-Score                      : 0.944
+False Positive Rate (Track A) : 0.00%   (0 legitimate requests falsely rejected)
+False Positive Rate (Track B) : 100.00% (Historical pilot: 27 / 27 benign sequences flagged)
+========================================================================================
+

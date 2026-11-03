@@ -1,0 +1,34 @@
+=== RUNTIME INTERCEPTION TRACE: HUMAN OVERSIGHT LIFECYCLE ===
+Session ID: session_demo_c
+Timestamp: 2026-11-02T14:53:10.550100Z
+
+[PHASE 1: SUBMISSION & ESCALATION]
+[T+0.00ms] Gateway.submit() received ActionRequest(tool='delete_database')
+[T+0.05ms] Session lock acquired for 'session_demo_c'
+[T+0.12ms] Action canonicalized: id=act_demo_c001
+[T+0.22ms] Registry: Tool 'delete_database' verified. Class: DESTRUCTIVE
+[T+0.35ms] PolicyEngine: Evaluating rules -> PolicyVerdict.UNDETERMINED
+[T+0.42ms] Combinator.decide(): Tool class in mandatory_review_classes
+           Rule D5c triggered -> Decision.REVIEW
+           Reason: CLASS_REQUIRES_REVIEW:DESTRUCTIVE
+[T+0.52ms] View Builder: build_reviewer_view() projected allow-listed summary
+[T+0.65ms] ReviewService.create_ticket() -> ticket_id=tkt_demo_c001 (TTL: 300,000ms)
+[T+0.75ms] AuditStore: append REVIEW_CREATED (ticket_id=tkt_demo_c001)
+[T+0.85ms] Session lock released. Returning FirewallResponse(status='PENDING_REVIEW')
+
+[PHASE 2: CONCURRENCY LOCKOUT CHECK]
+[T+10.0ms] Agent submits concurrent action to 'session_demo_c'
+[T+10.1ms] Gateway checks ReviewService.has_pending_review('session_demo_c') -> TRUE
+[T+10.2ms] Gateway immediately rejects: FirewallResponse(status='BUSY', reason='BUSY:PENDING_REVIEW')
+
+[PHASE 3: REVIEWER APPROVAL & EXECUTION]
+[T+5000ms] Human operator (sec_admin_01) calls resolve_review(ticket_id='tkt_demo_c001', outcome='APPROVE')
+[T+5000.1ms] ReviewService: ticket resolved to APPROVED
+[T+5000.2ms] TokenStore.issue_token() -> tok_c001
+[T+5000.4ms] ControlledExecutor.execute() called with tok_c001
+[T+5000.6ms] Database deletion handler executed -> deleted=True
+[T+5000.8ms] ReviewService: ticket marked EXECUTED (prevents duplicate execution)
+[T+5001.0ms] State Engine: apply_event(EXECUTED)
+[T+5001.2ms] AuditStore: append REVIEW_RESOLVED (APPROVED) and EXECUTED
+=== TRACE COMPLETE: APPROVED & EXECUTED ===
+

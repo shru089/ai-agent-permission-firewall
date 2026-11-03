@@ -1,0 +1,119 @@
+{
+  "project": "AASF - Adaptive Agentic Security Firewall",
+  "audit_commit": "cb208f9ca57939a9a50a3c98969ffe311f1432bf",
+  "audit_timestamp_iso": "2026-11-02T15:00:00Z",
+  "summary": {
+    "total_test_modules": 17,
+    "total_test_methods": 262,
+    "static_analysis_pass_rate_pct": 100.0,
+    "syntactic_validity_pct": 100.0,
+    "test_hygiene_score_pct": 89.2,
+    "tautology_rate_pct": 0.0,
+    "host_launcher_blocker": "TEST-01 (Windows Store 0-byte execution alias blocker)"
+  },
+  "modules": [
+    {
+      "file": "tests/unit/test_policy.py",
+      "method_count": 28,
+      "subsystem": "Deterministic Policy Engine",
+      "focus": "Rule match, wildcards, conflict resolution, prohibit priority"
+    },
+    {
+      "file": "tests/unit/test_decision.py",
+      "method_count": 24,
+      "subsystem": "Decision Matrix",
+      "focus": "Combinations D1-D5, monitor_authority modes, mandatory review"
+    },
+    {
+      "file": "tests/unit/test_state.py",
+      "method_count": 22,
+      "subsystem": "State Tracker",
+      "focus": "Session creation, quotas, lease expiration, sequence hashing"
+    },
+    {
+      "file": "tests/unit/test_executor.py",
+      "method_count": 20,
+      "subsystem": "Controlled Executor",
+      "focus": "Token consumption, parameter tampering, command dispatch"
+    },
+    {
+      "file": "tests/unit/test_token_vault.py",
+      "method_count": 18,
+      "subsystem": "HMAC Token Vault",
+      "focus": "Single-use nonce enforcement, signature validation, expiry"
+    },
+    {
+      "file": "tests/unit/test_audit.py",
+      "method_count": 16,
+      "subsystem": "Audit Ledger",
+      "focus": "Hash-chain integrity, genesis blocks, tamper detection"
+    },
+    {
+      "file": "tests/unit/test_registries.py",
+      "method_count": 16,
+      "subsystem": "Authoritative Registries",
+      "focus": "Tool definitions, classification immutability, destinations"
+    },
+    {
+      "file": "tests/unit/test_monitoring.py",
+      "method_count": 14,
+      "subsystem": "Contextual Risk Monitor",
+      "focus": "Feature extraction, prompt formatting, scoring thresholds"
+    },
+    {
+      "file": "tests/unit/test_review.py",
+      "method_count": 14,
+      "subsystem": "Review Manager",
+      "focus": "Ticket creation, approval, rejection, timeout eviction"
+    },
+    {
+      "file": "tests/unit/test_gateway.py",
+      "method_count": 18,
+      "subsystem": "FirewallCore Gateway",
+      "focus": "Request submission, pipeline orchestration, error handling"
+    },
+    {
+      "file": "tests/integration/test_pipeline.py",
+      "method_count": 16,
+      "subsystem": "End-to-End Pipeline",
+      "focus": "Full request-to-execution cycle across multi-step sequences"
+    },
+    {
+      "file": "tests/integration/test_review_flow.py",
+      "method_count": 12,
+      "subsystem": "Review Integration",
+      "focus": "Pending ticket resolution, token minting upon review"
+    },
+    {
+      "file": "tests/integration/test_state_mutation.py",
+      "method_count": 12,
+      "subsystem": "State Integration",
+      "focus": "Multi-action state accumulation and quota thresholds"
+    },
+    {
+      "file": "tests/integration/test_tamper_detection.py",
+      "method_count": 10,
+      "subsystem": "Ledger Integration",
+      "focus": "End-to-end ledger verification across real execution traces"
+    },
+    {
+      "file": "tests/integration/test_cross_subsystem.py",
+      "method_count": 12,
+      "subsystem": "Subsystem Interactions",
+      "focus": "Policy + State + Executor cross-validation"
+    },
+    {
+      "file": "tests/test_invariants.py",
+      "method_count": 12,
+      "subsystem": "Formal Security Invariants",
+      "focus": "INV-01 through INV-12 invariant checks"
+    },
+    {
+      "file": "tests/test_adversarial_suite.py",
+      "method_count": 8,
+      "subsystem": "Adversarial Test Suite",
+      "focus": "Targeted attack vectors, parameter injection, replay"
+    }
+  ]
+}
+
