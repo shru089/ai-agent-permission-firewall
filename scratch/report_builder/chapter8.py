@@ -76,10 +76,13 @@ def add_chapter8(doc: Document):
     # 8.4 Security and Invariant Regression Testing
     add_h1(doc, "8.4", "Security and Invariant Regression Testing")
     add_p(doc,
-        "Security testing specifically subjected the firewall to adversarial regression scenarios: (1) attempts to redeem an already consumed "
+        "Security testing specifically subjected the firewall to adversarial regression scenarios in `tests/invariants/`, "
+        "supplemented by state-engine, combinator, and executor property tests: (1) attempts to redeem an already consumed "
         "execution token (INV-06); (2) attempts to submit altered tool arguments with a valid token (INV-08); (3) concurrent multi-threaded "
         "attempts to resolve the same review ticket twice (INV-05); and (4) attempts to modify historical audit log records (INV-09). "
-        "In 100% of test cases, the system failed closed, raising explicit cryptographic exceptions and rejecting unauthorized execution."
+        "While the complete repository harness comprises 433 automated tests verifying all layers, invariant enforcement is specifically "
+        "exercised by dedicated invariant suites (`tests/invariants/`), state-machine property tests, and the benchmark trace monitor. "
+        "In 100% of evaluated test cases, the system failed closed, raising explicit cryptographic exceptions and rejecting unauthorized execution."
     )
 
     # 8.5 Empirical Benchmark Results across Experimental Arms
@@ -199,11 +202,22 @@ def add_chapter8(doc: Document):
         ["H1 (History Necessity)", "B3 (J = 0.0) and stochastic B4 (|J| <= 0.03) on history-manipulated twins", "Measured J = 0.0000 across TEST-IN, CAL, and TEST-NOVEL for B3 & B4 mock", "CONFIRMED (Zero discrimination without state fold)"],
         ["H2 (Task Success Preservation)", "B6 vs B5: Delta_APR >= -0.03 and Delta_LTS >= +0.10", "Delta_APR = 0.0000; Delta_LTS (M-LTS-0) = +0.5000 (0.50 vs 0.00); Oracle LTS tied at 1.00", "CONFIRMED (Utility preserved, uninterrupted gain)"],
         ["H3 (Review Burden Reduction)", "Delta_REV <= -0.15 vs mandatory review baseline; Unsafe allow point increase = 0.00 (UB <= 0.02)", "Delta_REV = -0.2500 (0.3333 -> 0.0833); Point unsafe allows = 0.00 (Bootstrap UB not archived)", "CONFIRMED (Review overhead slashed 25%)"],
-        ["H4 (Security Invariant Violations)", "M-VIOL = 0 across all evaluated traces and splits (INV-01 to INV-12)", "M-VIOL = 0 (Zero invariant breaches observed across all 433 tests and splits)", "CONFIRMED (Zero violations observed)"],
+        ["H4 (Security Invariant Violations)", "M-VIOL = 0 across benchmark evaluation runs (INV-01 to INV-12)", "M-VIOL = 0 observed across all benchmark traces and dedicated invariant suites (tests/invariants/)", "CONFIRMED (Zero breaches on evaluated scope)"],
         ["H5 (Latency Bound SLA)", "P1 cascade-invoked p95 <= 600 ms and hard timeout <= 1500 ms", "Arm-level P1 p95 = 1.023 ms (<2 ms); isolated cascade-invoked p95 and 1500 ms ceiling not logged", "NOT VERIFIED (Arm meets SLA; sub-metric not logged)"],
     ]
     col_w_t86 = [1.4, 2.2, 1.8, 1.2]
     add_table(doc, headers_t86, data_t86, "Table 8.6", "Summary of Formal Hypothesis Testing Outcomes (H1 through H5)", col_w_t86)
+
+    add_p(doc,
+        "Methodological Disclosures regarding Hypotheses H3, H4, and H5:\n"
+        "(1) Regarding H3, while human review burden dropped significantly by 25.00% without any observed unsafe allowances (point estimate = 0.0000), "
+        "the cluster bootstrap upper confidence bound (UB <= 0.02) was not separately archived in the benchmark summary table.\n"
+        "(2) Regarding H4, invariant violation counting (M-VIOL = 0) was evaluated across all benchmark traces and verified by dedicated invariant "
+        "test suites (`tests/invariants/`); the general test count (433 tests) spans contracts, serialization, property, and integration layers.\n"
+        "(3) Regarding H5, while the P1 architecture achieved sub-millisecond median and p95 decision latencies (< 2 ms) well below the 600 ms SLA "
+        "ceiling, the isolated cascade-invoked p95 metric and the 1,500 ms hard-timeout fallback ceiling were not separately captured as distinct log "
+        "fields in the evaluation artifact; consequently, H5 is formally recorded as not verified in full to uphold strict preregistration integrity."
+    )
 
     # 8.11 Limitations and Threats to Validity
     add_h1(doc, "8.11", "Limitations and Threats to Validity")
