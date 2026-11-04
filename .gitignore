@@ -34,3 +34,6 @@ labels.sqlite
 
 
 ~$*
+
+.venv/
+.hypothesis/
