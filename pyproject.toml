@@ -45,6 +45,9 @@ target-version = "py311"
 extend-exclude = [
     "docs/research",
     "experiments/scripts",
+    "AASF_FINAL_AUDIT",
+    "AASF_PROJECT_COMPLETION_AUDIT",
+    "scratch",
 ]
 
 [tool.ruff.lint]

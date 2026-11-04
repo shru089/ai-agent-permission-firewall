@@ -6,7 +6,7 @@ Usage:
 """
 
 import argparse
-import sys
+
 import uvicorn
 
 
@@ -34,8 +34,12 @@ def print_startup_banner(host: str, port: int) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="AASF Interactive Security Console")
-    parser.add_argument("--host", type=str, default="127.0.0.1", help="Host interface (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=8000, help="Port number (default: 8000)")
+    parser.add_argument(
+        "--host", type=str, default="127.0.0.1", help="Host interface (default: 127.0.0.1)"
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port number (default: 8000)"
+    )
     args = parser.parse_args()
 
     print_startup_banner(args.host, args.port)

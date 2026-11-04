@@ -72,7 +72,11 @@ class ActionOnlyMonitor:
             )
 
         args_str = json.dumps(view.action.arguments, sort_keys=True)
-        sections = [f"PROPOSED TOOL ACTION:\nTool: {view.action.tool}\nArguments:\n```json\n{args_str}\n```"]
+        action_desc = (
+            f"PROPOSED TOOL ACTION:\nTool: {view.action.tool}\n"
+            f"Arguments:\n```json\n{args_str}\n```"
+        )
+        sections = [action_desc]
 
         if view.registry_facts:
             sections.append(f"REGISTRY FACTS:\n{json.dumps(view.registry_facts, sort_keys=True)}")
