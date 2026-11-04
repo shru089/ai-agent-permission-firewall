@@ -1,0 +1,53 @@
+{
+  "initial": {
+    "action_id": "act_282866c2691e",
+    "status": "PENDING_REVIEW",
+    "decision": "REVIEW",
+    "reason_codes": [
+      "CLASS_REQUIRES_REVIEW:DESTRUCTIVE",
+      "NO_MONITOR_CONFIGURED"
+    ],
+    "policy_verdict": "UNDETERMINED",
+    "monitor_verdict": "UNKNOWN",
+    "ticket_id": "tkt_82ec5d4fab95",
+    "result": null,
+    "route_trace": {
+      "path": "cascade_path",
+      "monitor_invoked": false,
+      "final_decision": "REVIEW",
+      "reason": "CLASS_REQUIRES_REVIEW:DESTRUCTIVE",
+      "reason_codes": [
+        "CLASS_REQUIRES_REVIEW:DESTRUCTIVE",
+        "NO_MONITOR_CONFIGURED"
+      ],
+      "failure_reason": null,
+      "review_reason": "CLASS_REQUIRES_REVIEW:DESTRUCTIVE",
+      "latency_ms": 0.3337,
+      "decision_latency_ms": 0.3337,
+      "policy_verdict": "UNDETERMINED",
+      "monitor_verdict": "UNKNOWN"
+    }
+  },
+  "resolved": {
+    "action_id": "act_282866c2691e",
+    "status": "EXECUTED",
+    "decision": "ALLOW",
+    "reason_codes": [
+      "REVIEW_APPROVED"
+    ],
+    "policy_verdict": null,
+    "monitor_verdict": null,
+    "ticket_id": "tkt_82ec5d4fab95",
+    "result": {
+      "has_value": true,
+      "value": {
+        "deleted": true,
+        "database": "legacy_metrics"
+      },
+      "error": null,
+      "outcome_contract": "SYNCHRONOUS_CONFIRMED",
+      "confirmation_level": "CONFIRMED_COMPLETED"
+    },
+    "route_trace": null
+  }
+}

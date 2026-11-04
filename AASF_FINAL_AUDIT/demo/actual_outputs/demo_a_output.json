@@ -1,0 +1,36 @@
+{
+  "action_id": "act_27402856378e",
+  "status": "EXECUTED",
+  "decision": "ALLOW",
+  "reason_codes": [
+    "POLICY_PERMIT:R3-permit-internal-export"
+  ],
+  "policy_verdict": "PERMIT",
+  "monitor_verdict": "NOT_CONSULTED",
+  "ticket_id": null,
+  "result": {
+    "has_value": true,
+    "value": {
+      "exported_rows": 5000,
+      "status": "COMPLETED"
+    },
+    "error": null,
+    "outcome_contract": "SYNCHRONOUS_CONFIRMED",
+    "confirmation_level": "CONFIRMED_COMPLETED"
+  },
+  "route_trace": {
+    "path": "fast_path",
+    "monitor_invoked": false,
+    "final_decision": "ALLOW",
+    "reason": "POLICY_PERMIT:R3-permit-internal-export",
+    "reason_codes": [
+      "POLICY_PERMIT:R3-permit-internal-export"
+    ],
+    "failure_reason": null,
+    "review_reason": null,
+    "latency_ms": 0.2862,
+    "decision_latency_ms": 0.2862,
+    "policy_verdict": "PERMIT",
+    "monitor_verdict": "NOT_CONSULTED"
+  }
+}

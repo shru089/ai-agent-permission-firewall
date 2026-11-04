@@ -1,0 +1,27 @@
+{
+  "action_id": "act_d212aa6a0d9d",
+  "status": "DENIED",
+  "decision": "DENY",
+  "reason_codes": [
+    "POLICY_PROHIBIT:R1-no-confidential-external-export"
+  ],
+  "policy_verdict": "PROHIBIT",
+  "monitor_verdict": "NOT_CONSULTED",
+  "ticket_id": null,
+  "result": null,
+  "route_trace": {
+    "path": "fast_path",
+    "monitor_invoked": false,
+    "final_decision": "DENY",
+    "reason": "POLICY_PROHIBIT:R1-no-confidential-external-export",
+    "reason_codes": [
+      "POLICY_PROHIBIT:R1-no-confidential-external-export"
+    ],
+    "failure_reason": "POLICY_PROHIBIT:R1-no-confidential-external-export",
+    "review_reason": null,
+    "latency_ms": 0.2224,
+    "decision_latency_ms": 0.2224,
+    "policy_verdict": "PROHIBIT",
+    "monitor_verdict": "NOT_CONSULTED"
+  }
+}

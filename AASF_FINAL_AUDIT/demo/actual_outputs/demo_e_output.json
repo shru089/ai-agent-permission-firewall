@@ -1,0 +1,27 @@
+{
+  "action_id": "act_2e7e2f9265e5",
+  "status": "PENDING_REVIEW",
+  "decision": "REVIEW",
+  "reason_codes": [
+    "MONITOR_UNAVAILABLE"
+  ],
+  "policy_verdict": "PERMIT",
+  "monitor_verdict": "UNKNOWN",
+  "ticket_id": "tkt_e87363c2f54b",
+  "result": null,
+  "route_trace": {
+    "path": "fast_path",
+    "monitor_invoked": true,
+    "final_decision": "REVIEW",
+    "reason": "MONITOR_UNAVAILABLE",
+    "reason_codes": [
+      "MONITOR_UNAVAILABLE"
+    ],
+    "failure_reason": null,
+    "review_reason": "MONITOR_UNAVAILABLE",
+    "latency_ms": 0.2719,
+    "decision_latency_ms": 0.2719,
+    "policy_verdict": "PERMIT",
+    "monitor_verdict": "UNKNOWN"
+  }
+}

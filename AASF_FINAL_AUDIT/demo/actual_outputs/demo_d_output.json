@@ -1,0 +1,11 @@
+{
+  "ticket_id": "tkt_abb4431cdf00",
+  "status": "ReviewStatus.PENDING",
+  "resolve_status": "DENIED",
+  "decision": "Decision.DENY",
+  "reasons": [
+    "STATE_CHANGED",
+    "RECORDED:546db37a68681d68d708d9a5dc7873119044bcf1064fc68e37a00afbdbc9e4f6",
+    "CURRENT:4e85a3d1c0be694abbb324d07761bfb6abf8609b01fdf2a5aad575c59cadea3d"
+  ]
+}
