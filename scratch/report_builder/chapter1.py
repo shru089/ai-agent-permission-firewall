@@ -73,16 +73,16 @@ def add_chapter1(doc: Document):
     add_bullet(doc, "An attacker tricks the agent into acting as an unauthorized intermediary to perform actions that the attacker lacks permissions to execute directly, bypassing boundary firewalls.", "B. Confused Deputy Vulnerabilities:")
     add_bullet(doc, "The hallmark of sophisticated attacks against agents. No single tool call violates policy in isolation. Step 1 reads confidential data (permitted under read policy); Step 2 stages a temporary file; Step 3 transmits data externally. Stateless defenses evaluate each step as legal, failing to detect the exfiltration pipeline.", "C. Multi-Step Context Manipulation:")
     add_bullet(doc, "As an agent executes lengthy workflows, its internal context window accumulates thousands of tokens. Hallucinations, subtle goal misalignments, or attention degradation can cause the agent to wander from its original intent, modifying sensitive resources unintentionally.", "D. Goal Drift and State Degradation:")
-    add_bullet(doc, "Existing production solutions frequently default to human-in-the-loop review queues for every sensitive tool call. In high-throughput enterprise pipelines, this floods human operators with hundreds of trivial tickets, inducing severe cognitive fatigue that inevitably leads to erroneous rubber-stamping of malicious requests.", "E. Reviewer Fatigue and Operational Bottlenecks:")
+    add_bullet(doc, "Human review requirements can add operational workload. This project measures review rates on its benchmark splits and does not evaluate a deployed production review queue.", "E. Reviewer Workload:")
 
     # 1.4 Problem Statement
     add_h1(doc, "1.4", "Problem Statement")
     add_callout(doc, "FORMAL PROBLEM STATEMENT",
         "Given an autonomous agent session S executing an unbounded sequence of tool invocations {a_1, a_2, ..., a_n} in an "
         "enterprise environment with heterogeneous security classifications, design an in-process security mediation firewall that "
-        "provably guarantees complete prevention of multi-step policy violations (Attack Prevention Rate = 1.0) while minimizing "
+        "evaluates multi-step policy violations using the benchmark measures reported in Chapter 8 while minimizing "
         "human review burden, maintaining legitimate task success, preserving strict cryptographic non-repudiation, and executing "
-        "decision mediation within an operational latency bound of p95 <= 600 ms."
+        "decision mediation evaluated against the preregistered latency budget; H5 status and limitations are reported in the latency-results section."
     )
 
     # 1.5 Motivation and Industry Relevance
@@ -102,7 +102,7 @@ def add_chapter1(doc: Document):
     add_bullet(doc, "Develop a deterministic, monotonic state-folding engine (Phi) that maintains a tamper-evident, cryptographically hash-chained session state reflecting complete historical resource access.", "Primary Objective 2 (State Awareness):")
     add_bullet(doc, "Formulate a three-valued policy engine (PERMIT, PROHIBIT, REVIEW) combined with a mathematically pure decision combinator (Delta) enforcing twelve strict security invariants (INV-01 to INV-12).", "Primary Objective 3 (Invariant Enforcement):")
     add_bullet(doc, "Design a tiered advisory cascade combining lightweight heuristic classifiers and offline LLM monitors to slash human review overhead without granting models veto or allow authority.", "Primary Objective 4 (Adaptive Cascades):")
-    add_bullet(doc, "Implement a cryptographically enforced single-use execution token mechanism (HMAC-SHA256) preventing replay attacks and race conditions.", "Secondary Objective 1 (Token Security):")
+    add_bullet(doc, "Implement a single-use execution token mechanism bound to the action and relevant state, with expiry and replay checks. HMAC-SHA256 is used separately by the evidence verifier.", "Secondary Objective 1 (Token Security):")
     add_bullet(doc, "Empirically evaluate the architecture against pre-registered hypotheses (H1 to H5) across four canonical dataset splits under strict action-history invariance.", "Secondary Objective 2 (Empirical Validation):")
 
     # 1.7 Project Scope and System Boundaries
@@ -119,7 +119,7 @@ def add_chapter1(doc: Document):
     )
     add_bullet(doc, "The Deterministic State Fold (Phi) continually updates the session state vector by folding incoming actions and their confirmed outcomes into an immutable hash chain. Every resource classification, destination zone, and data taint accumulated during the session is permanently tracked.", "1. Stateful Causal History:")
     add_bullet(doc, "The Pure Decision Combinator (Delta) maps the joint state of the policy engine, evidence verifier, and advisory monitors into a definitive trichotomy: ALLOW, DENY, or REVIEW. Crucially, advisory AI monitors are restricted to advisory-only semantics—they can recommend scrutiny, but can never override a deterministic policy prohibition.", "2. Fail-Closed Invariant Combinator:")
-    add_bullet(doc, "When human oversight is required, the Review Service generates a cryptographic review ticket bound to the exact state hash. Upon human approval, the state is re-evaluated to prevent time-of-check to time-of-use (TOCTOU) exploits, and a single-use HMAC authorization token is issued directly to the Controlled Executor.", "3. Cryptographic Tokenized Execution:")
+    add_bullet(doc, "When human oversight is required, the Review Service generates a review ticket bound to the relevant state. Upon human approval, the state is re-evaluated before a single-use authorization token is issued to the Controlled Executor. HMAC-SHA256 evidence verification is handled separately.", "3. Tokenized Execution:")
 
     # 1.9 Organization of the Report
     add_h1(doc, "1.9", "Organization of the Report")
@@ -130,8 +130,8 @@ def add_chapter1(doc: Document):
     add_bullet(doc, "Provides existing vs. proposed system analysis, feasibility analysis, use case modeling, functional decomposition, and Level 0 DFD.", "Chapter 5 (Project Analysis):")
     add_bullet(doc, "Exposes the architectural blueprint, component design, Level 1 DFD, UML Class, Sequence, and Activity diagrams, state-fold algorithms, and token lifecycle.", "Chapter 6 (Project Design):")
     add_bullet(doc, "Documents implementation specifics across all core modules, code snippets, package structure, and invariant traceability.", "Chapter 7 (Implementation):")
-    add_bullet(doc, "Details experimental methodology, benchmark dataset splits, test suite breakdown (415 tests), hypothesis outcomes (H1–H5), latency, ablations, and validity threats.", "Chapter 8 (Result Analysis):")
+    add_bullet(doc, "Details experimental methodology, benchmark dataset splits, the audited test result (433 tests passed), hypothesis outcomes (H1–H5), latency, ablations, and validity threats.", "Chapter 8 (Result Analysis):")
     add_bullet(doc, "Summarizes project achievements, research and technical contributions, system limitations, future extension roadmaps, and final conclusions.", "Chapter 9 (Conclusion):")
-    add_bullet(doc, "Provides full IEEE references, list of research publications (P1–P4), paper abstracts, plagiarism documentation, formal invariant proofs, and cryptographic manifests.", "Back Matter & Appendices:")
+    add_bullet(doc, "Provides references, research manuscripts and abstracts, security invariant specifications, and dataset manifests.", "Back Matter & Appendices:")
     
     add_page_break(doc)

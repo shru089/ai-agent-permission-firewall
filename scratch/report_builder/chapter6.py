@@ -36,9 +36,9 @@ def add_chapter6(doc: Document):
     # 6.2 Architectural Design Principles
     add_h1(doc, "6.2", "Architectural Design Principles")
     add_p(doc, "AASF’s architectural blueprint is governed by four immutable engineering principles:")
-    add_bullet(doc, "The firewall is an inescapable reference monitor. No execution handle exists in the agent's process space that can invoke tools without traversing FirewallCore (INV-01).", "1. Complete Mediation:")
+    add_bullet(doc, "Configured tool dispatches are mediated through FirewallCore and the controlled executor (INV-01).", "1. Tool Dispatch Mediation:")
     add_bullet(doc, "Security-relevant attributes, such as data sensitivity classifications and network zone bindings, monotonically accumulate within the session state and cannot be erased or downgraded by subsequent unprivileged actions (INV-12).", "2. Monotonic State Accumulation:")
-    add_bullet(doc, "Every component boundary enforces a strict information barrier. Advisory models and human reviewers receive projection views with sensitive values redacted, preventing secondary data leakage (INV-10).", "3. Principle of Least Privilege & Isolation:")
+    add_bullet(doc, "Monitor and reviewer views are constructed from projected fields, and repository tests exercise selected redaction behaviors. This does not establish that every sensitive value or secret format is removed (INV-10).", "3. Principle of Least Privilege & Isolation:")
     add_bullet(doc, "In the presence of any ambiguity—whether missing evidence tokens, unparseable payloads, or model execution timeouts—the system defaults to a secure non-executing state (REVIEW or DENY) (INV-04).", "4. Fail-Closed Default Stance:")
 
     # 6.3 Detailed Component and Module Design
@@ -50,7 +50,7 @@ def add_chapter6(doc: Document):
     add_bullet(doc, "Wraps heuristic classifiers (B4) and model clients (B5/P1) inside a timeout-bounded, exception-isolated execution harness.", "4. CascadeAdapter & SafeMonitorWrapper:")
     add_bullet(doc, "A pure mathematical function Delta implementing three-valued decision synthesis and enforcing invariants INV-03 and INV-04.", "5. DecisionCombinator:")
     add_bullet(doc, "Manages review ticket generation, human approval capture, state-hash revalidation (INV-05), and session resume signaling.", "6. ReviewService:")
-    add_bullet(doc, "Generates and atomically redeems single-use HMAC-SHA256 execution tokens bound to action hashes (INV-06, INV-08).", "7. TokenStore:")
+    add_bullet(doc, "Issues and redeems single-use authorization tokens bound to the action and relevant state. HMAC-SHA256 evidence verification is separate.", "7. TokenStore:")
     add_bullet(doc, "The only component with authority to invoke underlying tools; dispatches calls if and only if presented with a valid token.", "8. ControlledExecutor:")
 
     # 6.4 Data Flow Diagrams (Level 1 DFD)
@@ -134,8 +134,8 @@ def add_chapter6(doc: Document):
     add_p(doc,
         "The Decision Combinator is the central arbiter of AASF. It evaluates inputs across a three-valued lattice: "
         "Policy Verdict P in {PERMIT, PROHIBIT, REVIEW}, Evidence Status E in {VALID, INVALID, MISSING}, and Monitor Verdict "
-        "M in {BENIGN, SUSPICIOUS, MALICIOUS, NOT_CONSULTED}. Figure 6.9 details the combinator flowchart, verifying how strict "
-        "invariants guarantee that advisory models can never overturn a policy prohibition."
+        "M in {BENIGN, SUSPICIOUS, MALICIOUS, NOT_CONSULTED}. Figure 6.9 details the combinator flowchart and the policy precedence "
+        "that prevents monitor advice from authorizing a prohibited action."
     )
     
     # Embed Fig 6.3 Decision Combinator Flowchart

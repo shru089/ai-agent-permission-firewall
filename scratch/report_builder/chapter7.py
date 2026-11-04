@@ -45,7 +45,7 @@ def add_chapter7(doc: Document):
         ["src/firewall/executor/", "Controlled Tool Execution", "executor.py (ControlledExecutor), tokens.py (TokenStore)"],
         ["src/firewall/audit/", "Tamper-Evident Audit", "store.py (AuditStore, hash chaining, verify_chain)"],
         ["experiments/", "Benchmark Harnesses", "generator/ (cli.py, synthesis.py), run_experiment.py"],
-        ["tests/", "Automated Test Suites", "unit/, integration/, invariants/, property/, experiments/ (415 tests)"],
+        ["tests/", "Automated Test Suites", "unit/, integration/, invariants, experiments; 433 tests passed in the audited run"],
     ]
     col_w_t71 = [1.8, 1.6, 2.6]
     add_table(doc, headers_t71, data_t71, "Table 7.1", "Repository Package Organization and Subsystem Directory Mapping", col_w_t71)
@@ -55,8 +55,8 @@ def add_chapter7(doc: Document):
     add_p(doc,
         "AASF adheres to Clean Architecture and Domain-Driven Design principles. High-level policy and decision logic do not depend "
         "on low-level database or OS drivers. Instead, all components communicate via strictly typed, immutable Pydantic v2 data models "
-        "defined in `src/firewall/contracts/models.py`. Model schemas include version markers (`CONTRACTS_VERSION = '1.0.0'`), "
-        "guaranteeing schema backwards compatibility across distributed deployments."
+        "defined in `src/firewall/contracts/models.py`. Model schemas include version markers (`CONTRACTS_VERSION = '1.0.0'`) "
+        "for identifying the contract version."
     )
 
     # 7.3 Implementation Architecture and Interception Boundary
@@ -70,8 +70,7 @@ def add_chapter7(doc: Document):
     # 7.4 Runtime Firewall Core Orchestrator
     add_h1(doc, "7.4", "Runtime Firewall Core Orchestrator")
     add_p(doc,
-        "The `FirewallCore` class coordinates all runtime subsystems under a fine-grained session lock (`threading.Lock`), "
-        "guaranteeing thread-safe execution across concurrent agent sessions (INV-11). Listing 7.1 demonstrates the primary "
+        "The `FirewallCore` class coordinates runtime subsystems under a session lock (`threading.Lock`) (INV-11). Listing 7.1 demonstrates the primary "
         "request submission and routing logic from `src/firewall/core.py`."
     )
     
@@ -117,8 +116,8 @@ def add_chapter7(doc: Document):
     add_p(doc,
         "Advisory monitors are integrated via `SafeMonitorWrapper`, which wraps all external monitor executions with: (1) strict "
         "per-call timeouts (default 200 ms); (2) exception catchers that map crashes to `MonitorVerdict.ERROR`; and (3) payload "
-        "sanitization via `build_monitor_view()`. The tiered heuristic cascade (`CascadeAdapter`) inspects action patterns; low-risk "
-        "diagnostic tools (e.g., `validate_schema`) bypass secondary model consultation via the sub-millisecond fast path."
+        "sanitization via `build_monitor_view()`. The tiered heuristic cascade (`CascadeAdapter`) inspects action patterns. Some actions "
+        "may not require secondary model consultation; canonical evaluator latency is reported by arm and split in Chapter 8."
     )
 
     # 7.7 Decision Combinator Implementation
@@ -160,34 +159,11 @@ def add_chapter7(doc: Document):
     # 7.9 Execution Token Store and Controlled Executor
     add_h1(doc, "7.9", "Execution Token Store and Controlled Executor")
     add_p(doc,
-        "Listing 7.3 exhibits the cryptographic token issuance and single-use redemption logic from `src/firewall/executor/tokens.py`. "
-        "Tokens are computed as `HMAC-SHA256(secret_key, session_id || action_hash || state_hash || expiry)`. The store maintains "
-        "an atomic consumed set protected by threading mutexes, guaranteeing that no token can be redeemed twice (INV-06)."
+        "`TokenStore` in `src/firewall/executor/tokens.py` issues and redeems authorization tokens. Tokens are "
+        "bound to the action and relevant state and are subject to expiry and single-use checks. HMAC-SHA256 is used separately by the "
+        "evidence verifier. The store maintains a consumed-token set protected by a mutex; a consumed token cannot be reused."
     )
     
-    code_snippet_token = (
-        "class TokenStore:\n"
-        "    def issue_token(self, session_id: str, action_hash: str, state_hash: str) -> str:\n"
-        "        payload = f'{session_id}:{action_hash}:{state_hash}:{time.time() + self.ttl_seconds}'\n"
-        "        sig = hmac.new(self.secret_key, payload.encode('utf-8'), hashlib.sha256).hexdigest()\n"
-        "        token = f'tok_{sig[:32]}'\n"
-        "        with self._lock:\n"
-        "            self._active_tokens[token] = TokenMetadata(session_id=session_id, action_hash=action_hash, ...)\n"
-        "        return token\n"
-        "\n"
-        "    def consume_token(self, token: str, action_hash: str) -> bool:\n"
-        "        with self._lock:\n"
-        "            if token in self._consumed_tokens or token not in self._active_tokens:\n"
-        "                raise InvalidTokenError('Token is invalid, expired, or already consumed (INV-06)')\n"
-        "            meta = self._active_tokens[token]\n"
-        "            if meta.action_hash != action_hash:\n"
-        "                raise TokenMismatchError('Token action hash mismatch (INV-08)')\n"
-        "            self._consumed_tokens.add(token)\n"
-        "            del self._active_tokens[token]\n"
-        "            return True"
-    )
-    add_code_snippet(doc, code_snippet_token, "Listing 7.3: Single-Use Execution Token Lifecycle Implementation")
-
     # 7.10 Deterministic State Folding Engine
     add_h1(doc, "7.10", "Deterministic State Folding Engine")
     add_p(doc,
@@ -207,8 +183,7 @@ def add_chapter7(doc: Document):
     # 7.12 Implementation Traceability of Invariants INV-01 to INV-12
     add_h1(doc, "7.12", "Implementation Traceability of Invariants INV-01 to INV-12")
     add_p(doc,
-        "Table 7.2 maps each formalized mathematical security invariant directly to its authoritative implementation file "
-        "and verification test suite in the repository."
+        "Table 7.2 maps documented security invariants to implementation files and related repository tests. This mapping is not formal verification of each invariant."
     )
     
     headers_t72 = ["Invariant ID", "Invariant Name", "Authoritative Source File", "Verification Test Suite"]
@@ -232,10 +207,8 @@ def add_chapter7(doc: Document):
     # 7.13 Technical Implementation Highlights and Code Snippets
     add_h1(doc, "7.13", "Technical Implementation Highlights and Code Snippets")
     add_p(doc,
-        "A critical engineering achievement of the AASF implementation is the elimination of credential leakage across monitor logs. "
-        "During our security audits, we discovered that raw tool outputs, exception strings, and error messages frequently embedded "
-        "database connection strings or private keys. AASF implements recursive regex scrubbing in `src/firewall/state/views.py`, "
-        "ensuring that all nested JSON fields, free-text errors, and tool outputs are sanitized before entering the advisory cascade."
+        "The AASF implementation sanitizes monitor views to redact credential-like values. Tests exercise redaction in monitor and reviewer views. "
+        "Sanitization is implemented in `src/firewall/state/views.py`; this description does not establish that every possible secret format is detected."
     )
 
     add_page_break(doc)

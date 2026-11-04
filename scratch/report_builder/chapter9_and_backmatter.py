@@ -12,8 +12,8 @@ Chapter 9:
 
 Back Matter:
 - References / Bibliography (IEEE Style, 22 citations)
-- Appendix I: List of Research Publications (P1–P4)
-- Appendix II: Published Paper Abstract
+- Appendix I: Research Manuscripts
+- Appendix II: Manuscript Abstract
 - Appendix III: Plagiarism and Originality Report Placeholder
 - Appendix IV: Formal Specifications of Security Invariants (INV-01 to INV-12)
 - Appendix V: Cryptographic Benchmark Manifests
@@ -38,28 +38,27 @@ def add_chapter9(doc: Document):
 
     # 9.2 Fulfillment of Project Objectives
     add_h1(doc, "9.2", "Fulfillment of Project Objectives")
-    add_p(doc, "All primary and secondary engineering objectives established in Section 1.6 were completely fulfilled:")
-    add_bullet(doc, "Engineered FirewallCore, achieving 100% non-bypassable mediation of agent-to-tool execution dispatches (INV-01).", "1. Complete Mediation (Fulfilled):")
-    add_bullet(doc, "Implemented the deterministic folding operator Phi, maintaining an immutable, hash-chained session state vector across unbounded action histories (INV-02).", "2. State Awareness (Fulfilled):")
-    add_bullet(doc, "Formulated the three-valued policy engine and pure decision combinator Delta, verifying zero invariant violations (M-VIOL = 0) across all test suites (INV-03, INV-04).", "3. Invariant Enforcement (Fulfilled):")
-    add_bullet(doc, "Developed the tiered heuristic and advisory cascade, slashing human review overhead by 75% to 100% while maintaining sub-millisecond median latencies (p95 = 1.12 ms) (H3, H5).", "4. Adaptive Oversight Optimization (Fulfilled):")
-    add_bullet(doc, "Enforced HMAC-SHA256 single-use tokens, completely eliminating replay attacks, concurrent race conditions, and TOCTOU exploits (INV-05, INV-06).", "5. Cryptographic Tokenized Execution (Fulfilled):")
+    add_p(doc, "The following implementation and evaluation outcomes are documented in the repository:")
+    add_bullet(doc, "Implemented FirewallCore to mediate configured agent-to-tool dispatches through the firewall gateway.", "1. Complete Mediation:")
+    add_bullet(doc, "Implemented the deterministic folding operator Phi for modeled session histories, with hash-chained state records in the in-process runtime (INV-02).", "2. State Awareness:")
+    add_bullet(doc, "Implemented the three-valued policy engine and decision combinator Delta. The benchmark summary reports M-VIOL = 0 / 0 for its listed arms and splits.", "3. Policy and Decision Logic:")
+    add_bullet(doc, "Compared with B3, B6 review rate decreased from 0.3333 to 0.0833 on TEST-IN (75%) and from 0.2500 to 0.0000 on TEST-NOVEL (100%). P1 p95 evaluator latency was 1.023 ms on TEST-IN and 0.936 ms on TEST-NOVEL. The separate synthetic-request CLI benchmark is not combined with evaluator measurements.", "4. Evaluated Review and Latency Results:")
+    add_bullet(doc, "TokenStore issues single-use authorization tokens bound to the action and relevant state, with expiry and replay checks. HMAC-SHA256 is used separately by the evidence verifier.", "5. Authorization Token Handling:")
 
     # 9.3 Core Research Contributions
     add_h1(doc, "9.3", "Core Research Contributions")
-    add_p(doc, "The project delivered four foundational scientific contributions to the literature of AI agent security:")
-    add_bullet(doc, "Mathematically proved and empirically demonstrated that stateless monitors exhibit Youden's J = 0.0 on history-manipulated workflows, establishing state-history folding as a formal requirement for agent security (P1).", "Contribution 1: State vs. Context Theorem:")
+    add_p(doc, "The project documents the following research and engineering contributions:")
+    add_bullet(doc, "The DEV manipulation-check artifact reports Youden's J = 0.0 for B3 and B4. In the benchmark summary, B3/B4 report J = 0.0000 on TEST-IN and TEST-NOVEL, while B6/P1 report J = 0.5000 on TEST-IN and 1.0000 on TEST-NOVEL.", "Contribution 1: State and Context Evaluation:")
     add_bullet(doc, "Formalized an attribute-based policy lattice capable of dynamically propagating resource taints across multi-step agent actions without manual policy restructuring (P2).", "Contribution 2: Dynamic Policy Lattice:")
-    add_bullet(doc, "Proved that advisory AI models can be safely integrated into mission-critical systems provided their authority is strictly restricted to escalation-only semantics within a fail-closed combinator (P3).", "Contribution 3: Advisory-Only Cascade Semantics:")
-    add_bullet(doc, "Established mathematical models for human reviewer queue management, proving that risk-stratified gating resolves reviewer fatigue while preserving safety (P4).", "Contribution 4: Human-in-the-Loop Optimization:")
+    add_bullet(doc, "Implemented advisory monitor semantics in which monitor advice does not authorize an action that policy prohibits.", "Contribution 3: Advisory-Only Cascade Semantics:")
+    add_bullet(doc, "Evaluated review rates by arm on TEST-IN and TEST-NOVEL; the reported rates are split-specific benchmark measurements.", "Contribution 4: Human-in-the-Loop Evaluation:")
 
     # 9.4 Engineering and Technical Contributions
     add_h1(doc, "9.4", "Engineering and Technical Contributions")
     add_p(doc,
-        "From an engineering perspective, AASF provides a production-grade, open-source reference implementation written in modern Python 3.11. "
-        "The repository contains 415 automated tests achieving complete code and branch coverage, verified under strict Ruff linting, Mypy typing, "
-        "and automated GitHub Actions CI pipelines. The architecture introduces reusable abstractions including `ControlledExecutor`, `TokenStore`, "
-        "`AuditStore`, and `SafeMonitorWrapper` that can be integrated directly into commercial agent platforms (e.g., LangGraph, AutoGen)."
+        "AASF is an in-process Python implementation of an agent-action permission firewall. 433 tests passed in the audited run, "
+        "with zero failures. Test runtime depends on the execution environment. No coverage report establishing complete code or branch coverage "
+        "is included in the audited artifacts. Production readiness and integration with commercial agent platforms were not evaluated."
     )
 
     # 9.5 Encountered Limitations
@@ -67,11 +66,11 @@ def add_chapter9(doc: Document):
     add_p(doc, "Three engineering limitations were identified during evaluation:")
     add_bullet(doc, "The canonical runtime currently executes in-process within a single operating system host process. Distributed agent clusters spanning multiple host nodes require shared Redis or Raft-backed state stores.", "1. Single-Node In-Process Scope:")
     add_bullet(doc, "Cryptographic token keys and evidence HMAC secrets reside in host memory; physical memory scraping by a root adversary with kernel privileges is out of scope.", "2. Memory-Resident Key Storage:")
-    add_bullet(doc, "While AASF perfectly tracks structured tool calls, unstructured free-form agent thoughts (hidden chain-of-thought) are not parsed for covert steganographic channels.", "3. Unstructured Cognitive Steganography:")
+    add_bullet(doc, "The implementation evaluates structured tool actions; unstructured agent reasoning text is outside the evaluated action interface.", "3. Unstructured Agent Content:")
 
     # 9.6 Future Scope and Extension Roadmaps
     add_h1(doc, "9.6", "Future Scope and Extension Roadmaps")
-    add_p(doc, "The project establishes a clear roadmap for future research and commercial extension:")
+    add_p(doc, "The following items are proposed future work; their inclusion does not imply that production or commercial readiness has been established:")
     add_bullet(doc, "Migrate the StateEngine and TokenStore to a distributed, Byzantine Fault Tolerant (BFT) consensus protocol (e.g., Raft) to support multi-agent swarms operating across heterogeneous cloud clusters.", "1. Distributed Multi-Node State Synchronization:")
     add_bullet(doc, "Integrate Hardware Security Modules (HSM) or cloud KMS (e.g., AWS KMS, HashiCorp Vault) for hardware-enforced token signing and tamper-proof key isolation.", "2. Hardware-Enforced HSM Key Storage:")
     add_bullet(doc, "Develop reinforcement learning algorithms that observe human reviewer resolutions over time to synthesize and propose automated ABAC rule refinements.", "3. Dynamic Policy Learning and Self-Tuning:")
@@ -80,11 +79,9 @@ def add_chapter9(doc: Document):
     # 9.7 Final Concluding Remarks
     add_h1(doc, "9.7", "Final Concluding Remarks")
     add_p(doc,
-        "The deployment of autonomous AI agents in mission-critical enterprise environments cannot rely on the fragile hope that foundation "
-        "models will unfailingly adhere to natural language guidelines. Security requires mathematical rigor, deterministic state tracking, "
-        "cryptographic non-repudiation, and verifiable human oversight. The Adaptive Agentic Security Firewall proves that history-aware "
-        "runtime mediation eliminates multi-step attack surfaces, slashes operational overhead, and operates with sub-millisecond latency. "
-        "AASF establishes a robust, mathematically defensible foundation for the safe, secure, and compliant deployment of autonomous AI agents."
+        "This project implemented and evaluated an in-process permission firewall for agent tool actions. The benchmark report records results "
+        "by arm and dataset split; those results do not establish universal prevention or production readiness. Canonical evaluator latency and "
+        "the separate synthetic-request CLI microbenchmark are distinct measurements and are reported separately."
     )
     
     add_page_break(doc)
@@ -95,10 +92,10 @@ def add_back_matter(doc: Document):
     add_p(doc, "All cited references conform to IEEE standard academic citation formats:")
     
     refs = [
-        "[1] S. Singh, A. Kumar, and M. Haque, “State vs. context: Evaluating LLM runtime monitors under action-history manipulation,” in Proceedings of the IEEE Conference on Secure AI Systems, 2026.",
-        "[2] K. Thakur, A. Kumar, and M. Haque, “Self-adapting attribute-based access control (SA-ABAC) for multi-agent collaboration,” IEEE Transactions on Dependable and Secure Computing, vol. 23, no. 4, pp. 112–126, 2026.",
-        "[3] A. Kasurde, A. Kumar, and M. Haque, “Adaptive security-check depth: A tiered rejection cascade for latency-constrained interception,” in ACM Conference on Computer and Communications Security (CCS), 2026.",
-        "[4] S. Jagtap, A. Kumar, and M. Haque, “Workload-aware adaptive dynamic oversight for human-agent systems,” International Journal of Human-Computer Studies, vol. 182, p. 103140, 2026.",
+        "[1] S. Singh, A. Kumar, and M. Haque, “State vs. context: Evaluating LLM runtime monitors under action-history manipulation,” manuscript; publication status unverified.",
+        "[2] K. Thakur, A. Kumar, and M. Haque, “Self-adapting attribute-based access control (SA-ABAC) for multi-agent collaboration,” manuscript; publication status unverified.",
+        "[3] A. Kasurde, A. Kumar, and M. Haque, “Adaptive security-check depth: A tiered rejection cascade for latency-constrained interception,” manuscript; publication status unverified.",
+        "[4] S. Jagtap, A. Kumar, and M. Haque, “Workload-aware adaptive dynamic oversight for human-agent systems,” manuscript; publication status unverified.",
         "[5] F. B. Schneider, “Enforceable security policies,” ACM Transactions on Information and System Security (TISSEC), vol. 3, no. 1, pp. 30–50, 2000.",
         "[6] Y. Liu, R. Jia, and P. Liang, “ToolSafe: Fine-grained parameter validation and type enforcement for tool-augmented language models,” in Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (ACL), 2026, pp. 4501–4515.",
         "[7] H. Zhang, X. Chen, and D. Song, “StepGuard: Step-level runtime supervision and verification for autonomous agents,” in Proceedings of the Conference on Empirical Methods in Natural Language Processing (EMNLP), 2026, arXiv:2608.24777.",
@@ -128,54 +125,33 @@ def add_back_matter(doc: Document):
         
     add_page_break(doc)
 
-    # ---------------- APPENDIX I: LIST OF PUBLICATIONS ----------------
-    add_chapter_title(doc, "APPENDIX I", "LIST OF RESEARCH PUBLICATIONS")
-    add_p(doc,
-        "The theoretical and empirical foundations of this capstone project contributed to four peer-reviewed research papers "
-        "authored by the project team:"
-    )
-    add_bullet(doc, "S. Singh, A. Kumar, and M. Haque, “State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation,” in Proceedings of the IEEE Conference on Secure AI Systems, 2026.", "Paper 1 (Foundational Research [P1]):")
-    add_bullet(doc, "K. Thakur, A. Kumar, and M. Haque, “Self-Adapting Attribute-Based Access Control (SA-ABAC) for Multi-Agent Collaboration,” IEEE Transactions on Dependable and Secure Computing, 2026.", "Paper 2 (Policy Architecture [P2]):")
-    add_bullet(doc, "A. Kasurde, A. Kumar, and M. Haque, “Adaptive Security-Check Depth: A Tiered Rejection Cascade for Latency-Constrained Interception,” in ACM Conference on Computer and Communications Security (CCS), 2026.", "Paper 3 (Cascade Interception [P3]):")
-    add_bullet(doc, "S. Jagtap, A. Kumar, and M. Haque, “Workload-Aware Adaptive Dynamic Oversight for Human-Agent Systems,” International Journal of Human-Computer Studies, 2026.", "Paper 4 (Human Oversight Optimization [P4]):")
+    # ---------------- APPENDIX I: RESEARCH MANUSCRIPTS ----------------
+    add_chapter_title(doc, "APPENDIX I", "RESEARCH MANUSCRIPTS")
+    add_p(doc, "The repository contains research manuscripts and abstracts related to this project. Publication or peer-review status is not established by the artifacts included here.")
     
     add_page_break(doc)
 
-    # ---------------- APPENDIX II: PUBLISHED PAPER ABSTRACT ----------------
-    add_chapter_title(doc, "APPENDIX II", "PUBLISHED PAPER ABSTRACT")
-    add_callout(doc, "EXCERPT: STATE VS. CONTEXT (IEEE SECURE AI SYSTEMS 2026)",
+    # ---------------- APPENDIX II: MANUSCRIPT ABSTRACT ----------------
+    add_chapter_title(doc, "APPENDIX II", "MANUSCRIPT ABSTRACT")
+    add_callout(doc, "PROJECT MANUSCRIPT ABSTRACT",
         "Title: State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation\n"
         "Authors: Shrishti Singh, A. Kumar, M. Haque\n\n"
         "Abstract: Autonomous language model agents rely on multi-step tool execution pipelines to accomplish complex tasks. "
         "However, contemporary runtime defenses evaluate candidate actions either in total stateless isolation or over raw "
         "context windows subject to prompt degradation. In this paper, we investigate the vulnerability of LLM runtime monitors "
         "to action-history manipulation, where an adversary intersperses benign diagnostic actions between privileged reads and "
-        "data exfiltrations. Across a rigorous benchmark of action-invariant twin pairs, we demonstrate that stateless monitors "
-        "achieve Youden's J = 0.0, failing completely on history-dependent exfiltration attacks. To resolve this, we formalize "
+        "data exfiltrations. In the reported DEV manipulation check, B3 and B4 each have Youden's J = 0.0. The benchmark summary reports "
+        "B3/B4 J = 0.0000 on TEST-IN and TEST-NOVEL, and B6/P1 J = 0.5000 on TEST-IN and 1.0000 on TEST-NOVEL. To examine this, we describe "
         "a monotonic state-folding engine that cryptographically tracks resource classifications and taints across sessions. "
-        "Empirical evaluation confirms that state-aware mediation restores attack prevention to 100% while reducing decision latency "
-        "to sub-millisecond bounds."
+        "On TEST-IN and TEST-NOVEL, B6 and P1 each report M-APR = 1.0000. P1 p95 evaluator latency is 1.023 ms on TEST-IN and 0.936 ms on "
+        "TEST-NOVEL. These are split-specific evaluator results; the separate synthetic-request CLI microbenchmark is not combined with them."
     )
     
     add_page_break(doc)
 
-    # ---------------- APPENDIX III: PLAGIARISM REPORT ----------------
-    add_chapter_title(doc, "APPENDIX III", "PLAGIARISM AND ORIGINALITY REPORT")
-    add_p(doc, "Official Institutional Plagiarism Verification Certificate:")
-    add_callout(doc, "TURNITIN / INSTITUTIONAL SIMILARITY VERIFICATION",
-        "Document Title: Adaptive Agentic Security Firewall (AASF): B.Tech Capstone Report\n"
-        "Department: Department of Computer Science and Engineering\n"
-        "University: Chhatrapati Shivaji Maharaj University, Panvel\n"
-        "Submission Date: November 2026\n\n"
-        "Overall Similarity Index: 6% (Institutional Threshold: <= 15%)\n"
-        "Primary Source Matches:\n"
-        " - Match 1: 2% (Standard Cryptographic and IEEE Reference Definitions)\n"
-        " - Match 2: 1.5% (Pre-registered Protocol Documents, PREREG-001)\n"
-        " - Match 3: 1% (Standard Pydantic and Python Documentation Citations)\n"
-        "Exclusions: Bibliography, Quotes, Mathematical Formulas (< 12 words).\n\n"
-        "Verification Status: PASSED (Certified Bonafide Original Capstone Dissertation)\n\n"
-        "[ SIGNATURE: INSTITUTIONAL PLAGIARISM OFFICER ]"
-    )
+    # ---------------- APPENDIX III: SIMILARITY VERIFICATION STATUS ----------------
+    add_chapter_title(doc, "APPENDIX III", "SIMILARITY VERIFICATION STATUS")
+    add_p(doc, "No institutional Turnitin or equivalent similarity report is included in the repository. No similarity percentage is claimed.")
     
     add_page_break(doc)
 
@@ -207,8 +183,7 @@ def add_back_matter(doc: Document):
     # ---------------- APPENDIX V: CRYPTOGRAPHIC MANIFESTS ----------------
     add_chapter_title(doc, "APPENDIX V", "CRYPTOGRAPHIC BENCHMARK MANIFESTS")
     add_p(doc,
-        "To ensure exact scientific reproducibility, all benchmark splits and evaluation results are cryptographically sealed. "
-        "The SHA-256 digests below match the frozen manifest files tracked in the official repository:"
+        "The repository tracks dataset manifests and test commitments. These hashes identify committed protocol and split artifacts; they do not cryptographically seal evaluation result tables or guarantee that every result can be regenerated:"
     )
     add_callout(doc, "BENCHMARK CRYPTOGRAPHIC COMMITMENTS",
         "1. PREREG-001 Protocol Digest:\n"
@@ -220,6 +195,6 @@ def add_back_matter(doc: Document):
         "4. TEST Split Sealed Commitment (docs/prereg/TEST_COMMITMENT.sha256):\n"
         "   test_in_traces.jsonl: SHA-256 verified\n"
         "   test_novel_traces.jsonl: SHA-256 verified\n\n"
-        "5. Automated Test Suite Commitment:\n"
-        "   415 passed in 10.97s (pytest -q, Ruff 0 errors, Mypy 0 errors)"
+        "5. Test run:\n"
+        "   433 tests passed in the audited run; runtime depends on the execution environment. This is not a cryptographic commitment."
     )

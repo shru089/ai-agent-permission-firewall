@@ -101,8 +101,8 @@ def add_chapter2(doc: Document):
     )
     add_bullet(doc,
         "Singh, Kumar, and Haque, 'State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation' (docs/research/shrishti). "
-        "This foundational research proved that stateless monitors achieve Youden's J = 0.0 when faced with multi-step history manipulation, "
-        "establishing the mathematical necessity of state-folding mediation.",
+        "This research investigated monitor performance on multi-step history manipulation. The current benchmark reports split-specific "
+        "Youden's J values for B3, B4, B6, and P1 in Chapter 8.",
         "[P1] State-History Monitoring Foundations:"
     )
     add_bullet(doc,
@@ -112,12 +112,12 @@ def add_chapter2(doc: Document):
     )
     add_bullet(doc,
         "Kasurde, Kumar, and Haque, 'Adaptive Security-Check Depth: A Tiered Rejection Cascade for Latency-Constrained Interception' (docs/research/akshat). "
-        "This research developed the tiered fast-path and cascade-path heuristic filters, proving that 90%+ of benign requests can be verified in < 1 ms.",
+        "This research describes tiered fast-path and cascade-path heuristic filters. No provider-latency or 90% fast-path result is claimed here.",
         "[P3] Tiered Advisory Cascades and Fast-Path Routing:"
     )
     add_bullet(doc,
         "Jagtap, Kumar, and Haque, 'Workload-Aware Adaptive Dynamic Oversight for Human-Agent Systems' (docs/research/snehal). "
-        "This work established the mathematical optimization models for human review routing, proving that dynamic risk-based gating eliminates 75%+ of reviewer fatigue.",
+        "This work discusses workload-aware human review. The current benchmark reports review-rate changes by arm and split in Chapter 8.",
         "[P4] Dynamic Human Oversight and Reviewer Fatigue Optimization:"
     )
 
@@ -132,10 +132,9 @@ def add_chapter2(doc: Document):
     data_t21 = [
         ["Interception Layer", "Network / Gateway", "Application Input", "Tool Interface", "Agent Output", "Post-Hoc Logs", "In-Process Kernel"],
         ["State Awareness", "Stateless (Per-Op)", "Stateless (Context)", "Stateless (Single)", "Windowed Context", "Full Trace (Post)", "Deterministic State Fold"],
-        ["Multi-Step Exfiltration Defense", "Vulnerable (Blind)", "Vulnerable (Soft)", "Vulnerable (Blind)", "Partial (Heuristic)", "Detection Only", "Complete Prevention (100%)"],
-        ["Decision Latency Bound", "< 5 ms", "10 - 50 ms", "< 2 ms", "800 - 2500 ms", "Offline (> 10 s)", "< 2 ms (p95 Fast Path)"],
+        ["Multi-Step Exfiltration Defense", "Vulnerable (Blind)", "Vulnerable (Soft)", "Vulnerable (Blind)", "Partial (Heuristic)", "Detection Only", "M-APR = 1.0 on evaluated TEST-IN and TEST-NOVEL traces (B6/P1)"],
         ["Human Review Integration", "Manual Gates", "None", "None", "All High-Risk", "Post-Incident", "Adaptive Dynamic Cascade"],
-        ["Execution Authorization", "API Bearer Token", "None", "Direct Call", "Direct Call", "None (Audit)", "Single-Use HMAC Token"],
+        ["Execution Authorization", "API Bearer Token", "None", "Direct Call", "Direct Call", "None (Audit)", "Single-use action/state-bound authorization token"],
         ["Audit Tamper-Resistance", "Plain Database", "Application Logs", "None", "Plain Logs", "Signed Traces", "SHA-256 Hash Chaining"],
     ]
     col_w_t21 = [1.3, 0.8, 0.8, 0.8, 0.8, 0.8, 1.2]
@@ -170,18 +169,18 @@ def add_chapter2(doc: Document):
     # 2.6 Research Contributions of AASF
     add_h1(doc, "2.6", "Research Contributions of AASF")
     add_p(doc, "To resolve these identified gaps, the Adaptive Agentic Security Firewall delivers five explicit contributions:")
-    add_bullet(doc, "Formalized and implemented a deterministic state-folding engine that tracks session taints across unbounded multi-step agent workflows.", "1. Deterministic State Engine:")
-    add_bullet(doc, "Engineered a mathematically proven decision combinator enforcing twelve security invariants, guaranteeing fail-closed defaults and restricting advisory monitors to escalation-only roles.", "2. Invariant Decision Combinator:")
-    add_bullet(doc, "Constructed a single-use HMAC tokenized execution pipeline that cryptographically binds authorization to exact state hashes, completely eliminating replay and TOCTOU attacks.", "3. Single-Use Token Architecture:")
-    add_bullet(doc, "Designed a tiered advisory cascade combining sub-millisecond heuristic filters with offline models, reducing human review burden by 75% to 100% without compromising security.", "4. Adaptive Oversight Optimization:")
-    add_bullet(doc, "Established and preregistered a frozen, cryptographically sealed 4-split benchmark (DEV, CAL, TEST-IN, TEST-NOVEL) verifying 100% action-D invariance across multi-step attack twins.", "5. Empirical Benchmark & Validation:")
+    add_bullet(doc, "Implemented a deterministic state-folding engine that tracks modeled session state across the multi-step traces exercised by the repository.", "1. Deterministic State Engine:")
+    add_bullet(doc, "Implemented a decision combinator that applies the documented policy precedence and fail-closed rules, with advisory monitors restricted to advice.", "2. Invariant Decision Combinator:")
+    add_bullet(doc, "Implemented a single-use authorization-token pipeline with action binding, expiry, and replay checks. HMAC-SHA256 is used separately by the evidence verifier.", "3. Single-Use Token Architecture:")
+    add_bullet(doc, "The benchmark summary reports B6 review-rate reductions relative to B3 of 75% on TEST-IN (0.3333 to 0.0833) and 100% on TEST-NOVEL (0.2500 to 0.0000).", "4. Adaptive Oversight Evaluation:")
+    add_bullet(doc, "Evaluated the four dataset splits DEV, CAL, TEST-IN, and TEST-NOVEL under the preregistered protocol. Results are reported by split and arm.", "5. Empirical Benchmark:")
 
     # 2.7 Summary
     add_h1(doc, "2.7", "Summary")
     add_p(doc,
         "Contemporary literature reveals an urgent, unaddressed gap between stateless perimeter controls and non-deterministic LLM judges. "
-        "By synthesizing Schneider's formal execution monitoring theory with attribute-based access control and cryptographic tokenized execution, "
-        "AASF provides the first comprehensive, mathematically provable, and latency-optimized runtime firewall for autonomous agents."
+        "AASF combines in-process action mediation, stateful policy evaluation, advisory monitor consultation, and controlled execution. "
+        "The benchmark results and their limits are reported by arm and split in Chapter 8."
     )
     
     add_page_break(doc)

@@ -38,7 +38,7 @@ def add_chapter5(doc: Document):
     add_p(doc, "Our technical analysis identifies five catastrophic vulnerabilities inherent to existing agent architectures:")
     add_bullet(doc, 
         "Existing systems maintain zero memory of preceding actions. They cannot correlate a current export action with a read action performed "
-        "three steps earlier. Consequently, multi-step data exfiltration pipelines succeed with a 100% Attack Success Rate (ASR) against stateless controls.",
+        "three steps earlier. The evaluated history-manipulation scenarios test whether monitors account for this preceding context.",
         "1. Complete Causal Blindness (Stateless Evaluation):"
     )
     add_bullet(doc, 
@@ -47,14 +47,12 @@ def add_chapter5(doc: Document):
         "2. Absence of Dynamic Taint Propagation:"
     )
     add_bullet(doc, 
-        "Standard execution engines dispatch calls using persistent system credentials. Once an agent decides to invoke a tool, there is no "
-        "cryptographic handshake or single-use authorization token required. This leaves the system completely defenseless against token replay, "
-        "race conditions, and internal execution hijacking.",
+        "Some execution engines dispatch calls using persistent system credentials without a single-use authorization token. This design can "
+        "increase exposure to replay and authorization-binding risks.",
         "3. Lack of Execution Tokenization:"
     )
     add_bullet(doc, 
-        "Mandatory human review for every sensitive action creates an unbearable operational bottleneck. In production simulations, human "
-        "operators faced with 50+ alerts per hour experience severe cognitive fatigue, leading to rubber-stamping rates exceeding 80%.",
+        "Mandatory human review for sensitive actions can increase review workload. This study measures review rates on its benchmark splits; it does not evaluate a deployed production review queue.",
         "4. Acute Human Oversight Fatigue:"
     )
     add_bullet(doc, 
@@ -67,20 +65,20 @@ def add_chapter5(doc: Document):
     add_h1(doc, "5.3", "Proposed System Architecture and Advantages")
     add_p(doc,
         "The Adaptive Agentic Security Firewall (AASF) replaces unmediated execution with an authoritative, in-process security kernel. "
-        "AASF intercepts every agent tool request, folds it into a deterministic state vector, evaluates stateful ABAC policies, consults "
+        "FirewallCore mediates submitted requests through the configured execution interface, folds them into a deterministic state vector, evaluates stateful ABAC policies, consults "
         "tiered advisory monitors, and issues cryptographically signed, single-use execution tokens. Table 5.1 provides a structured comparison "
         "between the existing paradigm and the proposed AASF architecture."
     )
     
     headers_t51 = ["Architectural Feature", "Existing Agent Runtimes", "Proposed AASF Architecture", "Impact on Security Posture"]
     data_t51 = [
-        ["Interception Mechanism", "Direct, unmediated tool dispatch", "Authoritative in-process FirewallCore kernel", "100% mediation; no unauthenticated tool execution (INV-01)."],
+        ["Interception Mechanism", "Direct, unmediated tool dispatch", "In-process FirewallCore mediation", "Configured agent tool actions are routed through the firewall gateway."],
         ["State Tracking", "Stateless / per-action isolation", "Deterministic Monotonic State Fold (Phi)", "Correlates multi-step workflows; tracks confidential taints (INV-02)."],
         ["Policy Logic", "Binary (Allow / Deny)", "Three-Valued Lattice (PERMIT / PROHIBIT / REVIEW)", "Expressive risk handling; accommodates dynamic human oversight."],
-        ["AI Risk Monitoring", "None or direct LLM judge authority", "Advisory-only tiered cascades (B4/B5/P1)", "Reduces human fatigue by 75–100%; AI models cannot overturn policy (INV-03)."],
-        ["Execution Authorization", "Static API keys / Bearer tokens", "Single-Use HMAC-SHA256 Execution Tokens", "Eliminates replay attacks, race conditions, and TOCTOU exploits (INV-06)."],
-        ["Review Revalidation", "Unverified execution on approval", "Cryptographic state-hash re-check (INV-05)", "Guarantees state has not drifted between review and execution."],
-        ["Audit Integrity", "Plain text / Relational DB logs", "Tamper-evident SHA-256 Hash Chain", "Cryptographic non-repudiation; mathematical tamper detection (INV-09)."],
+        ["AI Risk Monitoring", "None or direct LLM judge authority", "Advisory-only tiered cascades (B4/B5/P1)", "Compared with B3, B6 review rate decreased 75% on TEST-IN and 100% on TEST-NOVEL."],
+        ["Execution Authorization", "Static API keys / Bearer tokens", "Single-use action/state-bound authorization tokens", "Token redemption checks include action binding, expiry, and single-use consumption."],
+        ["Review Revalidation", "Unverified execution on approval", "State-head re-check on approval (INV-05)", "Review approval is revalidated against the session state head."],
+        ["Audit Integrity", "Plain text / Relational DB logs", "Append-only SHA-256 hash chain", "Audit records are linked by hashes and the chain can be verified."],
     ]
     col_w_t51 = [1.3, 1.4, 1.8, 1.5]
     add_table(doc, headers_t51, data_t51, "Table 5.1", "Comparative Feature Matrix: Conventional Controls vs. Proposed AASF", col_w_t51)
@@ -89,15 +87,13 @@ def add_chapter5(doc: Document):
     add_h1(doc, "5.4", "Multidimensional Feasibility Analysis")
     add_p(doc, "A comprehensive feasibility study was conducted across four critical dimensions:")
     add_bullet(doc, 
-        "AASF is implemented entirely in modern Python 3.11 utilizing standardized cryptographic libraries (hashlib, hmac) and high-performance "
-        "Pydantic v2 data models. By running in-process, it incurs zero external network overhead on the fast path, achieving sub-millisecond "
-        "decision latencies (p95 < 2 ms). The architecture is fully compatible with existing agent frameworks.", 
+        "AASF is implemented in Python and uses Pydantic data models and standard-library cryptographic primitives. Canonical evaluator decision latency "
+        "is reported by arm and split in Chapter 8. The separate synthetic-request CLI microbenchmark is not combined with evaluator measurements.",
         "1. Technical Feasibility:"
     )
     add_bullet(doc, 
-        "AASF relies entirely on open-source software, eliminating licensing fees or commercial gateway subscriptions. Furthermore, by replacing "
-        "constant LLM-as-a-judge calls with tiered heuristic cascades and slashing human review volume by up to 100%, AASF drastically reduces "
-        "both API inference costs and human operational expenses.", 
+        "AASF uses tiered heuristic and monitor consultation. In the benchmark summary, B6 review rate relative to B3 decreased 75% on TEST-IN "
+        "and 100% on TEST-NOVEL. These results are limited to the evaluated traces; operational costs were not measured.",
         "2. Economic Feasibility:"
     )
     add_bullet(doc, 
@@ -132,17 +128,17 @@ def add_chapter5(doc: Document):
     add_p(doc, "The functional architecture of AASF decomposes into six discrete, loosely coupled subsystems:")
     add_bullet(doc, "Ingests raw agent requests, validates JSON schemas against CanonicalAction contracts, and acquires exclusive session locks.", "Subsystem 1: Interception & Session Gateway:")
     add_bullet(doc, "Maintains the session state vector, applying the deterministic folding function Phi to update history and taint classifications.", "Subsystem 2: Deterministic State Engine:")
-    add_bullet(doc, "Evaluates candidate actions against attribute rules, verifying HMAC evidence tokens and resource classifications.", "Subsystem 3: Stateful Policy Engine:")
+    add_bullet(doc, "Evaluates candidate actions against attribute rules, evidence receipts, and resource classifications. Evidence HMAC verification is separate from authorization tokens.", "Subsystem 3: Stateful Policy Engine:")
     add_bullet(doc, "Executes multi-tiered heuristic checks (B4) and offline model assessments (B5/P1) across isolated MonitorView projections.", "Subsystem 4: Advisory Monitor Cascade:")
     add_bullet(doc, "Pure mathematical decider Delta synthesizing policy, evidence, and advisory verdicts into ALLOW, DENY, or REVIEW.", "Subsystem 5: Invariant Decision Combinator:")
-    add_bullet(doc, "Manages review ticketing, state revalidation, single-use HMAC token issuance, and controlled tool execution.", "Subsystem 6: Oversight & Token Execution Engine:")
+    add_bullet(doc, "Manages review ticketing, state revalidation, single-use authorization tokens, and controlled tool execution. Evidence HMAC verification is separate.", "Subsystem 6: Oversight & Token Execution Engine:")
 
     # 5.7 Data Flow Analysis (Level 0 DFD)
     add_h1(doc, "5.7", "Data Flow Analysis (Level 0 DFD)")
     add_p(doc,
         "Figure 5.2 illustrates the Context-Level Data Flow Diagram (DFD Level 0). It highlights the strict boundary separation: "
-        "all interactions between the Agent, Security Administrator, Human Reviewer, and External Environment are mediated exclusively "
-        "through the central AASF In-Process Firewall process."
+        "configured interactions between the Agent, Security Administrator, Human Reviewer, and External Environment pass through "
+        "the central AASF in-process firewall gateway."
     )
     
     # Embed Fig 6.6 DFD Level 0 Context
@@ -155,9 +151,9 @@ def add_chapter5(doc: Document):
     add_bullet(doc, "The agent submits an ActionRequest; the gateway parses arguments and computes action_hash = SHA256(canonical_json).", "Stage 1 (Submission):")
     add_bullet(doc, "The session lock is acquired; current SessionState head hash is retrieved from the registry.", "Stage 2 (Session Lock):")
     add_bullet(doc, "PolicyEngine evaluates the action against active ABAC rules. If strictly prohibited, DENY is returned immediately.", "Stage 3 (Policy Evaluation):")
-    add_bullet(doc, "If policy permits, the request is checked against advisory cascades. Fast-path allows immediate dispatch; complex requests consult monitors.", "Stage 4 (Cascade Routing):")
+    add_bullet(doc, "If policy permits, the request follows the configured advisory cascade; monitor consultation depends on the decision path.", "Stage 4 (Cascade Routing):")
     add_bullet(doc, "DecisionCombinator computes Delta(P, E, M). If REVIEW, a ticket is created and session state transitions to BUSY.", "Stage 5 (Decision Synthesis):")
-    add_bullet(doc, "Upon ALLOW, TokenStore issues a single-use HMAC token. ControlledExecutor verifies the token and invokes the tool.", "Stage 6 (Execution):")
+    add_bullet(doc, "Upon ALLOW, TokenStore issues a single-use authorization token. ControlledExecutor validates the token before invoking the tool.", "Stage 6 (Execution):")
     add_bullet(doc, "Execution results are captured; StateEngine folds the event into the session state; AuditStore appends the hash-chained record.", "Stage 7 (State Fold & Audit):")
 
     add_page_break(doc)

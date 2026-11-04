@@ -43,8 +43,8 @@ def add_chapter4(doc: Document):
     # 4.3 Research Methodology and Protocol Pre-registration
     add_h1(doc, "4.3", "Research Methodology and Protocol Pre-registration")
     add_p(doc,
-        "To guarantee absolute scientific integrity and prevent post-hoc hypothesizing (p-hacking), the project implemented formal "
-        "experiment pre-registration. Prior to evaluating the firewall against the test splits, the research team authored and cryptographically "
+        "To reduce post-hoc interpretation, the project used a preregistered protocol. Prior to evaluating the firewall against the test splits, "
+        "the research team authored and cryptographically "
         "locked the experimental protocol in docs/prereg/PREREG-001.md, generating a SHA-256 commitment digest:"
     )
     add_callout(doc, "PRE-REGISTERED BENCHMARK COMMITMENT (PREREG-001)",
@@ -53,13 +53,13 @@ def add_chapter4(doc: Document):
         "Action-D Invariance: Matched attack-benign twin pairs share mathematically identical final action vectors a_D."
     )
     add_p(doc,
-        "This methodology guarantees that test splits remained completely quarantined from the engineering phase, preventing label leakage "
+        "The protocol defines the held-out test splits and information barriers intended to reduce label leakage "
         "or over-fitting during algorithm development."
     )
 
     # 4.4 Project Phases and Milestones
     add_h1(doc, "4.4", "Project Phases and Milestones")
-    add_p(doc, "The project was executed across nine structured phases spanning the 2026–2027 academic year:")
+    add_p(doc, "The following nine phases reproduce the historical project plan for the 2026–2027 academic year; phase descriptions are planning text, not a verified status report:")
     add_bullet(doc, "Systematic literature survey, formal threat modeling (01_THREAT_MODEL.md), requirement elicitation, and mathematical formalization of invariants INV-01 to INV-12.", "Phase 1: Problem Definition & Threat Modeling (Months 1–2):")
     add_bullet(doc, "Definition of immutable Pydantic v2 data contracts, schema snapshots, and foundational HMAC/SHA-256 cryptographic utilities.", "Phase 2: Contract Specifications & Cryptographic Primitives (Month 3):")
     add_bullet(doc, "Implementation of FirewallCore in-process interception, thread-safe session locking, and ControlledExecutor abstraction.", "Phase 3: Core Runtime Interception Architecture (Month 4):")
@@ -68,15 +68,15 @@ def add_chapter4(doc: Document):
     add_bullet(doc, "Implementation of pluggable heuristic cascades, SafeMonitorWrapper, and isolated MonitorView projections.", "Phase 6: Tiered Advisory Monitor Cascades (Month 7):")
     add_bullet(doc, "Authoring of the deterministic dataset generator, action-history twin synthesis, and protocol pre-registration locking.", "Phase 7: Benchmark Dataset & Pre-Registration (Month 8):")
     add_bullet(doc, "Execution of 8 experimental arms across DEV, CAL, TEST-IN, and TEST-NOVEL; ablation studies and latency profiling.", "Phase 8: Empirical Evaluation & Ablation Studies (Month 9):")
-    add_bullet(doc, "Compilation of academic publications (P1–P4), capstone dissertation, engineering audit reports, and artifact delivery.", "Phase 9: Documentation, Dissertation & Code Finalization (Month 10):")
+    add_bullet(doc, "Compilation of research manuscripts (publication status unverified), capstone dissertation, engineering audit reports, and artifact delivery.", "Phase 9: Documentation, Dissertation & Code Finalization (Month 10):")
 
     # 4.5 Work Breakdown Structure (WBS)
     add_h1(doc, "4.5", "Work Breakdown Structure (WBS)")
     add_p(doc,
-        "Table 4.1 delineates the Work Breakdown Structure, detailing the discrete work packages, deliverables, and completion milestones."
+        "Table 4.1 reproduces the historical work-breakdown plan. Its milestone labels are planning text and do not establish current implementation or verification status."
     )
     
-    headers_t41 = ["WBS Code", "Work Package Description", "Primary Deliverables", "Target Milestone"]
+    headers_t41 = ["WBS Code", "Work Package Description", "Primary Deliverables", "Historical Planning Label"]
     data_t41 = [
         ["1.0", "System Architecture & Threat Modeling", "Threat Model, SRS, Invariant Formalization", "Milestone M1 (Completed)"],
         ["2.0", "Core Interception & Runtime Engine", "FirewallCore, Session Locks, Interception Hook", "Milestone M2 (Completed)"],
@@ -85,7 +85,7 @@ def add_chapter4(doc: Document):
         ["5.0", "Oversight Platform & Token Management", "ReviewService, TokenStore, ControlledExecutor", "Milestone M5 (Completed)"],
         ["6.0", "Advisory Cascades & Information Barrier", "B4 CascadeAdapter, SafeMonitorWrapper, Redaction", "Milestone M6 (Completed)"],
         ["7.0", "Benchmark Generation & Manifests", "Deterministic Dataset Generator, Sealed Manifests", "Milestone M7 (Completed)"],
-        ["8.0", "Evaluation, Ablations & Benchmarking", "Hypothesis Verification (H1-H5), Latency Analysis", "Milestone M8 (Completed)"],
+        ["8.0", "Evaluation, Ablations & Benchmarking", "Reported hypothesis outcomes (H1-H5), Latency Analysis", "Historical plan label: M8 (Completed)"],
         ["9.0", "Reporting & Artifact Verification", "Comprehensive Report, Traceability Matrix, CI Audit", "Milestone M9 (Completed)"],
     ]
     col_w_t41 = [1.0, 2.0, 2.0, 1.0]
@@ -128,11 +128,11 @@ def add_chapter4(doc: Document):
     
     headers_t43 = ["Risk Description", "Category", "Probability", "Impact", "Enforced Mitigation Strategy in AASF"]
     data_t43 = [
-        ["Advisory LLM latency violates 600 ms SLA", "Performance", "Medium", "High", "Implemented tiered cascade: 90%+ benign requests resolved via sub-ms heuristic fast-path."],
+        ["Advisory LLM latency may exceed the decision budget", "Performance", "Medium", "High", "Use the reported evaluator p95 measurements by arm and split; live provider latency remains unevaluated."],
         ["State drift between review approval and execution (TOCTOU)", "Security", "High", "Critical", "Enforced INV-05: State hash recorded in ticket must match current state head hash at redemption."],
         ["Duplicate token redemption in concurrent workloads", "Security", "Medium", "Critical", "Enforced INV-06: Atomic, thread-safe token consumption using threading locks and TokenStore."],
-        ["Test split leakage into training/development", "Methodological", "Low", "High", "Strict cryptographic separation: test commitments sealed in SHA-256 manifests; automated CI leakage checks."],
-        ["Reviewer fatigue causing accidental rubber-stamping", "Operational", "High", "Medium", "Adaptive oversight filtering: advisory cascades eliminate 75%+ of redundant review tickets."],
+        ["Test split leakage into training/development", "Methodological", "Low", "High", "Split manifests and held-out commitment hashes are checked by repository tests; this does not prove absence of every possible leakage path."],
+        ["High human review volume", "Operational", "High", "Medium", "The benchmark summary reports B6 review-rate reductions relative to B3 of 75% on TEST-IN and 100% on TEST-NOVEL."],
     ]
     col_w_t43 = [1.5, 0.9, 0.7, 0.7, 2.2]
     add_table(doc, headers_t43, data_t43, "Table 4.3", "Project Risk Assessment, Probability, Impact, and Mitigation Strategies", col_w_t43)

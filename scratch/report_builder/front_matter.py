@@ -237,7 +237,7 @@ def add_front_matter(doc: Document):
     
     add_p(doc, "We confirm that this report has not been submitted previously to this or any other university or institution for the award of any degree, diploma, fellowship, or other academic recognition. All sources of information, external libraries, datasets, and peer-reviewed literature have been duly acknowledged and cited according to academic standards.")
     
-    add_p(doc, "We further affirm that all experimental benchmark data, system source code, and empirical measurements presented herein represent actual, reproducible execution artifacts verified through deterministic testing harnesses.")
+    add_p(doc, "We further affirm that the report's empirical claims are attributed to repository artifacts where available. The cited test run verifies the executed test suite; it does not establish that every evaluation result can be regenerated from a clean checkout.")
 
     p_sig_s = doc.add_paragraph()
     p_sig_s.paragraph_format.space_before = Pt(48)
@@ -278,18 +278,18 @@ def add_front_matter(doc: Document):
         "to orchestrate complex, multi-step workflows across enterprise software systems, external APIs, and sensitive data stores. "
         "However, current security mechanisms predominantly rely either on static, single-step permission policies or unconstrained "
         "human-in-the-loop review queues. These approaches fail to defend against emergent threats such as multi-step context manipulation, "
-        "confused-deputy data exfiltration, and unauthorized privilege drift, while simultaneously imposing severe reviewer fatigue. "
-        "To resolve this fundamental tension, this project presents the Adaptive Agentic Security Firewall (AASF), a mathematically "
-        "grounded, in-process security mediation architecture engineered for autonomous agent execution environments. AASF introduces "
+        "confused-deputy data exfiltration, and unauthorized privilege drift, while review requirements may add operational workload. "
+        "This project presents the Adaptive Agentic Security Firewall (AASF), an in-process security mediation prototype. AASF includes "
         "three primary technical innovations: (1) a deterministic, monotonic state-folding engine (Phi) that cryptographically accumulates "
-        "session history; (2) a three-valued policy engine coupled with a pure decision combinator (Delta) enforcing twelve provable "
-        "security invariants (INV-01 to INV-12); and (3) a tiered advisory rejection cascade that integrates lightweight rule-based "
+        "session history; (2) a three-valued policy engine coupled with a pure decision combinator (Delta), designed around twelve "
+        "security invariants (INV-01 to INV-12); and (3) an advisory cascade that integrates rule-based "
         "heuristics and offline LLM monitors without granting advisory models execution authority. The system was empirically evaluated "
         "across four pre-registered canonical dataset splits (DEV, CAL, TEST-IN, and TEST-NOVEL) under strict action-history invariance. "
-        "Experimental findings confirm that AASF completely eliminates history-dependent attack blindspots (Youden's J = 0.0 for stateless "
-        "baselines versus J = 1.0 for AASF), achieves a 100% attack prevention rate (M-APR = 1.0) on novel attacks, and slashes human review "
-        "overhead by 75% to 100% relative to mandatory review baselines, all while maintaining a 95th-percentile decision latency under 2 ms "
-        "against a 600 ms SLA. AASF demonstrates that history-aware runtime mediation is both computationally feasible and necessary for secure autonomous agent deployment."
+        "The DEV manipulation-check artifact reports Youden's J = 0.0 for B3 and B4. In the benchmark summary, B3/B4 report J = 0.0000 on "
+        "TEST-IN and TEST-NOVEL, while B6/P1 report J = 0.5000 on TEST-IN and 1.0000 on TEST-NOVEL. On both held-out splits, B6 and P1 "
+        "each report M-APR = 1.0000. Compared with B3, B6 review rate decreased from 0.3333 to 0.0833 on TEST-IN (75%) and from 0.2500 "
+        "to 0.0000 on TEST-NOVEL (100%). P1 arm-level p95 evaluator latency was 1.023 ms on TEST-IN and 0.936 ms on TEST-NOVEL. These results are "
+        "specific to the evaluated arms and splits. H2 and H3 are not verified against all frozen criteria. See Section 8.10 for the full H5 latency limitation."
     )
     add_p(doc, abstract_text)
     
@@ -424,7 +424,6 @@ def add_front_matter(doc: Document):
         ("   8.5 Empirical Benchmark Results across Experimental Arms", "130"),
         ("   8.6 Runtime Latency and Performance Overhead Evaluation", "134"),
         ("   8.7 Calibration Analysis on Validation Split", "136"),
-        ("   8.8 Ablation Study: Action History Windows", "138"),
         ("   8.9 Comparative Baseline Analysis and Confusion Matrices", "140"),
         ("   8.10 Pre-registered Hypothesis Testing (H1 to H5)", "142"),
         ("   8.11 Limitations and Threats to Validity", "145"),
@@ -437,9 +436,9 @@ def add_front_matter(doc: Document):
         ("   9.6 Future Scope and Extension Roadmaps", "153"),
         ("   9.7 Final Concluding Remarks", "155"),
         ("REFERENCES / BIBLIOGRAPHY", "156"),
-        ("APPENDIX I: LIST OF RESEARCH PUBLICATIONS (P1–P4)", "160"),
-        ("APPENDIX II: PUBLISHED PAPER ABSTRACT", "162"),
-        ("APPENDIX III: PLAGIARISM AND ORIGINALITY REPORT", "163"),
+        ("APPENDIX I: RESEARCH MANUSCRIPTS", "160"),
+        ("APPENDIX II: MANUSCRIPT ABSTRACT", "162"),
+        ("APPENDIX III: SIMILARITY VERIFICATION STATUS", "163"),
         ("APPENDIX IV: FORMAL SPECIFICATIONS OF SECURITY INVARIANTS", "164"),
         ("APPENDIX V: CRYPTOGRAPHIC BENCHMARK MANIFESTS", "168"),
     ]
@@ -503,12 +502,9 @@ def add_front_matter(doc: Document):
         ("Figure 6.10", "UML Activity Diagram for Dynamic Advisory Cascades and Fallback Routing", "95"),
         ("Figure 8.1", "Attack Prevention Rate (APR) vs. Legitimate Task Success (LTS) on TEST-IN", "131"),
         ("Figure 8.2", "Human Review Burden Reduction across Evaluated System Configurations", "133"),
-        ("Figure 8.3", "Youden’s J Statistic for Multi-Step History Manipulation across Splits (H1)", "135"),
-        ("Figure 8.4", "Uninterrupted Legitimate Task Success (M-LTS-0) Tradeoff Comparison (H2)", "137"),
-        ("Figure 8.5", "End-to-End Decision Latency Distribution (p50, p95, p99) vs. 600 ms SLA (H5)", "139"),
-        ("Figure 8.6", "Confusion Matrix Heatmaps on Critical Scenarios for B0, B1, B3, and AASF", "141"),
-        ("Figure 8.7", "Automated Test Suite Distribution across 415 Passing Verification Tests", "143"),
-        ("Figure 8.8", "Ablation Study: Empirical Security-Usability Impact of History Window Size", "145"),
+        ("Figure 8.3", "Confusion Matrix Heatmaps on Critical Scenarios for B0, B1, B3, and AASF", "141"),
+        ("Figure 8.4", "Youden’s J Statistic for Multi-Step History Manipulation across Splits (H1)", "135"),
+        ("Figure 8.5", "Uninterrupted Legitimate Task Success (M-LTS-0) Tradeoff Comparison (H2)", "137"),
     ]
     
     t_lof = doc.add_table(rows=len(lof_entries), cols=3)
@@ -564,11 +560,10 @@ def add_front_matter(doc: Document):
         ("Table 7.1", "Repository Package Organization and Subsystem Directory Mapping", "97"),
         ("Table 7.2", "Implementation Mapping of Mathematical Security Invariants in Code", "117"),
         ("Table 8.1", "Deterministic Canonical Dataset Splits and Action-D Invariance Profile", "123"),
-        ("Table 8.2", "Automated Test Suite Verification Summary across 415 Unit/Property Tests", "127"),
+        ("Table 8.2", "Automated Test Execution Summary", "127"),
         ("Table 8.3", "Empirical Evaluation Metrics across 8 Experimental Arms on TEST-IN Split", "131"),
         ("Table 8.4", "Calibration Split (CAL, N=8) Decision Threshold Optimization Outcomes", "136"),
-        ("Table 8.5", "Ablation Study: Performance across Action History Representation Windows", "138"),
-        ("Table 8.6", "Summary of Formal Hypothesis Testing Outcomes (H1 through H5)", "143"),
+        ("Table 8.5", "Measured Values for Pre-Registered Hypotheses (H1 through H5)", "143"),
     ]
     
     t_lot = doc.add_table(rows=len(lot_entries), cols=3)

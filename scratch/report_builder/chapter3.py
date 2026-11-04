@@ -23,25 +23,25 @@ def add_chapter3(doc: Document):
     add_p(doc,
         "The System Requirement Specification (SRS) establishes the formal engineering foundation for the Adaptive Agentic Security "
         "Firewall (AASF). It delineates the complete functional capabilities, non-functional performance benchmarks, hardware-software "
-        "prerequisites, technological justifications, and mathematical security invariants that govern the design, implementation, and "
-        "verification of the firewall. All requirements adhere strictly to the engineering roadmap and verified repository implementation."
+        "prerequisites, technological justifications, and mathematical security invariants that govern the design and intended implementation. "
+        "Roadmap and traceability status labels cited here are historical planning text; requirements listed in this chapter are not, by themselves, evidence of implementation or verification."
     )
 
     # 3.2 Functional Requirements (FR-01 to FR-12)
     add_h1(doc, "3.2", "Functional Requirements (FR-01 to FR-12)")
-    add_p(doc, "AASF enforces twelve discrete functional requirements spanning request interception, state tracking, policy evaluation, and controlled execution:")
+    add_p(doc, "The requirements specification defines twelve functional requirements spanning request interception, state tracking, policy evaluation, and controlled execution:")
     
     frs = [
-        ("FR-01: In-Process Tool Interception", "The firewall shall intercept 100% of tool invocation requests emitted by autonomous agents before control is dispatched to underlying OS functions, database connectors, or external APIs."),
+        ("FR-01: In-Process Tool Interception", "The firewall shall mediate agent tool invocation requests before control is dispatched to the configured executor."),
         ("FR-02: Deterministic State Folding", "The system shall implement a deterministic state-folding operator Phi(S, a, r) that updates the session state vector by folding incoming action requests and confirmed results into an immutable history chain."),
         ("FR-03: Three-Valued Policy Evaluation", "The Policy Engine shall evaluate candidate actions against active attribute-based access control rules, emitting exactly one of three formal verdicts: PERMIT, PROHIBIT, or REVIEW."),
         ("FR-04: Tiered Advisory Consultation", "The firewall shall support pluggable advisory monitors (rule-based heuristic cascades and offline LLM classifiers) capable of returning risk assessments without granting them direct authorization powers."),
         ("FR-05: Pure Decision Combination", "The Decision Combinator shall implement a pure, side-effect-free mathematical function Delta(P, E, M) mapping policy verdicts, evidence sufficiency, and monitor scores into an authoritative decision: ALLOW, DENY, or REVIEW."),
-        ("FR-06: Cryptographic Token Issuance", "Upon reaching an ALLOW decision, the firewall shall issue a cryptographically signed, single-use HMAC-SHA256 execution token bound strictly to the session ID, action hash, and current state head hash."),
-        ("FR-07: Controlled Tool Execution", "The Controlled Executor shall execute tool actions if and only if presented with a cryptographically valid, unexpired, and unconsumed execution token matching the exact action parameters."),
-        ("FR-08: Replay & Race Prevention", "The Token Store shall atomically validate and mark tokens as CONSUMED in a thread-safe manner, guaranteeing that duplicate execution attempts, replayed tokens, or concurrent redemptions fail closed immediately."),
+        ("FR-06: Authorization Token Issuance", "Upon reaching an ALLOW decision, the firewall shall issue a single-use authorization token bound to the action and relevant state. HMAC-SHA256 evidence verification is handled separately."),
+        ("FR-07: Controlled Tool Execution", "The Controlled Executor shall validate authorization tokens for expiry, consumption, and action binding before executing tool actions."),
+        ("FR-08: Single-Use Token Redemption", "The Token Store shall validate and mark tokens as consumed so that a consumed token cannot be reused."),
         ("FR-09: Human Oversight Ticketing", "When a REVIEW decision is generated, the Review Service shall create a persistent, cryptographically signed review ticket and transition the agent session into a suspended BUSY state."),
-        ("FR-10: State-Hash Revalidation", "Upon human reviewer approval, the firewall shall verify that the session state hash has not drifted (INV-05) before issuing a single-use execution token, preventing Time-of-Check to Time-of-Use (TOCTOU) exploits."),
+        ("FR-10: State-Hash Revalidation", "Upon human reviewer approval, the firewall shall compare the current session state hash with the hash recorded for the review before issuing a single-use execution token."),
         ("FR-11: Tamper-Evident Audit Logging", "The Audit Store shall record every received action, policy verdict, monitor score, combinator decision, and execution result in an append-only cryptographic hash chain where each record hashes the previous record's digest."),
         ("FR-12: Full Audit Chain Verification", "The system shall expose an automated verification method capable of mathematically validating the entire hash chain from the genesis record to the latest leaf, detecting any unauthorized bit-level modification."),
     ]
@@ -50,16 +50,16 @@ def add_chapter3(doc: Document):
 
     # 3.3 Non-Functional Requirements (NFR-01 to NFR-08)
     add_h1(doc, "3.3", "Non-Functional Requirements (NFR-01 to NFR-08)")
-    add_p(doc, "To ensure production viability in demanding enterprise agent environments, AASF satisfies eight rigorous non-functional requirements:")
+    add_p(doc, "The requirements specification defines eight non-functional requirements. These are design targets, not claims of production readiness or measured satisfaction:")
     
     nfrs = [
-        ("NFR-01: Low Latency SLA", "The firewall's 95th-percentile (p95) decision latency on the fast-path evaluation shall not exceed 5 ms, and the end-to-end cascade path shall remain strictly under the pre-registered 600 ms SLA boundary."),
+        ("NFR-01: Preregistered Latency Targets", "The frozen protocol sets a B6 p95 target of 5 ms, a P1 fast-path p95 target of 10 ms, a P1 cascade-invoked p95 target of 600 ms, and a hard-timeout ceiling of 1,500 ms. H5 status and limitations are reported in Section 8.10."),
         ("NFR-02: Determinism and Reproducibility", "Given identical initial states and identical sequences of action requests, the state engine, policy evaluator, and decision combinator shall produce mathematically identical decision traces."),
         ("NFR-03: Fail-Closed Default Safety", "Any unexpected runtime exception, missing evidence attribute, unparseable payload, or monitor timeout shall immediately resolve to a safe fail-closed decision (DENY or REVIEW), never ALLOW."),
         ("NFR-04: Thread Safety and Concurrency", "The runtime firewall shall support concurrent multi-session execution without race conditions, data races, or token collisions using fine-grained session locking mechanisms."),
         ("NFR-05: Information Barrier Isolation", "Advisory monitors and human review views shall receive strictly redacted data projections (MonitorView), stripping raw sensitive database values, session secrets, and credentials (INV-10)."),
         ("NFR-06: Zero External Network Dependency", "The core firewall engine, state fold, and decision combinator shall execute completely in-process without requiring mandatory external network round-trips for baseline authorization."),
-        ("NFR-07: Strict Architectural Test Coverage", "The codebase shall maintain an automated test suite covering unit, integration, property-based, and invariant regression suites with zero failing tests."),
+        ("NFR-07: Automated Test Suite", "The codebase shall include automated unit, integration, property-based, and invariant regression tests."),
         ("NFR-08: Type Safety and Static Linting", "The entire codebase shall enforce strict type safety under Mypy (zero typing errors) and conform to PEP 8 standards enforced by Ruff linting."),
     ]
     for nfr_title, nfr_desc in nfrs:
@@ -75,7 +75,7 @@ def add_chapter3(doc: Document):
 
     # 3.5 Software Requirements and Dependencies
     add_h1(doc, "3.5", "Software Requirements and Dependencies")
-    add_p(doc, "The software environment is standardized to guarantee cross-platform reproducibility:")
+    add_p(doc, "The software environment and declared dependency ranges are listed for reproducibility:")
     add_bullet(doc, "Microsoft Windows 11 (64-bit), Ubuntu Linux 22.04/24.04 LTS, or macOS 14+ Sonoma.", "Operating System:")
     add_bullet(doc, "Python 3.11.x (tested specifically with Python 3.11.9).", "Python Runtime:")
     add_bullet(doc, "Git version 2.40+ with SHA-256 commit verification support.", "Version Control:")
@@ -85,25 +85,25 @@ def add_chapter3(doc: Document):
     add_p(doc,
         "Development followed strict Test-Driven Development (TDD) protocols. Continuous Integration (CI) is managed via GitHub Actions "
         "configured with multi-stage verification jobs: (1) Ruff linting and formatting check; (2) Mypy static type verification across "
-        "source and test suites; (3) Pytest execution across 415 tests; and (4) cryptographic dataset manifest and label leakage guards."
+        "source and test suites; (3) pytest execution; and (4) dataset manifests and label-leakage checks."
     )
 
     # 3.7 Technology Stack Justification
     add_h1(doc, "3.7", "Technology Stack Justification")
     add_p(doc,
-        "Every external library and tool integrated into AASF was selected based on strict security, performance, and deterministic criteria. "
+        "The following dependencies are declared in the repository configuration; their presence does not constitute an independent security or performance certification. "
         "Table 3.1 outlines the technology stack and its engineering justification."
     )
     
     headers_t31 = ["Technology / Library", "Version", "Functional Role in AASF", "Engineering Justification"]
     data_t31 = [
         ["Python", "3.11.9", "Core Programming Language", "Exceptional ecosystem for AI tooling, native type hinting, performance enhancements in 3.11."],
-        ["Pydantic", "2.7+", "Data Contracts & Schema Validation", "Rust-backed validation engine; guarantees strict type coercion and immutability."],
-        ["Cryptography / hashlib", "Standard Lib", "HMAC-SHA256 & Digest Engine", "Standardized, high-throughput cryptographic primitives for tokens and audit chains."],
+        ["Pydantic", "2.7+", "Data Contracts & Schema Validation", "Data validation and model serialization."],
+        ["Cryptography / hashlib", "Standard Lib", "HMAC-SHA256 & Digest Engine", "Cryptographic primitives used for evidence verification and hash-based integrity checks."],
         ["Pytest", "8.0+", "Automated Test Runner", "Supports parameterized fixtures, property testing, and comprehensive regression tracking."],
         ["Ruff", "0.4+", "Linter & Code Formatter", "Ultra-fast Rust-based linter ensuring strict code quality and formatting consistency."],
         ["Mypy", "1.10+", "Static Type Checker", "Enforces strict type safety across all contracts, preventing runtime type-coercion bugs."],
-        ["Matplotlib", "3.8+", "Experimental Visualization", "Publication-grade chart generation directly from verified evaluation JSON/CSV data."],
+        ["Matplotlib", "3.8+", "Experimental Visualization", "Chart generation for evaluation data."],
     ]
     col_w_t31 = [1.4, 0.8, 1.8, 2.0]
     add_table(doc, headers_t31, data_t31, "Table 3.1", "Technical Dependencies, Cryptographic Standards, and Tooling Stack", col_w_t31)
