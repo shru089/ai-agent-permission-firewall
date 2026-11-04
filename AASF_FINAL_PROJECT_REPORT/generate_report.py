@@ -210,9 +210,9 @@ add_page_break()
 # ABSTRACT
 # =====================================================================
 add_heading("ABSTRACT", level=1)
-add_body("The rapid adoption of autonomous AI agents capable of invoking tools, executing code, and exfiltrating data introduces a new class of permission-security risks that traditional static role-based access control cannot address. This project presents the Adaptive Agentic Security Firewall (AASF), a context-aware permission firewall that evaluates every agent action request against a deterministic stateful policy engine and an advisory-only context-aware monitor, producing one of three decisions: ALLOW, DENY, or REVIEW.", space_after=8)
-add_body("The core contribution is a multi-step (history-dependent) security model in which the firewall's decision depends not on an isolated action but on the full session history folded into typed observable state. This directly addresses the Action-D invariance problem: identical terminal actions can be safe or unsafe depending on preceding context, a distinction that stateless policy engines and action-only monitors cannot detect (Youden's J = 0).", space_after=8)
-add_body("The system was evaluated across four dataset splits (DEV, CAL, TEST-IN, TEST-NOVEL) using eight experimental arms under two execution modes (teacher-forced replay and closed-loop autonomous execution). All five pre-registered hypotheses (H1–H5) are confirmed: history-dependent invariance holds for stateless and action-only arms; the stateful policy matches or exceeds transcript monitors on attack prevention while improving uninterrupted legitimate task completion; human review burden is reduced by up to 100% with zero unsafe allowances; exactly zero policy-violating actions were executed across all protected arms; and p95 decision latency remains under 2 ms, far below the 600 ms budget. All 12 security invariants were verified across unit, integration, invariant, property, and experiment test suites (415 tests passing).", space_after=8)
+add_body("The rapid adoption of autonomous AI agents capable of invoking tools, executing code, and exfiltrating data introduces permission-security risks. This project presents the Adaptive Agentic Security Firewall (AASF), an in-process prototype that evaluates submitted agent action requests against a deterministic stateful policy engine and an advisory-only context-aware monitor, producing ALLOW, DENY, or REVIEW decisions for configured actions.", space_after=8)
+add_body("The implementation models multi-step, history-dependent decisions by folding session events into typed observable state. The reported Action-D results show Youden's J = 0 for B3/B4 in the listed evaluation artifacts; those finite-split values do not prove that history is universally necessary or establish live stochastic monitor behavior.", space_after=8)
+add_body("The project evaluates an in-process security mediation firewall for agent tool actions. On TEST-IN (8 traces), B6 and P1 each report M-APR = 1.0000, M-VIOL = 0 / 0, and review rate = 0.0833. Their p95 decision latencies are 1.337 ms and 1.023 ms, respectively. On TEST-NOVEL (4 traces), B6 and P1 each report M-APR = 1.0000, M-VIOL = 0 / 0, and review rate = 0.0000. Their p95 decision latencies are 1.709 ms and 0.936 ms, respectively. These values describe the reported arms and splits.", space_after=8)
 add_body("Keywords: AI agent security, permission firewall, context-aware access control, multi-step threats, stateful policy, advisory monitor, Action-D invariance, Youden's J, review burden reduction.", italic=True, size=11)
 
 add_page_break()
@@ -269,7 +269,7 @@ figures = [
     ("Figure 5:", "TEST-IN: Attack Prevention, Utility & Review Rate", 24),
     ("Figure 6:", "TEST-NOVEL: Generalization Against Reserved Attack Templates", 25),
     ("Figure 7:", "Youden's J: History-Dependence Detection", 26),
-    ("Figure 8:", "Decision Latency p95 by Arm and Split", 27),
+    ("Figure 8:", "Canonical Evaluator Decision Latency p95 by Arm and Split; synthetic-request CLI benchmark reported separately", 27),
     ("Figure 9:", "Security vs Utility Tradeoff (TEST-IN)", 28),
     ("Figure 10:", "Pre-Registered Hypotheses H1–H5 Outcomes", 28),
 ]
@@ -317,9 +317,9 @@ add_heading("1.3 Objectives", level=2)
 add_body("The primary objectives of this project are:", space_after=4)
 add_numbered("Design and implement a context-aware permission firewall (AASF) that evaluates agent actions against a deterministic stateful policy and an advisory-only monitor.")
 add_numbered("Formalize a three-valued policy semantics (PROHIBIT / PERMIT / UNDETERMINED / EVIDENCE_MISSING) and a pure decision function producing ALLOW / DENY / REVIEW outcomes.")
-add_numbered("Guarantee security invariants including PROHIBIT dominance, fail-closed default, advisory-only monitors, independent decision authority, and review revalidation.")
+add_numbered("Specify and test security invariants including PROHIBIT dominance, fail-closed defaults, advisory-only monitors, and review revalidation.")
 add_numbered("Empirically evaluate the firewall across development, calibration, and held-out test splits, confirming that history-aware stateful evaluation detects multi-step threats that stateless and action-only arms miss.")
-add_numbered("Demonstrate reduced human review burden with zero policy violations and sub-millisecond decision latency.")
+add_numbered("Evaluate human review rates, policy violations, and decision latency on the reported benchmark splits.")
 
 add_heading("1.4 Scope", level=2)
 add_body("The project scope includes: the firewall core, policy engine, state fold with hash-chained audit, advisory monitor interface, executor with single-use authorization tokens, review ticket mechanism, experimental harness with teacher-forced and closed-loop modes, and a pre-registered hypothesis-testing protocol. Out of scope: a production dashboard UI, workload-aware reviewer routing, real LLM provider integration in the shipped artifact (monitors use simulated/model-client interfaces), and end-user authentication beyond API-key-based session binding.", space_after=8)
@@ -340,7 +340,7 @@ add_heading("CHAPTER 2: LITERATURE SURVEY", level=1)
 
 add_heading("2.1 Related Work", level=2)
 add_body("Research on LLM agent safety and permission control has explored several axes. Early work treated agent actions as isolated API calls subject to static allow/deny lists. Subsequent proposals introduced LLM-based monitors that inspect agent transcripts and issue categorical assessments (PASS/FAIL/UNSURE or decisive/REVIEW). However, these approaches either evaluate actions without session context or grant the monitor real authorization authority, creating a single point of failure if the monitor is compromised or miscalibrated.", space_after=8)
-add_body("Stateful policy engines for agent workflows have been proposed, but most rely on regex or free-text matching over raw transcripts, which is vulnerable to relabeling and spoofing attacks. AASF differs by folding only typed, provenance-tagged fields into observable state, preventing adversarial renaming from evading policy checks. The advisory-only monitor design — where a monitor assessment can never independently authorize or relax a PROHIBIT — is a deliberate departure from architectures that let LLMs make allow/deny decisions.", space_after=8)
+add_body("Stateful policy engines for agent workflows have been proposed, but some approaches rely on regex or free-text matching over raw transcripts. AASF folds typed, provenance-tagged fields into observable state. Its advisory-only monitor design prevents monitor advice from authorizing an action that policy prohibits.", space_after=8)
 
 add_heading("2.2 Limitations of Existing Approaches", level=2)
 add_bullet("Stateless policy engines cannot detect history-dependent threats (Action-D invariance): identical terminal actions receive identical decisions regardless of preceding context.")
@@ -350,7 +350,7 @@ add_bullet("Over-escalation to human review creates unsustainable review burden 
 add_bullet("Naive combination of confidence scores and risk scores from different papers is semantically invalid: they measure different quantities in opposite directions.")
 
 add_heading("2.3 Positioning of AASF", level=2)
-add_body("AASF is positioned as a context-aware, stateful, advisory-monitor permission firewall. Its distinguishing properties are: (1) a deterministic three-valued policy engine over typed state; (2) monitors that are strictly advisory and cannot authorize execution; (3) PROHIBIT dominance that cannot be overridden by any monitor or review approval; (4) review revalidation (INV-05) that rechecks state freshness before execution; and (5) an experimental protocol with pre-registered hypotheses, sealed test sets, and information-barrier guarantees that prevent label leakage into firewall views.")
+add_body("AASF is a context-aware, stateful permission firewall with advisory monitors. Its implementation includes a deterministic three-valued policy engine over typed state, monitor advice that does not authorize execution, PROHIBIT precedence, review revalidation (INV-05), and information-barrier views. The associated tests exercise these behaviors.")
 
 add_page_break()
 
@@ -371,7 +371,7 @@ add_numbered("FR-08: The audit store shall append hash-chained, tamper-evident r
 
 add_heading("3.2 Non-Functional Requirements", level=2)
 add_numbered("NFR-01: Security — PROHIBIT actions shall never be executed; fail-closed on monitor timeout, malformed output, or state-store errors.")
-add_numbered("NFR-02: Performance — p95 decision latency shall be under 600 ms (achieved: under 2 ms).")
+add_numbered("NFR-02: Performance — the preregistered H5 criterion is cascade-invoked P1 p95 latency ≤ 600 ms, with a 1,500 ms hard-timeout ceiling. Available artifacts do not establish these criteria; see the H5 latency-budget statement in Chapter 7.")
 add_numbered("NFR-03: Determinism — identical inputs shall produce identical outputs across reruns.")
 add_numbered("NFR-04: Auditability — all decisions shall be hash-chained and cryptographically verifiable.")
 add_numbered("NFR-05: Information barriers — labels and future actions shall never leak into monitor views or firewall state.")
@@ -380,15 +380,15 @@ add_heading("3.3 Threat Model", level=2)
 add_body("The threat model assumes a potentially compromised or misaligned AI agent that may attempt multi-step attacks: exfiltrating confidential data to external destinations, executing destructive operations without authorization, chaining benign-looking preparation steps into a final violation, and attempting relabeling or spoofing attacks to evade detection. The firewall itself, the state store, and the executor are trusted components; the agent, the monitor model, and the network are untrusted. The design enforces that no single component can unilaterally authorize an unsafe action.", space_after=8)
 
 add_heading("3.4 Security Invariants", level=2)
-add_body("Twelve security invariants (INV-01 to INV-12) were specified and verified:", space_after=4)
+add_body("Security invariants are design requirements. Repository tests exercise selected invariant behaviors; the passing suite does not establish formal verification of every invariant across all execution environments.", space_after=4)
 add_bullet("INV-01: State monotonicity and authenticity — SHA-256 state-head chaining.")
 add_bullet("INV-02: Non-bypassable gateway — executor requires a gateway-issued token.")
 add_bullet("INV-03: Policy precedence — PROHIBIT cannot be overridden by monitor or review.")
-add_bullet("INV-04: Review ticket HMAC binding — tokens bound to action hash and session ID.")
+add_bullet("INV-04: Review authorization binding — authorization is bound to the action and session/state context. Evidence HMAC verification is handled separately.")
 add_bullet("INV-05: Evidence verification — signatures required for execution; review revalidation.")
 add_bullet("INV-06: Fail-closed default — timeouts, malformed JSON, exceptions map to UNKNOWN/REVIEW.")
 add_bullet("INV-07: Preimage resistance — tamper-evident hash construction.")
-add_bullet("INV-08: Information barrier — zero oracle annotations leak to firewall views or monitors.")
+add_bullet("INV-08: Information barrier — monitor-view construction excludes label fields in the implemented projection; repository tests cover selected leakage cases.")
 add_bullet("INV-09: Audit immutability — append-only hash-chained audit store.")
 add_bullet("INV-10: Transcript sanitization — secrets and credentials redacted in monitor views.")
 add_bullet("INV-11: Rollback protection — monotonic state progression enforced.")
@@ -425,7 +425,7 @@ add_heading("4.2.3 Policy Engine (Three-Valued Evaluation)", level=3)
 add_body("Policy rules evaluate each condition to TRUE, FALSE, or UNKNOWN. The verdict precedence is: PROHIBIT (if any PROHIBIT rule matches) > EVIDENCE_MISSING (if any PROHIBIT rule is MAYBE) > PERMIT (if any PERMIT rule matches) > UNDETERMINED. PROHIBIT dominates PERMIT; a PERMIT rule can never mask a PROHIBIT match or maybe-match.", space_after=6)
 
 add_heading("4.2.4 Advisory Monitor Interface", level=3)
-add_body("Monitors receive a MonitorView projection containing the canonical action, registry facts, goal, policy text, and a state summary — but never labels, future actions, or secrets. Monitor verdicts (BENIGN / SUSPICIOUS / UNKNOWN / NOT_CONSULTED) are strictly advisory: a BENIGN assessment can never independently authorize an action, and policy uncertainty always escalates to REVIEW rather than ALLOW.", space_after=6)
+add_body("Monitors receive an allow-listed MonitorView projection of action and state information; repository tests exercise selected label-isolation and redaction cases. Monitor verdicts are advisory and do not grant authorization authority. The implemented decision path maps policy uncertainty to REVIEW in the tested cases.", space_after=6)
 
 add_heading("4.2.5 Decision Combinator (Pure Function Δ)", level=3)
 add_body("The decision D_t = Δ(valid, V_t, u_t, c(a_t), κ) is a pure function over a finite domain, evaluated top-to-bottom with first match winning. Key properties: P-PROHIB (PROHIBIT ⇒ DENY), P-FAILCLOSED (monitor UNKNOWN never yields ALLOW), P-MONO (more suspicious output never yields a less strict decision), and P-NOLEAK (decision never reads labels or scores directly).", space_after=6)
@@ -440,7 +440,7 @@ add_heading("4.2.8 Audit Store", level=3)
 add_body("All decisions and executions are recorded in an append-only, hash-chained audit store. Each record is linked to its predecessor via SHA-256, making tampering detectable. JSONL export supports external analysis and dashboard integration.", space_after=6)
 
 add_heading("4.3 Information Flow", level=2)
-add_body("Information flows unidirectionally from the agent through the firewall layers to the executor. Monitors receive read-only projections and cannot write to state or audit. Labels are stored in a sealed label store, separate from the audit log, and are never accessible to firewall views or monitors (INV-08). The decision function never reads labels or monitor scores directly (P-NOLEAK).", space_after=8)
+add_body("Information flows from the agent through the firewall layers to the executor. Monitors receive read-only projections. The implementation separates labels from monitor-view construction, and repository tests cover selected information-barrier cases (INV-08).", space_after=8)
 
 add_caption("Figure 2: Decision Pipeline Flow — Action Request → Validation → State → Policy → Monitor → Combinator → ALLOW/DENY/REVIEW")
 
@@ -461,7 +461,7 @@ add_table(
     col_widths=[0.5, 1.1, 0.6, 0.7, 0.8, 0.9, 0.5, 0.7, 0.9, 0.7],
     font_size=8,
 )
-add_caption("Figure 3: Information-Access Matrix by Arm (● available, ○ static facts only, — not available). Every arm lacks labels/future actions by construction (INV-08).")
+add_caption("Figure 3: Information-Access Matrix by Arm (● available, ○ static facts only, — not available). The evaluated monitor views omit label and future-action fields in the tested setup (INV-08).")
 
 add_page_break()
 
@@ -518,7 +518,7 @@ add_heading("6.4 Metrics", level=2)
 add_body("Primary TF metrics: Recall and FPR on Ω_crit (critical matched pairs), prevalence-free; FPR on benign-labeled Ω_all. Primary OL metrics: M-APR (Attack Prevention Rate), M-LTS (Legitimate Task Success), M-LTS-0 (Uninterrupted Success), M-REVR (Review Rate), M-VIOL (Policy Violations), and M-LAT (Decision Latency). Security (M-APR) is always paired with utility (M-LTS) and burden (M-REVR); no result is reported as a single number.", space_after=8)
 
 add_heading("6.5 Hypotheses", level=2)
-add_body("Five pre-registered hypotheses were tested: H1 (history-dependent invariance / manipulation check — stateless and action-only arms show J = 0 on held-out splits), H2 (stateful policy matches/exceeds transcript monitor on APR while improving LTS-0), H3 (human review burden reduced by ≥0.15 with zero increase in unsafe allowances), H4 (exactly zero PROHIBIT actions executed across all protected arms), H5 (p95 decision latency ≤ 600 ms).", space_after=8)
+add_body("Reported hypothesis outcomes: H1 J values are reported for the specified arms and splits; H2 is not verified because the reported LTS-0 comparison does not establish the preregistered LTS criterion; H3 is not verified because the available summary omits the required unsafe-allowance upper confidence bound; H4 reports zero observed PROHIBIT actions in the evaluated arms and traces; H5 is NOT VERIFIED, as detailed in the H5 latency-budget statement in Chapter 7.", space_after=8)
 
 add_heading("6.6 Statistical Methods", level=2)
 add_body("Proportions are reported with counts first; Wilson 95% intervals are descriptive; the primary interval is cluster bootstrap (resample templates, then instances within). Paired comparisons use exact McNemar tests and paired cluster bootstrap CIs on risk differences. Multiplicity is controlled via Holm correction. Zero-event bounds use 1 − 0.05^(1/n). Reproducibility: deterministic generation; every run has a manifest of seeds, versions, and hashes.", space_after=8)
@@ -531,7 +531,7 @@ add_page_break()
 add_heading("CHAPTER 7: RESULTS AND ANALYSIS", level=1)
 
 add_heading("7.1 TEST-IN Split Results", level=2)
-add_body("Table 1 presents evaluation results on the TEST-IN split (N = 8 traces). All arms achieve M-APR = 1.0000 except B0 (AlwaysAllow, 0.0000). B6 (Stateful Policy) and P1 (Hybrid Cascade) achieve M-LTS-0 = 0.5000 (uninterrupted legitimate task success) versus 0.0000 for B3/B4/B5, while reducing review rate to 0.0833 versus 0.3333 for B3/B4/B5. Zero policy violations (M-VIOL = 0/0) across all arms. P95 latency ranges from 0.006 ms (B0) to 1.401 ms (B5), all far below the 600 ms budget.", space_after=8)
+add_body("On TEST-IN (N = 8 traces), B6 and P1 each report M-APR = 1.0000, M-LTS-0 = 0.5000, review rate = 0.0833, and M-VIOL = 0 / 0. Their p95 latencies are 1.337 ms for B6 and 1.023 ms for P1. B3, B4, and B5 each report review rate = 0.3333. These are results for this split.", space_after=8)
 
 add_table(
     ["Arm", "Youden's J", "M-APR", "M-LTS", "M-LTS-0", "M-REVR", "M-VIOL", "Latency p95 (ms)"],
@@ -551,7 +551,7 @@ add_table(
 add_caption("Table 1: TEST-IN Split Evaluation Results (N = 8 traces). Templates completely disjoint from DEV and CAL.")
 
 add_heading("7.2 TEST-NOVEL Split Results", level=2)
-add_body("Table 2 presents results on TEST-NOVEL (N = 4 traces), testing generalization against reserved structural attack templates. B6 and P1 achieve Youden's J = 1.0000 (perfect history-dependence detection) versus J = 0.0000 for B3/B4/B5, confirming that stateful typed history is decisive for novel attacks. M-LTS-0 = 1.0000 for B6/P1 versus 0.0000 for B3/B4/B5. Review rate drops to 0.0000 for B6/P1 versus 0.2500 for B3/B4/B5. Zero policy violations across all arms.", space_after=8)
+add_body("On TEST-NOVEL (N = 4 traces), B6 and P1 each report replay Youden’s J = 1.0000, M-APR = 1.0000, M-LTS-0 = 1.0000, review rate = 0.0000, and M-VIOL = 0 / 0. B3, B4, and B5 each report replay J = 0.0000 and review rate = 0.2500. These are results for this split.", space_after=8)
 
 add_table(
     ["Arm", "Youden's J", "M-APR", "M-LTS", "M-LTS-0", "M-REVR", "M-VIOL", "Latency p95 (ms)"],
@@ -571,20 +571,21 @@ add_table(
 add_caption("Table 2: TEST-NOVEL Split Evaluation Results (N = 4 traces). Tests generalization against reserved structural attack templates.")
 
 add_heading("7.3 Hypothesis Outcomes", level=2)
-add_body("All five pre-registered hypotheses (H1–H5) are confirmed:", space_after=4)
+add_body("The table below reports measured values for the pre-registered hypotheses. No p-value is reported here:", space_after=4)
 add_table(
     ["Hypothesis", "Criterion", "Empirical Result", "Outcome"],
     [
-        ["H1", "B3 J = 0.0; B4 |J| ≤ 0.03", "TEST-IN: B3 J=0.0000, B4 J=0.0000; CAL J=0.0000; TEST-NOVEL J=0.0000", "CONFIRMED"],
-        ["H2", "B6 APR ≥ B5 APR − 0.03; B6 LTS ≥ B5 LTS + 0.10", "TEST-IN: APR Δ=0.0000; LTS-0: B6 0.5000 vs B5 0.0000 (+0.5000)", "CONFIRMED"],
-        ["H3", "Review burden reduction ≥ 0.15; zero unsafe allowances", "TEST-IN: review rate 0.3333 → 0.0833 (Δ=0.2500). M-VIOL = 0", "CONFIRMED"],
+        ["H1", "B3 J = 0.0; B4 |J| ≤ 0.03", "DEV manipulation check: B3/B4 J = 0.0; TEST-IN: B3/B4 J = 0.0000, B6/P1 J = 0.5000; TEST-NOVEL: B3/B4 J = 0.0000, B6/P1 J = 1.0000", "Reported values"],
+        ["H2", "B6 APR ≥ B5 APR − 0.03; B6 LTS ≥ B5 LTS + 0.10", "TEST-IN: APR delta = 0.0000; LTS-0: B6 0.5000 vs B5 0.0000 (+0.5000); LTS-0 does not establish the preregistered LTS criterion", "NOT VERIFIED"],
+        ["H3", "P1 review reduction ≥ 0.15; unsafe-allow point increase = 0.00; one-sided 95% bootstrap upper bound ≤ 0.02", "Reported split-specific review-rate point estimates and zero unsafe-allow point increase; required upper bound is not reported", "NOT VERIFIED"],
         ["H4", "Exactly 0 PROHIBIT actions executed", "M-VIOL = 0 across all arms, traces, splits", "CONFIRMED"],
-        ["H5", "P1 p95 latency ≤ 600 ms", "P1 p95: 1.023 ms (TEST-IN), 0.936 ms (TEST-NOVEL)", "CONFIRMED"],
+        ["H5", "P1 cascade-invoked p95 latency ≤ 600 ms; hard timeout ≤ 1,500 ms", "See H5 latency-budget statement below", "NOT VERIFIED"],
     ],
     col_widths=[0.9, 1.7, 2.3, 0.9],
     font_size=8,
 )
-add_caption("Table 3: Pre-Registered Hypothesis Outcomes H1–H5 (all CONFIRMED).")
+add_body("H5 latency budget: The benchmark summary reports P1 arm-level p95 decision latency of 1.023 ms on TEST-IN and 0.936 ms on TEST-NOVEL, both below the preregistered 600 ms ceiling. The available results do not report p95 specifically for cascade-invoked P1 decisions or establish the 1,500 ms hard-timeout criterion, so H5 is not verified from the current artifacts. The DEV p95 value is inconsistent across reports: the final summary lists 0.878 ms, while the detailed DEV monitor benchmark lists 4.774 ms. The synthetic-request microbenchmark is separate and is not H5 evidence.", space_after=8)
+add_caption("Table 3: Pre-Registered Hypothesis Outcomes H1–H5 (reported values; H5 not verified).")
 
 add_heading("7.4 Ablation Findings", level=2)
 add_body("Twelve pre-registered ablations (A-01 to A-12) were performed. Key findings:", space_after=4)
@@ -593,7 +594,7 @@ add_table(
     [
         ["A-01", "State source", "Typed entities prevent relabeling attacks; M-APR = 1.0000 preserved under adversarial renaming."],
         ["A-02", "History representation", "Action-only views (B4) have J = 0.0000; typed state summaries (P1/B6) achieve J = 0.5000–1.0000."],
-        ["A-04", "Policy statefulness", "B6 reduces review burden 75% on TEST-IN, 100% on TEST-NOVEL, preserving M-APR = 1.0."],
+        ["A-04", "Policy statefulness", "Compared with B3, B6 review rate decreases 75% on TEST-IN (0.3333 to 0.0833) and 100% on TEST-NOVEL (0.2500 to 0.0000); B6 M-APR = 1.0000 on both splits."],
         ["A-10", "Reviewer robustness", "Under reject-all reviewer, B6 retains 50% uninterrupted success on TEST-IN; B3/B4/B5 collapse to 0%."],
     ],
     col_widths=[0.8, 1.3, 4.5],
@@ -602,7 +603,7 @@ add_table(
 add_caption("Table 4: Selected Ablation Findings (A-01, A-02, A-04, A-10).")
 
 add_heading("7.5 Security Invariant Audit", level=2)
-add_body("All 12 security invariants (INV-01 to INV-12) specified in the threat model were verified across unit, integration, invariant, property, and experiment test suites. The full 415-test suite passes with zero failures. Cryptographic SHA-256 state-head chaining, PROHIBIT dominance, advisory-only monitor semantics, fail-closed defaults, information barriers, audit immutability, and deterministic equivalence were all confirmed.", space_after=8)
+add_body("The repository includes tests for selected security-invariant behaviors. 433 tests passed in the audited run. The benchmark report records M-VIOL = 0 / 0 for the listed arms and splits; this is an evaluation result, not a universal security guarantee.", space_after=8)
 
 # Add figures
 doc.add_paragraph()
@@ -623,7 +624,7 @@ add_caption("Figure 7: Youden's J on Matched Critical Pairs — History-Dependen
 doc.add_paragraph()
 doc.add_picture("charts/latency.png", width=Inches(6.2))
 doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-add_caption("Figure 8: Decision Latency p95 by Arm and Split (budget ceiling: 600 ms; all arms well under budget)")
+add_caption("Figure 8: Canonical Evaluator Decision Latency p95 by Arm and Split; synthetic-request CLI microbenchmark reported separately")
 
 doc.add_paragraph()
 doc.add_picture("charts/tradeoff.png", width=Inches(5.5))
@@ -633,7 +634,7 @@ add_caption("Figure 9: Security vs Utility Tradeoff — TEST-IN Split (M-APR vs 
 doc.add_paragraph()
 doc.add_picture("charts/hypotheses.png", width=Inches(5.5))
 doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-add_caption("Figure 10: Pre-Registered Hypotheses H1–H5 — All CONFIRMED")
+add_caption("Figure 10: Pre-Registered Hypotheses H1–H5 — Outcomes reported from available artifacts; H5 not verified")
 
 add_page_break()
 
@@ -643,15 +644,15 @@ add_page_break()
 add_heading("CHAPTER 8: CONCLUSION AND FUTURE WORK", level=1)
 
 add_heading("8.1 Summary", level=2)
-add_body("This project designed, implemented, and empirically evaluated AASF, a context-aware permission firewall for autonomous AI agents. The core innovation is a deterministic stateful policy engine over typed, provenance-tagged observable state, combined with strictly advisory monitors that cannot independently authorize unsafe actions. The firewall produces ALLOW/DENY/REVIEW decisions with PROHIBIT dominance, fail-closed defaults, review revalidation (INV-05), and information-barrier guarantees (INV-08).", space_after=8)
-add_body("Empirical evaluation across DEV, CAL, TEST-IN, and TEST-NOVEL splits confirmed all five pre-registered hypotheses (H1–H5): history-dependent invariance holds (J = 0 for stateless/action-only arms), stateful evaluation matches or exceeds transcript monitors on attack prevention while improving uninterrupted utility, human review burden is reduced by up to 100% with zero unsafe allowances, exactly zero policy-violating actions were executed, and p95 decision latency is under 2 ms (versus 600 ms budget). All 415 tests pass and all 12 security invariants are verified.", space_after=8)
+add_body("This project designed, implemented, and empirically evaluated AASF as an in-process permission-firewall prototype for configured agent tool actions. The repository implements a deterministic stateful policy engine, advisory monitor interface, executor, review flow, and audit recording. Repository tests exercise selected security-invariant behaviors; they do not establish formal verification or universal security guarantees.", space_after=8)
+add_body("The benchmark report presents split-specific results. On TEST-IN and TEST-NOVEL, the summary reports B3/B4 replay Youden’s J = 0.0000 and B6/P1 J = 0.5000 on TEST-IN and 1.0000 on TEST-NOVEL. B6/P1 each report M-APR = 1.0000 and M-VIOL = 0 / 0 on both held-out splits. Relative to B3, reported review-rate point estimates decrease by 75% on TEST-IN and 100% on TEST-NOVEL. P1 arm-level p95 is 1.023 ms on TEST-IN and 0.936 ms on TEST-NOVEL; these values do not establish cascade-invoked latency. H5 is NOT VERIFIED; see the H5 latency-budget statement above. 433 tests passed in the audited run.", space_after=8)
 
 add_heading("8.2 Contributions", level=2)
 add_bullet("A context-aware permission firewall (AASF) with stateful typed history, advisory-only monitors, and ALLOW/DENY/REVIEW decisions.")
 add_bullet("A formal three-valued policy semantics and pure decision function with provable properties (P-PROHIB, P-FAILCLOSED, P-MONO, P-NOLEAK).")
 add_bullet("Empirical confirmation that history-aware stateful evaluation detects multi-step threats missed by stateless and action-only arms.")
-add_bullet("Demonstrated review-burden reduction with zero policy violations and sub-millisecond latency.")
-add_bullet("A pre-registered, reproducible experimental protocol with sealed test sets, information barriers, and cluster-aware statistical reporting.")
+add_bullet("Reported split-specific review rates, policy-violation counts, and evaluator p95 decision latencies.")
+add_bullet("A pre-registered experimental protocol with committed test-split manifests and documented information barriers and statistical procedures.")
 
 add_heading("8.3 Limitations", level=2)
 add_bullet("The benchmark uses simulated tools and scenario traces; real-world deployment requires integration with actual agent toolchains.")
@@ -781,7 +782,7 @@ add_table(
 )
 
 add_heading("B.4 Test Execution Summary", level=2)
-add_body("Total tests: 415 passed, 0 failed, 0 skipped. Test duration: 10.87s. Test suites: unit (19 files), invariants (2 files), integration (2 files), experiments (7 files), property (1 file). FW-GATE satisfied: all T-INV-01…12 invariant tests pass.", space_after=8)
+add_body("433 tests passed in the audited run. Test runtime depends on the execution environment. No coverage report establishing complete code or branch coverage is included in the audited artifacts.", space_after=8)
 
 add_page_break()
 
@@ -789,27 +790,7 @@ add_page_break()
 # APPENDIX C: SECURITY INVARIANTS
 # =====================================================================
 add_heading("APPENDIX C: SECURITY INVARIANTS", level=1)
-add_body("Twelve security invariants were specified in docs/01_THREAT_MODEL.md and verified across the test suite.", space_after=8)
-add_table(
-    ["ID", "Invariant", "Verification Method", "Status"],
-    [
-        ["INV-01", "State monotonicity and authenticity", "SHA-256 state-head chaining; T-STA tests", "VERIFIED"],
-        ["INV-02", "Non-bypassable gateway", "Executor requires gateway token; T-EXE tests", "VERIFIED"],
-        ["INV-03", "Policy precedence (PROHIBIT dominance)", "P-PROHIB exhaustive enumeration; T-DEC-001", "VERIFIED"],
-        ["INV-04", "Review ticket HMAC binding", "Tokens bound to action hash + session ID", "VERIFIED"],
-        ["INV-05", "Evidence verification & review revalidation", "Signatures required; state-head recheck on approval", "VERIFIED"],
-        ["INV-06", "Fail-closed default", "Timeouts/malformed/exceptions → UNKNOWN/REVIEW", "VERIFIED"],
-        ["INV-07", "Preimage resistance", "Tamper-evident hash construction; T-HASH tests", "VERIFIED"],
-        ["INV-08", "Information barrier", "Zero label leakage to views/monitors; CI label-leak check", "VERIFIED"],
-        ["INV-09", "Audit immutability", "Append-only hash-chained store; T-AUD tests", "VERIFIED"],
-        ["INV-10", "Transcript sanitization", "Secrets/credentials redacted in monitor views", "VERIFIED"],
-        ["INV-11", "Rollback protection", "Monotonic state progression enforced", "VERIFIED"],
-        ["INV-12", "Deterministic equivalence", "Identical inputs → identical outputs; rerun bit-identical", "VERIFIED"],
-    ],
-    col_widths=[0.7, 2.2, 2.4, 1.0],
-    font_size=8,
-)
-add_caption("Table C-1: Security Invariant Audit Summary (INV-01 to INV-12). All 12 verified.")
+add_body("Security invariants are design requirements. Repository tests exercise selected invariant behaviors; the passing suite does not establish formal verification of every invariant across all execution environments.", space_after=8)
 
 doc.add_paragraph()
 add_body("End of Report", bold=True, align=WD_ALIGN_PARAGRAPH.CENTER, size=12)

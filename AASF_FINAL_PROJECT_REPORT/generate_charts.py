@@ -102,10 +102,10 @@ colors = ["#2ca02c"] * 5
 fig, ax = plt.subplots(figsize=(8, 3))
 bars = ax.bar(hyps, outcomes, color=colors, width=0.5)
 for b in bars:
-    ax.text(b.get_x() + b.get_width()/2, b.get_height() - 0.05, "CONFIRMED", ha="center", va="bottom", color="white", fontweight="bold", fontsize=9)
+    ax.text(b.get_x() + b.get_width()/2, b.get_height() - 0.05, "REPORTED", ha="center", va="bottom", color="white", fontweight="bold", fontsize=9)
 ax.set_ylim(0, 1.25)
-ax.set_ylabel("Outcome (1=Confirmed)")
-ax.set_title("Pre-Registered Hypotheses H1–H5: All Confirmed")
+ax.set_ylabel("Reported value (not verification status)")
+ax.set_title("Pre-Registered Hypothesis Values: H5 Not Verified")
 ax.set_yticks([])
 ax.grid(axis="y", alpha=0.3)
 fig.tight_layout()
