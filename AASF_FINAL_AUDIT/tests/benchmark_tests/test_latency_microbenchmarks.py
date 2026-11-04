@@ -14,7 +14,6 @@ import os
 import statistics
 import sys
 import time
-from pathlib import Path
 
 repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 src_path = os.path.join(repo_root, "src")
@@ -24,9 +23,7 @@ if src_path not in sys.path:
 from firewall.audit.store import AuditStore
 from firewall.contracts.enums import (
     Classification,
-    Decision,
     EventType,
-    PolicyVerdict,
     ToolClass,
     Zone,
 )
@@ -35,7 +32,7 @@ from firewall.contracts.models import ActionRequest, CanonicalAction
 from firewall.core import FirewallCore
 from firewall.executor.tokens import TokenStore
 from firewall.policy.evaluator import create_default_stateful_policy
-from firewall.state.models import SessionState
+from firewall.state.engine import initial_state
 from firewall.state.registry import DestinationInfo, Registry, ResourceInfo, ToolInfo
 
 
@@ -58,26 +55,36 @@ def create_benchmark_registry() -> Registry:
     )
 
 
-def benchmark_component_micros(iterations=1000) -> dict:
+def benchmark_component_micros(iterations: int = 100) -> dict:
     """Measures latency for isolated deterministic components."""
     results = {}
 
     # 1. Token minting & consumption
-    store = TokenStore(secret_key=b"benchmarking_secret_key_32_bytes!", ttl_seconds=60)
+    store = TokenStore()
     mint_times = []
     consume_times = []
-    dummy_hash = b"\xaa" * 32
+    dummy_hash = "a" * 64
+    dummy_head = "h" * 64
 
     for i in range(iterations):
-        sess_id = f"sess_{i}"
         act_id = f"act_{i}"
         t0 = time.perf_counter()
-        tok = store.issue_token(sess_id, act_id, "validate_schema", dummy_hash)
+        tok = store.issue_token(
+            action_id=act_id,
+            action_hash=dummy_hash,
+            state_head_hash=dummy_head,
+            decision_id=f"dec_{i}",
+        )
         t1 = time.perf_counter()
         mint_times.append((t1 - t0) * 1000)
 
         t2 = time.perf_counter()
-        store.consume(tok.token_id, sess_id, act_id, "validate_schema", dummy_hash)
+        store.consume_token(
+            token_id=tok.token_id,
+            expected_action_id=act_id,
+            expected_action_hash=dummy_hash,
+            expected_state_head_hash=dummy_head,
+        )
         t3 = time.perf_counter()
         consume_times.append((t3 - t2) * 1000)
 
@@ -93,7 +100,7 @@ def benchmark_component_micros(iterations=1000) -> dict:
         t0 = time.perf_counter()
         audit.append(
             session_id=f"sess_{i % 10}",
-            event_type=EventType.DECISION_MADE,
+            record_type=EventType.ACTION_RECEIVED.value,
             payload={"action_id": f"act_{i}", "verdict": "ALLOW"},
         )
         t1 = time.perf_counter()
@@ -105,7 +112,7 @@ def benchmark_component_micros(iterations=1000) -> dict:
     # 3. Policy evaluation
     policy = create_default_stateful_policy()
     registry = create_benchmark_registry()
-    state = SessionState(session_id="bench_sess")
+    state = initial_state("bench_sess")
     action = CanonicalAction(
         action_id="act_bench",
         session_id="bench_sess",
@@ -127,7 +134,7 @@ def benchmark_component_micros(iterations=1000) -> dict:
     return results
 
 
-def benchmark_pipeline_configurations(iterations=500) -> dict:
+def benchmark_pipeline_configurations(iterations: int = 50) -> dict:
     """Profiles full Track A FirewallCore pipeline latency."""
     registry = create_benchmark_registry()
     fw = FirewallCore(registry=registry)
@@ -161,31 +168,30 @@ def benchmark_pipeline_configurations(iterations=500) -> dict:
     return summary
 
 
-def run_all_benchmarks():
+def test_latency_microbenchmarks_pipeline():
+    """
+    Automated pytest validation verifying that the benchmark harness executes without exceptions.
+    Scope Note: This test verifies harness structural validity and execution pipeline sanity.
+    It does not assert runtime latency thresholds or service level agreements (SLAs).
+    """
+    micros = benchmark_component_micros(iterations=10)
+    assert "token_mint_mean_ms" in micros
+    assert "audit_append_mean_ms" in micros
+    assert "policy_eval_mean_ms" in micros
+
+    pipeline = benchmark_pipeline_configurations(iterations=10)
+    assert "C4_full_track_a_permit" in pipeline
+
+
+if __name__ == "__main__":
     print("=" * 60)
     print("Running AASF Canonical Latency Microbenchmarks...")
     print("=" * 60)
 
-    micros = benchmark_component_micros(iterations=500)
+    m = benchmark_component_micros(iterations=100)
     print("\nComponent Micro-Latencies (ms):")
-    print(json.dumps(micros, indent=2))
+    print(json.dumps(m, indent=2))
 
-    pipeline = benchmark_pipeline_configurations(iterations=500)
+    p = benchmark_pipeline_configurations(iterations=50)
     print("\nPipeline Latencies (ms):")
-    print(json.dumps(pipeline, indent=2))
-
-    output = {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "iterations": 500,
-        "component_micros": micros,
-        "pipeline_configs": pipeline,
-    }
-
-    out_file = Path(repo_root) / "AASF_FINAL_AUDIT" / "benchmark_results.json"
-    out_file.write_text(json.dumps(output, indent=2), encoding="utf-8")
-    print(f"\nSaved benchmark results to {out_file}")
-    return output
-
-
-if __name__ == "__main__":
-    run_all_benchmarks()
+    print(json.dumps(p, indent=2))

@@ -1,113 +1,117 @@
 {
   "project": "AASF - Adaptive Agentic Security Firewall",
-  "audit_commit": "cb208f9ca57939a9a50a3c98969ffe311f1432bf",
-  "timestamp_iso": "2026-11-02T15:00:00Z",
-  "configurations": [
+  "audit_commit": "b30917b938bd2dada47b741ba24a9dde57d28a18",
+  "timestamp_iso": "2026-11-04T15:10:00Z",
+  "benchmark_environment": {
+    "os": "Windows 11 x86_64",
+    "python": "Python 3.13.5 (Anaconda win32)",
+    "timer": "time.perf_counter_ns()",
+    "sample_iterations": 300,
+    "warmup_iterations": 50,
+    "scope_note": "Local microbenchmark measurements executed in the host Python environment. Measurements evaluate single-threaded in-memory execution."
+  },
+  "measured_microbenchmarks": [
     {
-      "id": "C1",
+      "id": "M0",
       "name": "Direct Unprotected Baseline",
-      "description": "Direct execution without firewall gateway interception",
-      "latency_p50_ms": 0.05,
-      "latency_p90_ms": 0.08,
-      "latency_p99_ms": 0.12,
-      "latency_mean_ms": 0.06,
-      "relative_overhead_pct": 0.0
+      "description": "Direct synthetic Python lambda invocation without firewall interception",
+      "measurement_type": "EMPIRICAL_LOCAL_MEASUREMENT",
+      "latency_p50_ms": 0.0003,
+      "latency_p90_ms": 0.0004,
+      "latency_p95_ms": 0.0005,
+      "latency_p99_ms": 0.0008,
+      "latency_mean_ms": 0.0003,
+      "overhead_vs_baseline_ms": 0.0,
+      "context_note": "A minimal in-memory Python lambda taking ~0.3 microseconds. Real-world tools with network or disk I/O typically take 5-50 ms."
     },
     {
-      "id": "C2",
-      "name": "Deterministic Policy Engine Only",
-      "description": "Rule evaluation, wildcard resolution, Prohibit priority",
-      "latency_p50_ms": 0.35,
-      "latency_p90_ms": 0.48,
-      "latency_p99_ms": 0.65,
-      "latency_mean_ms": 0.38,
-      "relative_overhead_pct": 533.3
+      "id": "M1",
+      "name": "Fast-Path PROHIBIT (Demo B)",
+      "description": "Security intercept: tool validation, deterministic policy evaluation to PROHIBIT, session terminal event, audit append (no token, no execution)",
+      "measurement_type": "EMPIRICAL_LOCAL_MEASUREMENT",
+      "latency_p50_ms": 0.4917,
+      "latency_p90_ms": 0.6743,
+      "latency_p95_ms": 0.7871,
+      "latency_p99_ms": 1.2418,
+      "latency_mean_ms": 0.5384,
+      "overhead_vs_baseline_ms": 0.5381
     },
     {
-      "id": "C3",
-      "name": "State Tracker + Policy Engine",
-      "description": "State retrieval, quota checks, rule evaluation",
-      "latency_p50_ms": 0.58,
-      "latency_p90_ms": 0.74,
-      "latency_p99_ms": 0.98,
-      "latency_mean_ms": 0.62,
-      "relative_overhead_pct": 933.3
+      "id": "M2",
+      "name": "Review Ticket Creation (Demo C initial)",
+      "description": "Policy evaluation resulting in REVIEW, ReviewerView projection, ticket generation, state-head snapshot, audit append",
+      "measurement_type": "EMPIRICAL_LOCAL_MEASUREMENT",
+      "latency_p50_ms": 0.5902,
+      "latency_p90_ms": 0.9747,
+      "latency_p95_ms": 1.2127,
+      "latency_p99_ms": 1.5894,
+      "latency_mean_ms": 0.6840,
+      "overhead_vs_baseline_ms": 0.6837
     },
     {
-      "id": "C4",
-      "name": "Full Track A (Gateway + Policy + State + Token + Audit)",
-      "description": "Standard deterministic firewall core with all safety invariants",
-      "latency_p50_ms": 1.38,
-      "latency_p90_ms": 1.82,
-      "latency_p99_ms": 2.18,
-      "latency_mean_ms": 1.45,
-      "relative_overhead_pct": 2316.7
+      "id": "M3",
+      "name": "Review Resolution & Execution (Demo C resolve)",
+      "description": "Ticket retrieval, state freshness check, policy re-evaluation, HMAC capability token minting, ControlledExecutor execution, audit append",
+      "measurement_type": "EMPIRICAL_LOCAL_MEASUREMENT",
+      "latency_p50_ms": 0.7220,
+      "latency_p90_ms": 1.5963,
+      "latency_p95_ms": 1.9084,
+      "latency_p99_ms": 2.5616,
+      "latency_mean_ms": 0.9011,
+      "overhead_vs_baseline_ms": 0.9008
     },
     {
-      "id": "C5",
-      "name": "Full Track A + Mock Monitor",
-      "description": "Track A core plus zero-latency mock risk monitor",
-      "latency_p50_ms": 1.48,
-      "latency_p90_ms": 1.95,
-      "latency_p99_ms": 2.35,
-      "latency_mean_ms": 1.56,
-      "relative_overhead_pct": 2500.0
-    },
-    {
-      "id": "C6",
-      "name": "Full Track A + Local Fast Embeddings Monitor",
-      "description": "Track A core plus local sentence-transformer semantic monitor",
-      "latency_p50_ms": 18.40,
-      "latency_p90_ms": 24.50,
-      "latency_p99_ms": 32.80,
-      "latency_mean_ms": 19.80,
-      "relative_overhead_pct": 32900.0
-    },
-    {
-      "id": "C7",
-      "name": "Full Track A + LLM Risk Monitor",
-      "description": "Track A core plus external LLM API risk scoring call",
-      "latency_p50_ms": 580.00,
-      "latency_p90_ms": 940.00,
-      "latency_p99_ms": 1240.00,
-      "latency_mean_ms": 624.00,
-      "relative_overhead_pct": 1039900.0
-    },
-    {
-      "id": "C8",
-      "name": "Human Review Enqueue Overhead",
-      "description": "Ticket generation, persistence, and websocket notification broadcast",
-      "latency_p50_ms": 2.85,
-      "latency_p90_ms": 3.90,
-      "latency_p99_ms": 5.10,
-      "latency_mean_ms": 3.02,
-      "relative_overhead_pct": 4933.3
-    },
-    {
-      "id": "C9",
-      "name": "Full Track A under High Concurrency (4 Threads)",
-      "description": "Full deterministic core under lock contention",
-      "latency_p50_ms": 2.15,
-      "latency_p90_ms": 3.40,
-      "latency_p99_ms": 4.85,
-      "latency_mean_ms": 2.35,
-      "relative_overhead_pct": 3816.7
+      "id": "M4",
+      "name": "Fast-Path PERMIT (Demo A)",
+      "description": "Full gateway interception: action parsing, registry lookup, policy evaluation, state update, HMAC token issue, ControlledExecutor execution, audit append",
+      "measurement_type": "EMPIRICAL_LOCAL_MEASUREMENT",
+      "latency_p50_ms": 0.7283,
+      "latency_p90_ms": 1.4258,
+      "latency_p95_ms": 1.6201,
+      "latency_p99_ms": 2.5253,
+      "latency_mean_ms": 0.9386,
+      "overhead_vs_baseline_ms": 0.9383
     }
   ],
-  "deterministic_core_stage_breakdown": {
-    "registry_resolution_ms": 0.12,
-    "registry_resolution_pct": 8.28,
-    "policy_evaluation_ms": 0.35,
-    "policy_evaluation_pct": 24.14,
-    "state_tracking_ms": 0.22,
-    "state_tracking_pct": 15.17,
-    "decision_synthesis_ms": 0.08,
-    "decision_synthesis_pct": 5.52,
-    "token_vault_mint_and_validate_ms": 0.28,
-    "token_vault_pct": 19.31,
-    "audit_ledger_hashing_ms": 0.40,
-    "audit_ledger_pct": 27.59,
-    "total_deterministic_ms": 1.45
+  "analytical_stage_estimates": {
+    "status": "ANALYTICAL_ESTIMATES_NOT_INDIVIDUALLY_INSTRUMENTED",
+    "basis": "Architectural breakdown estimating internal distribution of the 0.94 ms Fast-Path PERMIT turn. Stages were not timed via separate hardware counters in bench.py.",
+    "breakdown": {
+      "registry_resolution_ms": 0.08,
+      "registry_resolution_pct": 8.52,
+      "policy_evaluation_ms": 0.22,
+      "policy_evaluation_pct": 23.44,
+      "state_tracking_ms": 0.15,
+      "state_tracking_pct": 15.98,
+      "decision_synthesis_ms": 0.05,
+      "decision_synthesis_pct": 5.33,
+      "token_vault_mint_and_validate_ms": 0.18,
+      "token_vault_pct": 19.18,
+      "audit_ledger_hashing_ms": 0.26,
+      "audit_ledger_pct": 27.70,
+      "total_deterministic_ms": 0.94
+    }
+  },
+  "external_comparisons": [
+    {
+      "id": "COMP-01",
+      "name": "Local Sentence Transformers Semantic Monitor (CPU)",
+      "status": "UNMEASURED_EXTERNAL_LITERATURE_ESTIMATE",
+      "latency_mean_ms": 19.80,
+      "note": "Derived from prior project literature and pilot experiments; not measured in the local bench.py microbenchmark."
+    },
+    {
+      "id": "COMP-02",
+      "name": "Local/Cloud LLM Risk Monitor (Ollama / Remote API)",
+      "status": "UNMEASURED_EXTERNAL_LITERATURE_ESTIMATE",
+      "latency_mean_ms": 624.00,
+      "note": "Representative external LLM call latency (network round-trip + token generation); not measured in the local bench.py microbenchmark. Relative speedup claims (e.g. 663x) are external comparisons, not experimentally measured speedups."
+    }
+  ],
+  "resource_and_concurrency_notes": {
+    "cpu_utilization_measured": false,
+    "memory_footprint_measured": false,
+    "multi_threaded_concurrency_measured": false,
+    "status_note": "No CPU utilization, memory consumption, or multi-threaded throughput tests exist in bench.py. All microbenchmarks reflect single-threaded execution."
   }
 }
-
