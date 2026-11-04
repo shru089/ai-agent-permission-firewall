@@ -56,10 +56,11 @@ def add_chapter9(doc: Document):
     # 9.4 Engineering and Technical Contributions
     add_h1(doc, "9.4", "Engineering and Technical Contributions")
     add_p(doc,
-        "From an engineering perspective, AASF provides a production-grade, open-source reference implementation written in modern Python 3.11. "
-        "The repository contains 415 automated tests achieving complete code and branch coverage, verified under strict Ruff linting, Mypy typing, "
-        "and automated GitHub Actions CI pipelines. The architecture introduces reusable abstractions including `ControlledExecutor`, `TokenStore`, "
-        "`AuditStore`, and `SafeMonitorWrapper` that can be integrated directly into commercial agent platforms (e.g., LangGraph, AutoGen)."
+        "From an engineering perspective, AASF provides a robust, open-source reference implementation written in modern Python 3.11. "
+        "The repository contains 433 automated verification tests across unit contracts, security invariants, integration slices, property models, "
+        "and benchmark evaluation suites, verified under Mypy static type checking on core architecture modules and automated regression pipelines. "
+        "The architecture introduces reusable abstractions including `ControlledExecutor`, `TokenStore`, `AuditStore`, and `SafeMonitorWrapper` "
+        "that provide a reference model for agent security research and runtime mediation."
     )
 
     # 9.5 Encountered Limitations
@@ -129,21 +130,22 @@ def add_back_matter(doc: Document):
     add_page_break(doc)
 
     # ---------------- APPENDIX I: LIST OF PUBLICATIONS ----------------
-    add_chapter_title(doc, "APPENDIX I", "LIST OF RESEARCH PUBLICATIONS")
+    add_chapter_title(doc, "APPENDIX I", "PROJECT RESEARCH WORKING PAPERS & TECHNICAL FOUNDATIONS")
     add_p(doc,
-        "The theoretical and empirical foundations of this capstone project contributed to four peer-reviewed research papers "
-        "authored by the project team:"
+        "The theoretical and empirical foundations of this capstone project are documented in four project technical working papers "
+        "and foundational manuscripts developed during this work:"
     )
-    add_bullet(doc, "S. Singh, A. Kumar, and M. Haque, “State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation,” in Proceedings of the IEEE Conference on Secure AI Systems, 2026.", "Paper 1 (Foundational Research [P1]):")
-    add_bullet(doc, "K. Thakur, A. Kumar, and M. Haque, “Self-Adapting Attribute-Based Access Control (SA-ABAC) for Multi-Agent Collaboration,” IEEE Transactions on Dependable and Secure Computing, 2026.", "Paper 2 (Policy Architecture [P2]):")
-    add_bullet(doc, "A. Kasurde, A. Kumar, and M. Haque, “Adaptive Security-Check Depth: A Tiered Rejection Cascade for Latency-Constrained Interception,” in ACM Conference on Computer and Communications Security (CCS), 2026.", "Paper 3 (Cascade Interception [P3]):")
-    add_bullet(doc, "S. Jagtap, A. Kumar, and M. Haque, “Workload-Aware Adaptive Dynamic Oversight for Human-Agent Systems,” International Journal of Human-Computer Studies, 2026.", "Paper 4 (Human Oversight Optimization [P4]):")
+    add_bullet(doc, "S. Singh, A. Kumar, and M. Haque, “State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation,” AASF Technical Research Working Paper [P1], 2026.", "Working Paper 1 (Foundational Research [P1]):")
+    add_bullet(doc, "K. Thakur, A. Kumar, and M. Haque, “Self-Adapting Attribute-Based Access Control (SA-ABAC) for Multi-Agent Collaboration,” AASF Technical Research Working Paper [P2], 2026.", "Working Paper 2 (Policy Architecture [P2]):")
+    add_bullet(doc, "A. Kasurde, A. Kumar, and M. Haque, “Adaptive Security-Check Depth: A Tiered Rejection Cascade for Latency-Constrained Interception,” AASF Technical Research Working Paper [P3], 2026.", "Working Paper 3 (Cascade Interception [P3]):")
+    add_bullet(doc, "S. Jagtap, A. Kumar, and M. Haque, “Workload-Aware Adaptive Dynamic Oversight for Human-Agent Systems,” AASF Technical Research Working Paper [P4], 2026.", "Working Paper 4 (Human Oversight Optimization [P4]):")
+    add_p(doc, "Note: [P1] through [P4] represent project technical papers and research working foundations authored as part of this undergraduate project initiative.")
     
     add_page_break(doc)
 
     # ---------------- APPENDIX II: PUBLISHED PAPER ABSTRACT ----------------
-    add_chapter_title(doc, "APPENDIX II", "PUBLISHED PAPER ABSTRACT")
-    add_callout(doc, "EXCERPT: STATE VS. CONTEXT (IEEE SECURE AI SYSTEMS 2026)",
+    add_chapter_title(doc, "APPENDIX II", "FOUNDATION RESEARCH WORKING PAPER ABSTRACT [P1]")
+    add_callout(doc, "EXCERPT: STATE VS. CONTEXT (RESEARCH WORKING PAPER [P1])",
         "Title: State vs. Context: Evaluating LLM Runtime Monitors under Action-History Manipulation\n"
         "Authors: Shrishti Singh, A. Kumar, M. Haque\n\n"
         "Abstract: Autonomous language model agents rely on multi-step tool execution pipelines to accomplish complex tasks. "
@@ -160,21 +162,25 @@ def add_back_matter(doc: Document):
     add_page_break(doc)
 
     # ---------------- APPENDIX III: PLAGIARISM REPORT ----------------
-    add_chapter_title(doc, "APPENDIX III", "PLAGIARISM AND ORIGINALITY REPORT")
-    add_p(doc, "Official Institutional Plagiarism Verification Certificate:")
-    add_callout(doc, "TURNITIN / INSTITUTIONAL SIMILARITY VERIFICATION",
+    add_chapter_title(doc, "APPENDIX III", "INSTITUTIONAL PLAGIARISM VERIFICATION PLACEHOLDER")
+    add_p(doc, "Institutional Plagiarism and Academic Integrity Verification Record:")
+    add_callout(doc, "ACADEMIC INTEGRITY & SIMILARITY CLEARANCE RECORD",
         "Document Title: Adaptive Agentic Security Firewall (AASF): B.Tech Capstone Report\n"
+        "Candidate Name(s): Shrishti Singh, Khushi Thakur, Akshat Kasurde, Shubham Jagtap\n"
+        "Degree: Bachelor of Technology in Computer Science & Engineering\n"
         "Department: Department of Computer Science and Engineering\n"
-        "University: Chhatrapati Shivaji Maharaj University, Panvel\n"
-        "Submission Date: November 2026\n\n"
-        "Overall Similarity Index: 6% (Institutional Threshold: <= 15%)\n"
-        "Primary Source Matches:\n"
-        " - Match 1: 2% (Standard Cryptographic and IEEE Reference Definitions)\n"
-        " - Match 2: 1.5% (Pre-registered Protocol Documents, PREREG-001)\n"
-        " - Match 3: 1% (Standard Pydantic and Python Documentation Citations)\n"
-        "Exclusions: Bibliography, Quotes, Mathematical Formulas (< 12 words).\n\n"
-        "Verification Status: PASSED (Certified Bonafide Original Capstone Dissertation)\n\n"
-        "[ SIGNATURE: INSTITUTIONAL PLAGIARISM OFFICER ]"
+        "Institution: Chhatrapati Shivaji Maharaj University, Panvel\n"
+        "Submission Academic Year: 2025–2026\n\n"
+        "Declaration of Originality:\n"
+        "The candidates hereby certify that the work presented in this dissertation is original and has been written in compliance with institutional academic integrity guidelines. All software, algorithms, and experimental results were implemented and verified independently by the project team. All external literature, libraries, and frameworks have been duly cited in IEEE format.\n\n"
+        "Institutional Anti-Plagiarism Verification:\n"
+        "[  ] Plagiarism Clearance Certificate Attached (Institutional Portal Verification)\n"
+        "Similarity Index Recorded: _______ % (Permissible Institutional Limit: <= 15%)\n"
+        "Verification Date: _______________\n\n"
+        "Signatures & Institutional Endorsements:\n"
+        "Project Guide: ________________________   Date: _______________\n"
+        "Head of Department: ___________________   Date: _______________\n"
+        "Institutional Reviewer: _______________   Date: _______________"
     )
     
     add_page_break(doc)
@@ -221,5 +227,5 @@ def add_back_matter(doc: Document):
         "   test_in_traces.jsonl: SHA-256 verified\n"
         "   test_novel_traces.jsonl: SHA-256 verified\n\n"
         "5. Automated Test Suite Commitment:\n"
-        "   415 passed in 10.97s (pytest -q, Ruff 0 errors, Mypy 0 errors)"
+        "   433 passed in 16.09s (pytest -v, Mypy clean on src/ across 52 files, exit code 0)"
     )

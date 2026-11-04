@@ -85,7 +85,7 @@ def add_chapter3(doc: Document):
     add_p(doc,
         "Development followed strict Test-Driven Development (TDD) protocols. Continuous Integration (CI) is managed via GitHub Actions "
         "configured with multi-stage verification jobs: (1) Ruff linting and formatting check; (2) Mypy static type verification across "
-        "source and test suites; (3) Pytest execution across 415 tests; and (4) cryptographic dataset manifest and label leakage guards."
+        "core source modules; (3) Pytest execution across 433 tests; and (4) cryptographic dataset manifest and label leakage guards."
     )
 
     # 3.7 Technology Stack Justification

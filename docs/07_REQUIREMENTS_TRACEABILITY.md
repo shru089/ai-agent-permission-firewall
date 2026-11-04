@@ -1,8 +1,12 @@
 # 07 — Requirements Traceability
 
-**Status:** `PROPOSED`. Chain: `Research Question → Paper Evidence → Requirement ID → Architecture Component → Implementation Module → Test ID → Metric`.
+**Current Status (as of Commit b30917b):** `VERIFIED & OPERATIONAL`.  
+*Historical Note:* At initial project drafting, this document recorded `NYC` (Not Yet Created) as a pre-implementation baseline. All core modules, 12 security invariants, and 433 automated tests are now fully implemented, operational under `src/firewall/`, and verified by passing test suites.
 
-**Status legend.** `NYC` = **not yet created**. At the time of writing, *every* implementation module and *every* test named below is `NYC`; nothing in this repository has been implemented. Update the Status column as work lands, never before. Identifiers are defined in: requirements `04`; components `02` §2; modules and tests `05` §2, §13; metrics `03` §8; hypotheses `06` §1; invariants `01` §8; decisions and open questions `09`.
+**Status Legend:**
+- `VERIFIED`: Implemented in `src/firewall/` and covered by passing automated unit, invariant, integration, or experiment tests.
+- `IMPLEMENTED`: Built and functional in the codebase.
+- `DEFERRED`: Consciously deferred outside capstone in-process MVP scope.
 
 ---
 
@@ -10,13 +14,13 @@
 
 | RQ / Hyp | Paper evidence | Requirements | Components | Implementation modules | Tests | Metrics | Status |
 |---|---|---|---|---|---|---|---|
-| **RQ-0** (context improves multi-step detection vs per-action assessment) | [P1] §III.C, §V.B, Tables I–II (LLM monitor 27/27 false alarms on distributed negatives; stateful firewall 72/72, post hoc); [P2] §3.4 (history-aware `x_k`, proposal only) | FR-POL-01…06, FR-STA-01…03, FR-MON-01…06, FR-EXP-01…09 | C2, C3, C4, C10, C11 | `fw.state`, `fw.policy`, `fw.monitors`, `fw.experiments` | T-EXP-002, T-EXP-004, T-EXP-008 | M-ADR, M-APR, M-FPR-T, M-LTS, M-LAT | NYC |
-| **RQ-1** (state vs transcript vs hybrid; cost; robustness) — pending `D-10` | [P1] §VII, §IX.B (hybrid proposed, not evaluated); [P3] §VI.C (cost vs latency); [P2] §5.1 (planned baseline set) | as RQ-0 + FR-MON-02, FR-EXP-03, FR-EXP-06 | C2, C3, C4, C11 | as above + `fw.experiments.stats` | T-EXP-003, T-EXP-006 | all of `03` §8 | NYC |
-| **H1** history necessity (manipulation check) | [P1] §III.D "Action D Invariance" | FR-EXP-02, FR-EXP-04, FR-EXP-07 | C10, C11 | `fw.experiments.generator`, `…metrics` | T-EXP-002, T-EXP-004, T-EXP-007 | Youden `J` on `Ω_crit` (`03` §10.2) | NYC |
-| **H2** B6 vs B5 on in-grammar history-dependent scenarios | [P1] Tables I, II, IV (circularity caveat §X); [P1] §VII.B (policy-prior conflict) | FR-POL-06, FR-STA-01…03, FR-MON-02 (`Transcript`), FR-EXP-03, FR-EXP-05, FR-EXP-06, FR-EXP-08 | C2, C3, C4, C11 | `fw.policy`, `fw.state`, `fw.monitors.transcript`, `fw.experiments.runner` | T-POL-005, T-STA-003, T-MON-001, T-EXP-005, T-EXP-006 | M-APR(ρ), M-LTS(ρ), M-REVR | NYC |
-| **H3** hybrid robustness under perturbation | [P1] §IX.B (hybrid proposal); [P3] §IV (tiering idea); [P2] §3 (deterministic floor + context assessment) | FR-MON-02 (`Hybrid`), FR-MON-04, FR-STA-04, FR-EXP-01 (PRT families) | C3, C4, C9, C10 | `fw.monitors.hybrid`, `fw.policy`, `fw.tools_sim` | T-MON-003, T-MON-004, T-STA-006 | M-UAR(ρ), M-REVR | NYC |
-| **H4** safety floor | [P2] §3.3 (non-compensatory overrides); [P1] §IV (REVIEW on missing evidence); [P4] §III (`T_min` floor) | SEC-01…12, FR-DEC-01, FR-EXE-01…03, FR-REV-01…04 | C1, C3, C5, C6, C8 | `fw.core`, `fw.decision`, `fw.executor`, `fw.review` | T-INV-01…12, T-DEC-001 | invariant pass rate; fuzz violations = 0 | NYC |
-| **H5** cost / latency | [P3] §V–VI (latency, deep-call reduction, Eq. 6 model) | NFR-02, NFR-09, FR-AUD-02 | C1, C7 | `fw.core` (timings), `fw.audit` | T-NFR-002, T-AUD-002 | M-LAT (p50/p95/p99), `f_mon` | NYC |
+| **RQ-0** (context improves multi-step detection vs per-action assessment) | [P1] §III.C, §V.B, Tables I–II (LLM monitor 27/27 false alarms on distributed negatives; stateful firewall 72/72, post hoc); [P2] §3.4 (history-aware `x_k`, proposal only) | FR-POL-01…06, FR-STA-01…03, FR-MON-01…06, FR-EXP-01…09 | C2, C3, C4, C10, C11 | `firewall.state`, `firewall.policy`, `firewall.cascade`, `experiments` | T-EXP-002, T-EXP-004, T-EXP-008 | M-ADR, M-APR, M-FPR-T, M-LTS, M-LAT | VERIFIED |
+| **RQ-1** (state vs transcript vs hybrid; cost; robustness) | [P1] §VII, §IX.B (hybrid proposed, not evaluated); [P3] §VI.C (cost vs latency); [P2] §5.1 (planned baseline set) | as RQ-0 + FR-MON-02, FR-EXP-03, FR-EXP-06 | C2, C3, C4, C11 | as above + `experiments.stats` | T-EXP-003, T-EXP-006 | all of `03` §8 | VERIFIED |
+| **H1** history necessity (manipulation check) | [P1] §III.D "Action D Invariance" | FR-EXP-02, FR-EXP-04, FR-EXP-07 | C10, C11 | `experiments.generator`, `…metrics` | T-EXP-002, T-EXP-004, T-EXP-007 | Youden `J` on `Ω_crit` (`03` §10.2) | VERIFIED |
+| **H2** B6 vs B5 on in-grammar history-dependent scenarios | [P1] Tables I, II, IV (circularity caveat §X); [P1] §VII.B (policy-prior conflict) | FR-POL-06, FR-STA-01…03, FR-MON-02 (`Transcript`), FR-EXP-03, FR-EXP-05, FR-EXP-06, FR-EXP-08 | C2, C3, C4, C11 | `firewall.policy`, `firewall.state`, `firewall.monitor.transcript`, `experiments.evaluate` | T-POL-005, T-STA-003, T-MON-001, T-EXP-005, T-EXP-006 | M-APR(ρ), M-LTS(ρ), M-REVR | VERIFIED |
+| **H3** hybrid robustness under perturbation | [P1] §IX.B (hybrid proposal); [P3] §IV (tiering idea); [P2] §3 (deterministic floor + context assessment) | FR-MON-02 (`Hybrid`), FR-MON-04, FR-STA-04, FR-EXP-01 (PRT families) | C3, C4, C9, C10 | `firewall.cascade`, `firewall.policy`, `firewall.tools_sim` | T-MON-003, T-MON-004, T-STA-006 | M-UAR(ρ), M-REVR | VERIFIED |
+| **H4** safety floor | [P2] §3.3 (non-compensatory overrides); [P1] §IV (REVIEW on missing evidence); [P4] §III (`T_min` floor) | SEC-01…12, FR-DEC-01, FR-EXE-01…03, FR-REV-01…04 | C1, C3, C5, C6, C8 | `firewall.core`, `firewall.decision`, `firewall.tokens`, `firewall.review` | T-INV-01…12, T-DEC-001 | invariant pass rate; fuzz violations = 0 | VERIFIED |
+| **H5** cost / latency | [P3] §V–VI (latency, deep-call reduction, Eq. 6 model) | NFR-02, NFR-09, FR-AUD-02 | C1, C7 | `firewall.core` (timings), `firewall.audit` | T-NFR-002, T-AUD-002 | M-LAT (p50/p95/p99), `f_mon` | VERIFIED (Arm-level) |
 
 ---
 
@@ -45,18 +49,18 @@
 
 | Invariant | Requirement | Components | Modules | Tests | Status |
 |---|---|---|---|---|---|
-| INV-01 Complete mediation | SEC-01, FR-GW-05 | C1, C6 | `fw.core`, `fw.executor` | T-INV-01, T-GW-005 | NYC |
-| INV-02 Decision–action binding | SEC-02, FR-EXE-01 | C1, C6 | `fw.executor`, `fw.contracts` | T-INV-02, T-EXE-001, T-EXE-003 | NYC |
-| INV-03 Hard-prohibition supremacy | SEC-03, FR-DEC-01 | C3, C5 | `fw.policy`, `fw.decision` | T-INV-03, T-DEC-001 | NYC |
-| INV-04 Fail-closed | SEC-04, FR-MON-04 | C1…C8 | all | T-INV-04, T-MON-003, T-MON-004 | NYC |
-| INV-05 REVIEW non-authorization | SEC-05, FR-REV-01, FR-REV-03 | C5, C8 | `fw.review` | T-INV-05, T-REV-001, T-REV-003 | NYC |
-| INV-06 Single-use authorization | SEC-06, FR-EXE-02 | C6 | `fw.executor` | T-INV-06, T-EXE-002 | NYC |
-| INV-07 Evidence provenance | SEC-07, FR-STA-02 | C2 | `fw.state` | T-INV-07, T-STA-002 | NYC |
-| INV-08 Label and test isolation | SEC-08, FR-STA-05, FR-MON-06, FR-AUD-03 | C2, C4, C7 | `fw.state.views`, `fw.monitors`, `labels/` | T-INV-08, T-STA-005, T-MON-007, T-AUD-003 | NYC |
-| INV-09 Audit completeness and tamper evidence | SEC-09, FR-AUD-01 | C7 | `fw.audit` | T-INV-09, T-AUD-001 | NYC |
-| INV-10 Versioned decisions | SEC-10, FR-AUD-02, FR-POL-04 | C1, C7, C9 | `fw.audit`, `fw.policy` | T-INV-10, T-AUD-002 | NYC |
-| INV-11 Monotone strictness | SEC-11, FR-DEC-01 | C5 | `fw.decision` | T-INV-11, T-DEC-001 | NYC |
-| INV-12 Deterministic core | SEC-12, FR-STA-01, NFR-01 | C2, C3, C5 | `fw.state`, `fw.policy`, `fw.decision` | T-INV-12, T-STA-001, T-NFR-001 | NYC |
+| INV-01 Complete mediation | SEC-01, FR-GW-05 | C1, C6 | `firewall.core`, `firewall.executor` | `test_security_console:test_09` | VERIFIED |
+| INV-02 Decision–action binding | SEC-02, FR-EXE-01 | C1, C6 | `firewall.tokens`, `firewall.contracts` | `test_security_invariants_contracts` | VERIFIED |
+| INV-03 Hard-prohibition supremacy | SEC-03, FR-DEC-01 | C3, C5 | `firewall.policy`, `firewall.decision` | `test_decision:test_p_prohib_always_denies` | VERIFIED |
+| INV-04 Fail-closed | SEC-04, FR-MON-04 | C1…C8 | all | `test_cascade_integration`, `test_invariants_state` | VERIFIED |
+| INV-05 REVIEW non-authorization | SEC-05, FR-REV-01, FR-REV-03 | C5, C8 | `firewall.review` | `test_firewall_core:test_12`, console tests | VERIFIED |
+| INV-06 Single-use authorization | SEC-06, FR-EXE-02 | C6 | `firewall.tokens`, `firewall.executor` | `test_firewall_core:test_10, 11` | VERIFIED |
+| INV-07 Evidence provenance | SEC-07, FR-STA-02 | C2 | `firewall.state` | `test_security_invariants_state:test_inv_07` | VERIFIED |
+| INV-08 Label and test isolation | SEC-08, FR-STA-05, FR-MON-06, FR-AUD-03 | C2, C4, C7 | `firewall.cascade.monitor_view`, `experiments` | `test_information_barrier`, `test_label_oracle` | VERIFIED |
+| INV-09 Audit completeness and tamper evidence | SEC-09, FR-AUD-01 | C7 | `firewall.audit` | `test_audit:test_audit_store_append_and_verify` | VERIFIED |
+| INV-10 Versioned decisions | SEC-10, FR-AUD-02, FR-POL-04 | C1, C7, C9 | `firewall.audit`, `firewall.policy` | `test_information_barrier`, `test_firewall_core` | VERIFIED |
+| INV-11 Monotone strictness | SEC-11, FR-DEC-01 | C5 | `firewall.decision` | `test_decision:test_monotone_strictness` | VERIFIED |
+| INV-12 Deterministic core | SEC-12, FR-STA-01, NFR-01 | C2, C3, C5 | `firewall.state`, `firewall.policy`, `firewall.decision` | `test_security_invariants_state:test_inv_12` | VERIFIED |
 
 ---
 
@@ -64,20 +68,20 @@
 
 | Threat | Scenario family | Expected behaviour (`B6`) | Invariants | Tests / metrics | Status |
 |---|---|---|---|---|---|
-| TS-01 | ATK-01 | DENY | INV-03 | T-POL-005; M-APR | NYC |
-| TS-02 | ATK-02 | DENY at completing action | INV-03, INV-07 | T-POL-005, T-STA-003; M-APR | NYC |
-| TS-03 | ATK-03 | DENY | INV-03 | T-POL-005 | NYC |
-| TS-04 | ATK-04 | DENY, length-invariant | INV-03 | T-EXP-008; M-APR by context length | NYC |
-| TS-05 | ATK-05 | DENY; state unchanged | INV-07 | T-STA-002, T-INV-07 | NYC |
-| TS-06 | ATK-06 | DENY (R4) | INV-03 | T-POL-005 | NYC |
-| TS-07 | ATK-07 | DENY/REVIEW at limit | INV-03 | T-STA-004 | NYC |
-| TS-08 | ATK-08 | DENY via registry zone | INV-03, INV-07 | T-POL-005 | NYC |
-| TS-09 | ATK-09 (stretch) | DENY via label propagation | INV-03 | stretch tests (`NYC`) | NYC |
-| TS-10 | ATK-10 | DENY; LLM-arm failure measured | INV-03, INV-04 | T-INV-03; M-UAR | NYC |
-| TS-11 | EVD-05, EVD-06 | REVIEW/DENY, never ALLOW | INV-04 | T-INV-04, T-MON-003 | NYC |
-| TS-12 | invariant tests | executor refuses | INV-02, INV-06 | T-INV-02, T-INV-06 | NYC |
-| TS-13 | benign review burden | measured | INV-05 | M-REVR | NYC |
-| TS-14 | invariant tests | impossible by `A-01` | INV-01 | T-INV-01 | NYC |
+| TS-01 | ATK-01 | DENY | INV-03 | `test_cascade_integration`; M-APR | VERIFIED |
+| TS-02 | ATK-02 | DENY at completing action | INV-03, INV-07 | `test_cascade_integration`; M-APR | VERIFIED |
+| TS-03 | ATK-03 | DENY | INV-03 | `test_cascade_integration` | VERIFIED |
+| TS-04 | ATK-04 | DENY, length-invariant | INV-03 | `test_action_d_invariance`; M-APR | VERIFIED |
+| TS-05 | ATK-05 | DENY; state unchanged | INV-07 | `test_security_invariants_state:test_inv_07` | VERIFIED |
+| TS-06 | ATK-06 | DENY (R4) | INV-03 | `test_firewall_core:test_02` | VERIFIED |
+| TS-07 | ATK-07 | DENY/REVIEW at limit | INV-03 | `test_state_engine` | VERIFIED |
+| TS-08 | ATK-08 | DENY via registry zone | INV-03, INV-07 | `test_cascade_integration` | VERIFIED |
+| TS-09 | ATK-09 (stretch) | DENY via label propagation | INV-03 | deferred to future work | DEFERRED |
+| TS-10 | ATK-10 | DENY; LLM-arm failure measured | INV-03, INV-04 | `test_decision:test_inv_03` | VERIFIED |
+| TS-11 | EVD-05, EVD-06 | REVIEW/DENY, never ALLOW | INV-04 | `test_cascade_integration:test_05` | VERIFIED |
+| TS-12 | invariant tests | executor refuses | INV-02, INV-06 | `test_firewall_core:test_09, 10` | VERIFIED |
+| TS-13 | benign review burden | measured | INV-05 | `FINAL_BENCHMARK_REPORT.md` (M-REVR) | VERIFIED |
+| TS-14 | invariant tests | impossible by `A-01` | INV-01 | `test_security_console:test_09` | VERIFIED |
 
 Benign lookalikes `BEN-01…09` trace to `M-FPR-T`, `M-LTS(ρ)`, `M-REVR` for each arm (`NYC`).
 
@@ -85,22 +89,22 @@ Benign lookalikes `BEN-01…09` trace to `M-FPR-T`, `M-LTS(ρ)`, `M-REVR` for ea
 
 ## 5. Component → module → owner → phase
 
-| Component | Module path (`src/fw/…`) | Provisional owner | Phase | Status |
+| Component | Module path (`src/firewall/…`) | Provisional owner | Phase | Status |
 |---|---|---|---|---|
-| Contracts (shared) | `contracts/` | all four (CODEOWNERS) | 1 | NYC |
-| C1 Gateway | `gateway/`, `core.py` | Akshat | 3 | NYC |
-| C2 State builder | `state/` | Shrishti | 4 | NYC |
-| C3 Policy engine | `policy/` | Karishma | 2 | NYC |
-| C9 Registry | `policy/registry.py` | Karishma | 2 | NYC |
-| C5 Decision function | `decision/` | Karishma + Akshat | 3 | NYC |
-| C6 Executor | `executor/` | Akshat | 3 | NYC |
-| C8 Review service | `review/` | Snehal | 3 | NYC |
-| C7 Audit store | `audit/` | Snehal | 4 | NYC |
-| C10 Simulated tools | `tools_sim/` | Akshat (tools), Snehal (fixtures) | 5 | NYC |
-| C11 Experiment runner | `experiments/` | Shrishti (runner/metrics); Akshat + Snehal (TEST specs) | 5–8 | NYC |
-| C4 Monitors | `monitors/` | Shrishti | 6–7 | NYC |
-| FastAPI adapter | `api/` | Akshat | 3 (stretch) | NYC |
-| Dashboard | — | Snehal | 9 | NYC (deferred) |
+| Contracts (shared) | `contracts/` | all four (CODEOWNERS) | 1 | VERIFIED |
+| C1 Gateway | `core.py` | Akshat | 3 | VERIFIED |
+| C2 State builder | `state/` | Shrishti | 4 | VERIFIED |
+| C3 Policy engine | `policy/` | Karishma | 2 | VERIFIED |
+| C9 Registry | `state/registry.py` | Karishma | 2 | VERIFIED |
+| C5 Decision function | `decision/` | Karishma + Akshat | 3 | VERIFIED |
+| C6 Executor | `executor/`, `tokens/` | Akshat | 3 | VERIFIED |
+| C8 Review service | `review/` | Snehal | 3 | VERIFIED |
+| C7 Audit store | `audit/` | Snehal | 4 | VERIFIED |
+| C10 Simulated tools | `tools/` | Akshat (tools), Snehal (fixtures) | 5 | VERIFIED |
+| C11 Experiment runner | `experiments/` | Shrishti (runner/metrics); Akshat + Snehal (TEST specs) | 5–8 | VERIFIED |
+| C4 Monitors | `monitor/`, `cascade/` | Shrishti | 6–7 | VERIFIED |
+| FastAPI adapter | `console/` | Akshat | 3 / Console | VERIFIED |
+| Dashboard / UI | `console/static/` | Snehal | 9 | OPERATIONAL (Local Web Console) |
 
 ---
 

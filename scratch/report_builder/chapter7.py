@@ -45,7 +45,7 @@ def add_chapter7(doc: Document):
         ["src/firewall/executor/", "Controlled Tool Execution", "executor.py (ControlledExecutor), tokens.py (TokenStore)"],
         ["src/firewall/audit/", "Tamper-Evident Audit", "store.py (AuditStore, hash chaining, verify_chain)"],
         ["experiments/", "Benchmark Harnesses", "generator/ (cli.py, synthesis.py), run_experiment.py"],
-        ["tests/", "Automated Test Suites", "unit/, integration/, invariants/, property/, experiments/ (415 tests)"],
+        ["tests/", "Automated Test Suites", "unit/, integration/, invariants/, property/, experiments/ (433 tests)"],
     ]
     col_w_t71 = [1.8, 1.6, 2.6]
     add_table(doc, headers_t71, data_t71, "Table 7.1", "Repository Package Organization and Subsystem Directory Mapping", col_w_t71)
@@ -63,8 +63,8 @@ def add_chapter7(doc: Document):
     add_h1(doc, "7.3", "Implementation Architecture and Interception Boundary")
     add_p(doc,
         "The core entrypoint of the firewall is `FirewallCore.submit(request: ActionRequest) -> FirewallResponse`. "
-        "When an agent emits an action, the call is intercepted by `FirewallCore`. Interception is non-bypassable because the agent "
-        "is provided only with mock or proxy tool handles whose actual execution targets are held exclusively by `ControlledExecutor`."
+        "When an agent emits an action, the call is intercepted by `FirewallCore`. Interception is enforced in-process under threat model assumption A-01 "
+        "because the agent is provided only with mock or proxy tool handles whose actual execution targets and credentials are held exclusively by `ControlledExecutor`."
     )
 
     # 7.4 Runtime Firewall Core Orchestrator

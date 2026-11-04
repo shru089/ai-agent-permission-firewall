@@ -1,5 +1,8 @@
 # AASF Project Completion Audit
 
+> **Audit Baseline & Provenance Note:**  
+> This completion audit was conducted on its recorded historical checkout (/Users/akshatkasurde/ai-agent-permission-firewall) on branch integrate/main-into-ci-ruff-lint-scope at commit 2a40bdb. It is preserved as a permanent historical baseline. It was not conducted directly on commit 30917b, which subsequently merged these results and verified runtime demonstrations on branch main.
+
 **Audit date:** 2026-11-04  
 **Checkout:** `/Users/akshatkasurde/ai-agent-permission-firewall`  
 **Branch:** `integrate/main-into-ci-ruff-lint-scope`  

@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code Style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![Type Checked: Mypy](https://img.shields.io/badge/type%20checked-mypy-blue.svg)](http://mypy-lang.org/)
-[![Tests Passing](https://img.shields.io/badge/tests-415%20passed-brightgreen.svg)](tests/)
+[![Tests Passing](https://img.shields.io/badge/tests-433%20passed-brightgreen.svg)](tests/)
 
 The **Adaptive Agentic Security Firewall (AASF)** is an authoritative, in-process runtime security mediation engine engineered for autonomous AI agents (such as LangChain, AutoGen, CrewAI, and OpenAI Assistants). 
 
@@ -15,8 +15,8 @@ AASF intercepts agent-to-tool dispatches, deterministically tracks session state
 
 ## System Overview & Primary Purpose
 
-> **Note on Core Engineering Focus:**  
-> The primary deliverable of this repository is the **authoritative software firewall runtime** located under `src/firewall/`. While this system is backed by extensive empirical research and formal scientific investigations contributed by our engineering team (detailed in the [Team Research Contributions](#team-research-contributions) section), the research acts as supporting theoretical validation. The core product is a production-grade, highly optimized, fail-closed runtime security engine.
+> **Note on Core Engineering Focus & System Boundary:**  
+> The primary deliverable of this repository is the **authoritative in-process runtime security reference monitor** located under `src/firewall/`. While this system is backed by empirical research and formal scientific investigations contributed by our engineering team (detailed in the [Team Research Contributions](#team-research-contributions) section), the software is an **in-process prototype reference monitor**. Under formal threat model Assumption `A-01`, tool-execution credentials are held exclusively by `ControlledToolExecutor` within a trusted host process. Complete host-level operating system isolation, hardware memory scraping protection, and hypervisor-level non-bypassability are outside the demonstrated software boundary.
 
 ```
        +-------------------------------------------------------------+
@@ -232,30 +232,43 @@ python -m venv .venv
 # Linux / macOS
 source .venv/bin/activate
 
-# Install dependencies
-pip install -r requirements.txt
+# Install package and development dependencies (defined in pyproject.toml)
+pip install -e ".[dev]"
 ```
 
-### 3. Run the Runtime Demo
+### 3. Run Demonstrations
+
+**A. Automated Programmatic Demonstrations:**
 ```bash
+# Run standalone sequential walkthrough of Scenarios A-F:
 python demo_runtime_firewall.py
+
+# Or run the verified audit demonstration suite with JSON capture:
+python AASF_FINAL_AUDIT/demo/runnable_demo.py --demo ALL
+```
+
+**B. Interactive Web Security Console:**
+```bash
+# Start local ASGI runtime console on http://127.0.0.1:8000
+python run_security_console.py
 ```
 
 ### 4. Run the Full Test Suite
-The repository includes 415 automated tests across unit, integration, invariant, and property suites:
+The repository includes 433 automated tests across unit, integration, invariant, property, and benchmark suites:
 ```bash
 pytest -q
 ```
-*Expected Output:* `415 passed in ~10.97s`
+*Expected Output:* `433 passed, 1 warning in ~16s`
 
 ### 5. Static Verification
 ```bash
-# Strict linting and formatting
-ruff check .
+# Production source code type verification (0 errors in 52 files)
+mypy src
 
-# Static type verification
-mypy src tests
+# Strict style checking
+ruff check src
 ```
+*(Note: Full repository linting and test typing audit disclosures are documented in [`AASF_FINAL_AUDIT/FINAL_SUBMISSION_VERIFICATION.md`](AASF_FINAL_AUDIT/FINAL_SUBMISSION_VERIFICATION.md).)*
 
 ---
 
@@ -263,9 +276,9 @@ mypy src tests
 
 For faculty, reviewers, and evaluators, the complete B.Tech Project Report package is available in the [`AASF_FINAL_PROJECT_REPORT/`](AASF_FINAL_PROJECT_REPORT/) directory:
 
-- **Complete University Dissertation (`.docx`):** [`AASF_Final_Project_Report.docx`](AASF_FINAL_PROJECT_REPORT/AASF_FINAL_Project_Report.docx) (Formatted according to CSMU Panvel B.Tech guidelines).
-- **Rendered PDF Version (`.pdf`):** [`AASF_Final_Project_Report.pdf`](AASF_FINAL_PROJECT_REPORT/AASF_Final_Project_Report.pdf) (High-resolution, publication-grade document).
-- **Technical Architecture Diagrams:** [`AASF_FINAL_PROJECT_REPORT/diagrams/`](AASF_FINAL_PROJECT_REPORT/diagrams/) (13 high-res diagrams).
+- **Complete University Dissertation (`.docx`):** [`AASF_FINAL_PROJECT_REPORT.docx`](AASF_FINAL_PROJECT_REPORT/AASF_FINAL_PROJECT_REPORT.docx) (Formatted according to CSMU Panvel B.Tech guidelines).
+- **Rendered PDF Version (`.pdf`):** [`AASF_Final_Project_Report.pdf`](AASF_FINAL_PROJECT_REPORT/AASF_Final_Project_Report.pdf) (High-resolution, 75-page document with active navigation).
+- **Technical Architecture Diagrams:** [`AASF_FINAL_PROJECT_REPORT/diagrams/`](AASF_FINAL_PROJECT_REPORT/diagrams/) (13 technical diagrams, 150 DPI).
 - **Experimental Benchmark Charts:** [`AASF_FINAL_PROJECT_REPORT/charts/`](AASF_FINAL_PROJECT_REPORT/charts/) (8 empirical charts from real evaluation data).
 - **Compliance & Verification Checklist:** [`AASF_FINAL_PROJECT_REPORT/REPORT_VERIFICATION.md`](AASF_FINAL_PROJECT_REPORT/REPORT_VERIFICATION.md).
 - **Implementation Traceability Matrix:** [`AASF_FINAL_PROJECT_REPORT/IMPLEMENTATION_TRACEABILITY.md`](AASF_FINAL_PROJECT_REPORT/IMPLEMENTATION_TRACEABILITY.md).

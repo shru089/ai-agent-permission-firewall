@@ -109,7 +109,7 @@ def add_chapter1(doc: Document):
     add_h1(doc, "1.7", "Project Scope and System Boundaries")
     add_p(doc, "To ensure rigorous engineering and verifiable evaluation, explicit system boundaries are established:")
     add_bullet(doc, "In-process mediation of agent-to-tool dispatch; deterministic state folding; stateful attribute-based access control; advisory monitor cascades; human review revalidation; single-use token lifecycle; hash-chained audit logging.", "In-Scope (System Core):")
-    add_bullet(doc, "Modifying internal LLM transformer weights or model pre-training; hosting external production SaaS databases; hardware-level side-channel attacks; physical tamper resistance of host memory.", "Out-of-Scope (External Environment):")
+    add_bullet(doc, "Modifying internal LLM transformer weights or model pre-training; hosting external production SaaS databases; hardware-level side-channel attacks; physical tamper resistance of host memory; OS kernel or host memory boundary isolation outside the in-process Python runtime (Assumption A-01).", "Out-of-Scope (External Environment):")
 
     # 1.8 Proposed Solution: The AASF Framework
     add_h1(doc, "1.8", "Proposed Solution: The AASF Framework")
@@ -130,7 +130,7 @@ def add_chapter1(doc: Document):
     add_bullet(doc, "Provides existing vs. proposed system analysis, feasibility analysis, use case modeling, functional decomposition, and Level 0 DFD.", "Chapter 5 (Project Analysis):")
     add_bullet(doc, "Exposes the architectural blueprint, component design, Level 1 DFD, UML Class, Sequence, and Activity diagrams, state-fold algorithms, and token lifecycle.", "Chapter 6 (Project Design):")
     add_bullet(doc, "Documents implementation specifics across all core modules, code snippets, package structure, and invariant traceability.", "Chapter 7 (Implementation):")
-    add_bullet(doc, "Details experimental methodology, benchmark dataset splits, test suite breakdown (415 tests), hypothesis outcomes (H1–H5), latency, ablations, and validity threats.", "Chapter 8 (Result Analysis):")
+    add_bullet(doc, "Details experimental methodology, benchmark dataset splits, test suite breakdown (433 tests), hypothesis outcomes (H1–H5), latency, ablations, and validity threats.", "Chapter 8 (Result Analysis):")
     add_bullet(doc, "Summarizes project achievements, research and technical contributions, system limitations, future extension roadmaps, and final conclusions.", "Chapter 9 (Conclusion):")
     add_bullet(doc, "Provides full IEEE references, list of research publications (P1–P4), paper abstracts, plagiarism documentation, formal invariant proofs, and cryptographic manifests.", "Back Matter & Appendices:")
     

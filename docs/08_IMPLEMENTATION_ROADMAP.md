@@ -1,6 +1,7 @@
 # 08 — Implementation Roadmap
 
-**Status:** `PROPOSED`. Implementation has **not started**. Phases follow the order requested by the team; deviations are flagged. Calendar dates are not assigned: the team's capacity and deadline are not known (`OQ-19`). Exit criteria are measurable and tied to requirement/test IDs (`04`, `05` §13, `07`).
+**Current Status (as of Commit b30917b):** `IMPLEMENTED & VERIFIED`. All 9 implementation and evaluation phases have been completed; the repository has 433 passing automated tests and an operational runtime reference monitor.  
+*Historical Note:* At initial project conception, this document was marked `PROPOSED (Implementation not started)`. The phase definitions, owners, and exit criteria below are preserved as permanent historical engineering records.
 
 ---
 
