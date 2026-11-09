@@ -119,8 +119,10 @@ class FirewallCore:
         review_service: Optional[ReviewService] = None,
         executor: Optional[ControlledExecutor] = None,
         verifier: Optional[HmacEvidenceVerifier] = None,
+        strict_permit_on_approval: bool = False,
     ) -> None:
         self.registry = registry
+        self.strict_permit_on_approval = strict_permit_on_approval
         self.policy_engine = policy_engine or create_default_stateful_policy()
         self.monitor = SafeMonitorWrapper(monitor) if monitor else None
         self.decision_config = decision_config or DecisionConfig()
@@ -703,21 +705,59 @@ class FirewallCore:
                         ticket_id=ticket_id,
                     )
 
-                # d2. If current policy verdict is PROHIBIT (INV-05), return DENY and do not execute
-                if policy_result.verdict == PolicyVerdict.PROHIBIT:
-                    reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or [
-                        "POLICY_PROHIBIT"
-                    ]
-                    reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
-                    self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
-                    return FirewallResponse(
-                        action_id=action.action_id,
-                        status="DENIED",
-                        decision=Decision.DENY,
-                        reason_codes=reasons,
-                        policy_verdict=PolicyVerdict.PROHIBIT,
-                        ticket_id=ticket_id,
-                    )
+                # d2. Policy re-evaluation upon review approval (INV-05 & SEC-01)
+                if self.strict_permit_on_approval:
+                    # Strict Zero-Trust Mode (SEC-01): Execution requires explicit PERMIT
+                    if policy_result.verdict != PolicyVerdict.PERMIT:
+                        reasons: list[str] = []
+                        if policy_result.verdict == PolicyVerdict.PROHIBIT:
+                            reasons = [
+                                f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules
+                            ] or ["POLICY_PROHIBIT"]
+                            reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
+                        elif policy_result.verdict == PolicyVerdict.EVIDENCE_MISSING:
+                            missing_str = (
+                                ",".join(policy_result.missing_fields)
+                                if policy_result.missing_fields
+                                else ""
+                            )
+                            reasons = (
+                                [f"EVIDENCE_MISSING:{missing_str}"]
+                                if missing_str
+                                else ["EVIDENCE_MISSING"]
+                            )
+                            reasons.append("EVIDENCE_MISSING_ON_APPROVAL")
+                        elif policy_result.verdict == PolicyVerdict.UNDETERMINED:
+                            reasons = ["POLICY_UNDETERMINED_ON_APPROVAL"]
+                        else:
+                            reasons = [f"POLICY_NON_PERMIT:{policy_result.verdict}"]
+
+                        self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
+                        return FirewallResponse(
+                            action_id=action.action_id,
+                            status="DENIED",
+                            decision=Decision.DENY,
+                            reason_codes=reasons,
+                            policy_verdict=policy_result.verdict,
+                            ticket_id=ticket_id,
+                        )
+                else:
+                    # Standard Baseline Mode (Technical Spec §10.8 & PREREG-001):
+                    # Prohibit dominance (INV-05): Human approval can NEVER override PROHIBIT
+                    if policy_result.verdict == PolicyVerdict.PROHIBIT:
+                        reasons = [f"POLICY_PROHIBIT:{r}" for r in policy_result.matched_rules] or [
+                            "POLICY_PROHIBIT"
+                        ]
+                        reasons.append("POLICY_PROHIBIT_ON_APPROVAL")
+                        self._apply_terminal_event(session_id, action, EventType.ACTION_DENIED)
+                        return FirewallResponse(
+                            action_id=action.action_id,
+                            status="DENIED",
+                            decision=Decision.DENY,
+                            reason_codes=reasons,
+                            policy_verdict=PolicyVerdict.PROHIBIT,
+                            ticket_id=ticket_id,
+                        )
 
                 # e. If state head changed or is missing, return DENY; do not execute directly
                 if recorded_state_head is None or recorded_state_head != state.head_hash:
